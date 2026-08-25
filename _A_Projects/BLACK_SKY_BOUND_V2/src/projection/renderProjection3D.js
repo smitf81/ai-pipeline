@@ -13,8 +13,9 @@ import { buildVisibleLightProjection } from './lightProjection.js';
 import { resolveNapalmPoolVisualState } from './napalmLayerState.js';
 import { buildOpeningSequenceProjection } from './openingSequenceProjection.js';
 import { buildPlayerLifecycleProjection } from './playerLifecycleProjection.js';
-import { buildSceneryMaterialProjection, buildSceneryProjection, buildTreeFireSceneryProjection } from './sceneObjectProjection.js';
+import { buildFoliageFireSceneryProjection, buildSceneryMaterialProjection, buildSceneryProjection } from './sceneObjectProjection.js';
 import { buildSmokeAwakeningProjection } from './smokeAwakeningProjection.js';
+import { buildStormCameraProjection } from './stormCameraProjection.js';
 import { buildTerrainProjection } from './terrainProjection.js';
 import { buildTutorialProjection } from './tutorialProjection.js';
 import { buildUnitSpawnerFixtureProjection } from './unitSpawnerFixtureProjection.js';
@@ -59,15 +60,16 @@ export function createRenderProjection3DCompiler(config) {
     }
     const staticMs = nowMs() - staticStart;
     const dynamicStart = nowMs();
-    const burningCount = Number(game.worldEvents?.diagnostics?.activeBurningTreeCount ?? 0);
+    const burningCount = Number(game.worldEvents?.diagnostics?.activeFoliageFireCount ?? 0)
+      + Number(game.worldEvents?.diagnostics?.burntOutFoliageCount ?? 0);
     if (burningCount !== activeBurningCount) {
-      activeBurningScenery = sceneObjects.filter((object) => object.materialState?.treeFire);
+      activeBurningScenery = sceneObjects.filter((object) => object.materialState?.foliageFire);
       activeBurningCount = burningCount;
     }
     materialScanFrame += 1;
     const materialCandidates = materialScanFrame % 30 === 0 ? sceneObjects : activeBurningScenery;
     const dynamicWorld = buildDynamicWorld(state, config, staticWorld, sceneryMaterialSignatures, materialCandidates, activeBurningScenery);
-    const screen = buildScreenProjection(state, dynamicWorld.renderTime);
+    const screen = buildScreenProjection(state, dynamicWorld.renderTime, tileSize);
     const dynamicMs = nowMs() - dynamicStart;
     const diagnostics = {
       contract: RENDER_PROJECTION_3D_CONTRACT,
@@ -155,7 +157,7 @@ function buildDynamicWorld(state, config, staticWorld, materialSignatures, mater
     lights,
     camera
   });
-  const burningWorldPackets = buildTreeFireSceneryProjection(activeBurningScenery, tileSize);
+  const burningWorldPackets = buildFoliageFireSceneryProjection(activeBurningScenery, tileSize);
   const worldEvents = buildWorldEventProjection(game.worldEvents, tileSize, burningWorldPackets);
   const particles = buildAmbientParticleProjection({
     lights,
@@ -189,7 +191,7 @@ function buildDynamicWorld(state, config, staticWorld, materialSignatures, mater
   };
 }
 
-function buildScreenProjection(state, renderTime) {
+function buildScreenProjection(state, renderTime, tileSize) {
   const game = state.game ?? {};
   return {
     classification: 'renderer_neutral_screen_projection_3d',
@@ -199,6 +201,7 @@ function buildScreenProjection(state, renderTime) {
     opening: buildOpeningSequenceProjection(state),
     authoredTransition: buildAuthoredTransitionSequenceProjection(state),
     smokeAwakening: buildSmokeAwakeningProjection(state),
+    stormCamera: buildStormCameraProjection(state, tileSize),
     tutorial: buildTutorialProjection(state)
   };
 }
@@ -221,7 +224,7 @@ function resetMaterialSignatures(sceneObjects, signatures) {
 
 function materialSignature(object) {
   const state = object.materialState ?? {};
-  const fire = state.treeFire ?? {};
+  const fire = state.foliageFire ?? {};
   return [object.selected ? 1 : 0, state.burnAmount ?? 0, state.wetness ?? 0, state.damageAmount ?? 0,
     state.integrity ?? 1, state.nightReveal ?? 0, fire.phase ?? '', roundSignature(fire.heatAmount),
     roundSignature(fire.emberAmount), roundSignature(fire.charAmount)].join(':');

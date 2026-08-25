@@ -89,6 +89,7 @@ function spawnDroplet(renderLayers, socket, projection, motionState, recipe, ent
     rimColour: recipe.droplet.rimColour,
     shadowColour: recipe.droplet.shadowColour,
     smokeColour: recipe.droplet.smokeColour,
+    emissionLight: recipe.droplet.emissionLight,
     pool: recipe.pool,
     light: recipe.light,
     flickerPhase: phase * 0.9 + x * 2.1 + y * 1.7 + seed * 4.7

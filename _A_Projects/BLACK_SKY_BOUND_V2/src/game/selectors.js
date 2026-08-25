@@ -3,14 +3,14 @@ import { EntityKind } from '../constants/entityKinds.js';
 import { areFactionsHostile } from '../constants/factions.js';
 import { getComponent } from '../ecs/world.js';
 import { query } from '../ecs/query.js';
-import { buildNapalmPoolLightViews } from '../projection/napalmLayerState.js';
+import { buildNapalmLightViews } from '../projection/napalmLayerState.js';
 import { buildSmokeSourceViews } from '../projection/smokeLayerState.js';
 import { buildSceneLightViews } from '../data/sceneLights.js';
 import { getLightEmitterRecipe, resolveEmitterLightContribution } from '../data/lightEmitters.js';
 import { resolveSmokeCloudShape } from './smokeCloudShape.js';
 import { resolveTorchLightAnchor } from './torchLightState.js';
 import { buildMamaWorldEventLightViews } from '../data/mamaWyvernWorldEvents.js';
-import { buildTreeFireLightViews } from '../data/treeFireStates.js';
+import { buildFoliageFireLightViews } from '../data/foliageFireStates.js';
 
 export function createActorView(game, entity) {
   const world = game.world;
@@ -19,7 +19,7 @@ export function createActorView(game, entity) {
   const motion = getComponent(world, entity, ComponentType.Motion);
   const stamina = getComponent(world, entity, ComponentType.Stamina);
   const dodgeState = getComponent(world, entity, ComponentType.DodgeState);
-  const chargeCounterState = getComponent(world, entity, ComponentType.ChargeCounterState);
+  const pounceCounterState = getComponent(world, entity, ComponentType.PounceCounterState);
   const abilityProgression = getComponent(world, entity, ComponentType.AbilityProgression);
   const health = getComponent(world, entity, ComponentType.Health);
   const collider = getComponent(world, entity, ComponentType.Collider);
@@ -86,7 +86,8 @@ export function createActorView(game, entity) {
     impactResponse: cloneData(impactResponse),
     stamina: cloneData(stamina),
     dodgeState: cloneData(dodgeState),
-    chargeCounterState: cloneData(chargeCounterState),
+    pounceCounterState: cloneData(pounceCounterState),
+    chargeCounterState: cloneData(pounceCounterState),
     abilityProgression: cloneData(abilityProgression),
     playerLifecycle: cloneData(playerLifecycle),
     enemyBehaviour: cloneData(enemyPressureAI),
@@ -99,6 +100,8 @@ export function createActorView(game, entity) {
       movement01: wyvernProjection.movement01 ?? 0,
       bodyPoints: (wyvernProjection.bodyPoints ?? []).map((point) => ({ ...point })),
       sockets: cloneSockets(wyvernProjection.sockets),
+      axialTurn: cloneData(wyvernProjection.axialTurn),
+      malformedTurnFrameCount: wyvernProjection.malformedTurnFrameCount ?? 0,
       motionState: cloneData(motionState),
       actionState: cloneData(actionState),
       comboState: cloneData(comboState),
@@ -239,7 +242,7 @@ export function buildUnitSpawnerFixtureViews(game) {
 }
 
 
-export function buildLightViews(game, renderTime = 0) {
+export function buildLightViews(game, renderTime = 0, visibilityContext = null) {
   const entityLights = query(game.world, [ComponentType.Transform, ComponentType.LightEmitter])
     .map((entity) => {
       const transform = getComponent(game.world, entity, ComponentType.Transform);
@@ -288,9 +291,9 @@ export function buildLightViews(game, renderTime = 0) {
   return [
     ...entityLights,
     ...buildSceneObjectLightViews(game.sceneObjects ?? [], renderTime),
-    ...buildTreeFireLightViews(game.sceneObjects ?? [], renderTime),
-    ...buildSceneLightViews(game.sceneLights, renderTime),
-    ...buildNapalmPoolLightViews(game.renderLayers, renderTime),
+    ...buildFoliageFireLightViews(game.sceneObjects ?? [], renderTime),
+    ...buildSceneLightViews(game.sceneLights, renderTime, visibilityContext),
+    ...buildNapalmLightViews(game.renderLayers, renderTime),
     ...buildMamaWorldEventLightViews(game.worldEvents, renderTime)
   ];
 }
@@ -376,13 +379,13 @@ function normalizeVector(x, y, fallbackX = 0, fallbackY = -1) {
   return { x: fallbackX / fallbackLength, y: fallbackY / fallbackLength };
 }
 
-export function syncGameViews(game) {
+export function syncGameViews(game, visibilityContext = null) {
   game.actors = buildActorViews(game);
   game.unitSpawnerFixtures = buildUnitSpawnerFixtureViews(game);
   game.corpses = buildCorpseViews(game);
   game.smokeClouds = buildSmokeViews(game);
   game.effects = buildEffectViews(game);
-  game.lights = buildLightViews(game, game.renderTime ?? 0);
+  game.lights = buildLightViews(game, game.renderTime ?? 0, visibilityContext);
   game.smokeSources = buildSmokeSourceViews(game);
   return game;
 }

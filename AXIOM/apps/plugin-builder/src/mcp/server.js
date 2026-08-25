@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import http from 'node:http';
+import { fileURLToPath } from 'node:url';
 import {
   axiom_plugin_create,
   axiom_plugin_create_from_gap,
@@ -19,6 +20,9 @@ import {
 } from '../builder/index.js';
 
 import { createSafeWriteDocumentationTool } from "./tools/safe_write_documentation.js";
+
+const PLUGIN_BUILDER_RUNTIME_CONTRACT = 'axiom.plugin-builder-runtime.v2-bounded-acquisition-r6';
+const PLUGIN_BUILDER_ROOT = fileURLToPath(new URL('../..', import.meta.url)).replace(/[\\/]$/, '');
 
 export const TOOLS = {
   axiom_plugin_create: {
@@ -110,10 +114,13 @@ export const TOOLS = {
         target_area: { type: 'string' },
         template: { type: 'string', enum: ['base', 'ui_panel', 'mcp_tool', 'editor'], default: 'base' },
         register: { type: 'boolean', default: true },
-        model: { type: 'string', default: 'qwen3.5-9b' },
+        model: { type: 'string', default: 'qwen3.5:9b' },
         host: { type: 'string', default: 'http://127.0.0.1:11434' },
-        timeout_ms: { type: 'number', default: 60000 },
+        timeout_ms: { type: 'number', default: 90000 },
         model_candidate: { type: 'object' },
+        original_request: { type: 'string' },
+        acquisition_mode: { type: 'string', enum: ['bounded_runtime_tool'] },
+        runtime_contract: { type: 'object' },
         request_id: { type: 'string' }
       }
     },
@@ -250,7 +257,14 @@ function startHttp() {
   const port = Number(process.env.PORT || 4242);
   http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') return send(res, 200, { ok: true });
-    if (req.method === 'GET' && req.url === '/health') return send(res, 200, { ok: true, service: 'axiom-plugin-builder', tool_count: Object.keys(TOOLS).length });
+    if (req.method === 'GET' && req.url === '/health') return send(res, 200, {
+      ok: true,
+      service: 'axiom-plugin-builder',
+      runtimeContract: PLUGIN_BUILDER_RUNTIME_CONTRACT,
+      builderRoot: PLUGIN_BUILDER_ROOT,
+      processId: process.pid,
+      tool_count: Object.keys(TOOLS).length
+    });
     if (req.method === 'GET' && req.url === '/tools') return send(res, 200, { ok: true, tools: Object.values(TOOLS).map(asMcpTool) });
     if (req.method === 'POST' && req.url === '/call') {
       const body = await readBody(req);

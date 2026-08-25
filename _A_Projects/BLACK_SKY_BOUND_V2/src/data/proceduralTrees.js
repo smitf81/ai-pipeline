@@ -12,6 +12,14 @@ export const TREE_SPECIES_RECIPES = Object.freeze({
     taper: 0.72, bend: 0.13, twist: 0.18, branchLevels: [5, 7], branchDensity: 0.74,
     leafDensity: 0.9, canopySpread: 0.86, crownStart: 0.25, rootScale: 1.02, moss: 0.28,
     barkColour: '#4a3020', leafColour: '#244d33',
+    barkMaterial: barkMaterial({
+      tint: '#4a3020', saturation: 1.08, brightness: 0.9,
+      textureWorldMeters: 0.68, normalStrength: 0.78, roughnessBias: 0.035
+    }),
+    leafMaterial: leafMaterial({
+      tint: '#244d33', saturation: 0.88, brightness: 0.9,
+      textureWorldMeters: 0.9, normalStrength: 0.34, roughnessBias: 0.055
+    }),
     crownWidthMeters: 3.1, crownDepthMeters: 3.7, projectedHeightTiles: 7.4
   }),
   silver_birch: recipe({
@@ -21,6 +29,14 @@ export const TREE_SPECIES_RECIPES = Object.freeze({
     taper: 0.64, bend: 0.22, twist: 0.24, branchLevels: [4, 6], branchDensity: 0.62,
     leafDensity: 0.64, canopySpread: 0.7, crownStart: 0.34, rootScale: 0.76, moss: 0.14,
     barkColour: '#d7cfb7', leafColour: '#728b4d',
+    barkMaterial: barkMaterial({
+      tint: '#d7cfb7', saturation: 0.18, brightness: 1.04,
+      textureWorldMeters: 0.54, normalStrength: 0.5, roughnessBias: -0.025
+    }),
+    leafMaterial: leafMaterial({
+      tint: '#728b4d', saturation: 0.68, brightness: 0.98,
+      textureWorldMeters: 1.25, normalStrength: 0.26, roughnessBias: -0.015
+    }),
     crownWidthMeters: 2.5, crownDepthMeters: 3.2, projectedHeightTiles: 6.8
   }),
   ancient_oak: recipe({
@@ -30,6 +46,14 @@ export const TREE_SPECIES_RECIPES = Object.freeze({
     taper: 0.84, bend: 0.34, twist: 0.31, branchLevels: [5, 7], branchDensity: 0.82,
     leafDensity: 0.78, canopySpread: 1.22, crownStart: 0.43, rootScale: 1.42, moss: 0.66,
     barkColour: '#563923', leafColour: '#315b36',
+    barkMaterial: barkMaterial({
+      tint: '#563923', saturation: 0.92, brightness: 0.96,
+      textureWorldMeters: 0.82, normalStrength: 0.92, roughnessBias: 0.055
+    }),
+    leafMaterial: leafMaterial({
+      tint: '#315b36', saturation: 1.04, brightness: 0.82,
+      textureWorldMeters: 1.6, normalStrength: 0.46, roughnessBias: 0.035
+    }),
     crownWidthMeters: 4.4, crownDepthMeters: 3.9, projectedHeightTiles: 7.8
   })
 });
@@ -66,6 +90,7 @@ export function resolveProceduralTreeDefinition(source = {}, context = {}) {
   const maturity = clamp(ageYears / recipeValue.matureYears, 0.34, 1.28);
   const oldGrowth = Math.max(0, maturity - 1);
   const ageHeightScale = 0.58 + Math.min(1, maturity) * 0.42 + oldGrowth * 0.08;
+  const leafColour = colour(source.leafColour, recipeValue.leafColour);
 
   return Object.freeze({
     contract: PROCEDURAL_TREE_DEFINITION_CONTRACT,
@@ -92,7 +117,9 @@ export function resolveProceduralTreeDefinition(source = {}, context = {}) {
     rootScale: number(source.rootScale ?? recipeValue.rootScale + jitter(random, 0.08) + oldGrowth * 0.2, NUMBER_FIELDS.rootScale),
     moss: number(source.moss ?? recipeValue.moss + ageYears / 800, NUMBER_FIELDS.moss),
     barkColour: colour(source.barkColour, recipeValue.barkColour),
-    leafColour: colour(source.leafColour, recipeValue.leafColour),
+    barkMaterial: resolveBarkMaterial(source.barkMaterial, recipeValue.barkMaterial, species),
+    leafColour,
+    leafMaterial: resolveLeafMaterial(source.leafMaterial, recipeValue.leafMaterial, species, leafColour),
     projected: Object.freeze(resolveProjectedSize(source, recipeValue))
   });
 }
@@ -140,6 +167,48 @@ function resolveProjectedSize(source, recipeValue) {
 
 function recipe(source) {
   return Object.freeze({ contract: TREE_RECIPE_CONTRACT, ...source });
+}
+
+function barkMaterial(source) {
+  return Object.freeze(source);
+}
+
+function leafMaterial(source) {
+  return Object.freeze(source);
+}
+
+function resolveBarkMaterial(source, fallback, species) {
+  const value = source && typeof source === 'object' ? source : {};
+  return Object.freeze({
+    variantId: species,
+    tint: colour(value.tint, fallback.tint),
+    saturation: bounded(value.saturation ?? fallback.saturation, 0, 1.5, 'bark_saturation'),
+    brightness: bounded(value.brightness ?? fallback.brightness, 0.35, 1.8, 'bark_brightness'),
+    textureWorldMeters: bounded(value.textureWorldMeters ?? fallback.textureWorldMeters, 0.3, 1.5, 'bark_texture_world_meters'),
+    normalStrength: bounded(value.normalStrength ?? fallback.normalStrength, 0, 1.5, 'bark_normal_strength'),
+    roughnessBias: bounded(value.roughnessBias ?? fallback.roughnessBias, -0.15, 0.15, 'bark_roughness_bias')
+  });
+}
+
+function resolveLeafMaterial(source, fallback, species, leafColour) {
+  const value = source && typeof source === 'object' ? source : {};
+  return Object.freeze({
+    variantId: species,
+    tint: colour(value.tint, leafColour ?? fallback.tint),
+    saturation: bounded(value.saturation ?? fallback.saturation, 0, 1.5, 'leaf_saturation'),
+    brightness: bounded(value.brightness ?? fallback.brightness, 0.35, 1.8, 'leaf_brightness'),
+    textureWorldMeters: bounded(value.textureWorldMeters ?? fallback.textureWorldMeters, 0.16, 2, 'leaf_texture_world_meters'),
+    normalStrength: bounded(value.normalStrength ?? fallback.normalStrength, 0, 1.2, 'leaf_normal_strength'),
+    roughnessBias: bounded(value.roughnessBias ?? fallback.roughnessBias, -0.15, 0.15, 'leaf_roughness_bias')
+  });
+}
+
+function bounded(value, min, max, field) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < min || numeric > max) {
+    throw new Error(`procedural_tree_${field}_invalid:${value}`);
+  }
+  return Number(numeric.toFixed(3));
 }
 
 function deriveSeed(source) {

@@ -273,7 +273,7 @@ function buildWyvernVisualProjection(projection, tileSize, creatureTuning = null
     gaitPhase: projection.gaitPhase ?? 0,
     idlePhase: projection.idlePhase ?? 0,
     movement01: projection.movement01 ?? 0,
-    motionState: cloneProjectionData(projection.motionState),
+    motionState: cloneProjectionData(projection.motionState), axialTurn: cloneProjectionData(projection.axialTurn), malformedTurnFrameCount: projection.malformedTurnFrameCount ?? 0,
     actionState: cloneProjectionData(projection.actionState),
     comboState: cloneProjectionData(projection.comboState),
     limbRig: cloneProjectionData(projection.limbRig),

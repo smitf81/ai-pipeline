@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="./bsb-v2-map-authoring.css">
   <link rel="stylesheet" href="./entity-studio.css">
   <link rel="stylesheet" href="./project-diary.css">
+  <link rel="stylesheet" href="./agent-activity.css">
+  <link rel="stylesheet" href="./level-design-session.css">
   <title>AXIOM — AI Native Game Editor</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap');
@@ -1253,6 +1255,34 @@
       font-weight: 700;
     }
 
+    .annotation-tool-strip {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid rgba(255, 197, 61, .34);
+      background: rgba(12, 13, 18, .92);
+      pointer-events: all;
+    }
+
+    .annotation-tool-strip[hidden] { display: none; }
+
+    .annotation-tool-btn {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font: 9px var(--mono);
+      padding: 6px 7px;
+    }
+
+    .annotation-tool-btn:hover,
+    .annotation-tool-btn.active {
+      border-color: rgba(255, 197, 61, .48);
+      background: rgba(255, 197, 61, .08);
+      color: #ffe0a0;
+    }
+
     .anim-machine-panel {
       position: absolute;
       top: 96px;
@@ -1488,6 +1518,46 @@
       z-index: 28;
       pointer-events: none;
       overflow: hidden;
+    }
+
+    #annotation-layer[data-interactive="true"] {
+      pointer-events: auto;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .annotation-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .annotation-stroke {
+      fill: none;
+      stroke: #ffc53d;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .annotation-stroke.freehand { stroke-width: 2.2; }
+    .annotation-stroke.highlight { stroke-width: 13; opacity: .24; }
+    .annotation-stroke.circle { stroke-width: 2; fill: rgba(255, 197, 61, .045); }
+    .annotation-stroke.arrow { stroke-width: 2.4; }
+    .annotation-stroke.gesture { stroke-dasharray: 5 4; opacity: .78; }
+
+    .annotation-index {
+      fill: rgba(8, 9, 12, .92);
+      stroke: rgba(255, 197, 61, .82);
+      stroke-width: 1;
+    }
+
+    .annotation-index-text {
+      fill: #ffe2a3;
+      font: 8px var(--mono);
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
     }
 
     .annotation-pin {
@@ -2231,6 +2301,15 @@
       color: var(--text1);
     }
     .pipeline-step:last-child { border-bottom: none; }
+
+    .pipeline-card.capability-acquisition-card {
+      padding: 7px 9px;
+      max-width: 100%;
+      line-height: 1.25;
+    }
+    .capability-acquisition-card .pipeline-title { margin-bottom: 5px; }
+    .capability-acquisition-card .pipeline-step { gap: 6px; padding: 2px 0; }
+    .capability-acquisition-card .pipeline-activate-row { margin-top: 6px; padding-top: 5px; }
 
     .ps-icon {
       width: 16px;
@@ -3405,6 +3484,14 @@
             <button id="mode-annotate" class="mode-btn" onclick="setInteractionMode('annotate')" title="Annotate mode: click or drag on the viewport to mark the active focus">Annotate</button>
             <button id="mode-play" class="mode-btn play" onclick="setInteractionMode('play')" title="Play mode: lock authoring input and inspect the running preview layer">Play</button>
           </div>
+          <div id="annotation-tool-strip" class="annotation-tool-strip" hidden aria-label="Annotation tools">
+            <button class="annotation-tool-btn" data-annotation-tool="point" onclick="AXIOM_INTERACTION.setAnnotationTool('point')" title="Point to one location">Point</button>
+            <button class="annotation-tool-btn" data-annotation-tool="circle" onclick="AXIOM_INTERACTION.setAnnotationTool('circle')" title="Circle an area">Circle</button>
+            <button class="annotation-tool-btn" data-annotation-tool="arrow" onclick="AXIOM_INTERACTION.setAnnotationTool('arrow')" title="Point from one place to another">Arrow</button>
+            <button class="annotation-tool-btn active" data-annotation-tool="freehand" onclick="AXIOM_INTERACTION.setAnnotationTool('freehand')" title="Draw a freehand note">Pen</button>
+            <button class="annotation-tool-btn" data-annotation-tool="highlight" onclick="AXIOM_INTERACTION.setAnnotationTool('highlight')" title="Highlight an area">Highlight</button>
+            <button class="annotation-tool-btn" onclick="AXIOM_INTERACTION.setMode('inspect')" title="Finish this annotation session and return viewport input">Done</button>
+          </div>
           <div id="mode-status" class="mode-status">
             <b>Inspect</b>
             <span>Select or double-click a target to focus it.</span>
@@ -3615,13 +3702,22 @@
       <div id="chat-messages">
         <div class="msg system">Initializing model bus...</div>
       </div>
-      <div id="chat-input-area">
-        <div class="agent-status-bar" id="agent-status-bar" style="display:none">
-          <div class="agent-phase-dot" id="agent-phase-dot"></div>
-          <span class="agent-phase-label" id="agent-phase-label">idle</span>
-          <div style="flex:1"></div>
-          <span class="agent-turn-badge" id="agent-turn-badge" style="display:none">loop 1</span>
+      <section id="agent-activity-surface" class="agent-activity-surface" aria-label="Co-Pilot activity" hidden>
+        <button id="agent-activity-toggle" class="agent-activity-summary" type="button" aria-expanded="false" aria-controls="agent-activity-body">
+          <span class="agent-activity-pulse" aria-hidden="true"></span>
+          <span class="agent-activity-summary-copy">
+            <strong id="agent-activity-summary-text">Co-Pilot activity</strong>
+            <span>Expand for stages and receipts</span>
+          </span>
+          <span id="agent-activity-summary-meta" class="agent-activity-summary-meta"></span>
+          <span class="agent-activity-chevron" aria-hidden="true">▶</span>
+        </button>
+        <div id="agent-activity-body" class="agent-activity-body" hidden>
+          <div class="agent-activity-body-head"><span>Recent Co-Pilot attempts</span><button id="agent-activity-clear" type="button">Clear history</button></div>
+          <div id="agent-activity-list"></div>
         </div>
+      </section>
+      <div id="chat-input-area">
         <textarea id="chat-input" placeholder="Ask AXIOM anything — input stays live during processing..." rows="3"></textarea>
         <div class="chat-send-row">
           <button class="send-btn" id="send-btn" onclick="sendChat()">Send ↵</button>
@@ -3838,8 +3934,14 @@
                 ...messages
               ],
               stream: false,
+              ...(opts.responseSchema ? { format: opts.responseSchema } : {}),
               ...(typeof opts.think === 'boolean' ? { think: opts.think } : {}),
-              options: { num_ctx: opts.num_ctx || 4096, num_predict: opts.max_tokens || 2048 }
+              options: {
+                num_ctx: opts.num_ctx || 4096,
+                num_predict: opts.max_tokens || 2048,
+                ...(Number.isFinite(opts.temperature) ? { temperature: opts.temperature } : {}),
+                ...(Number.isInteger(opts.seed) ? { seed: opts.seed } : {})
+              }
             })
           });
 
@@ -5135,36 +5237,14 @@
 
     const InteractionModeRuntime = (() => {
       const MODES = Object.freeze({
-        inspect: {
-          id: 'inspect',
-          label: 'Inspect',
-          detail: 'Select or double-click a target to build a focus packet.',
-          tool: 'select',
-          classification: 'read_only_interaction'
-        },
-        edit: {
-          id: 'edit',
-          label: 'Edit',
-          detail: 'Transform authored objects with the editor tools.',
-          tool: 'select',
-          classification: 'authoring_interaction'
-        },
-        annotate: {
-          id: 'annotate',
-          label: 'Annotate',
-          detail: 'Click or drag in the viewport to mark the active focus.',
-          tool: 'select',
-          classification: 'derived_annotation_layer'
-        },
-        play: {
-          id: 'play',
-          label: 'Play',
-          detail: 'Authoring input is locked while the preview layer is inspected.',
-          tool: 'select',
-          classification: 'preview_interaction'
-        }
+        inspect: { id: 'inspect', label: 'Inspect', detail: 'Select or double-click a target to build a focus packet.', tool: 'select', classification: 'read_only_interaction' },
+        edit: { id: 'edit', label: 'Edit', detail: 'Transform authored objects with the editor tools.', tool: 'select', classification: 'authoring_interaction' },
+        annotate: { id: 'annotate', label: 'Annotate', detail: 'Point, circle, draw, or highlight over Author and Runtime.', tool: 'select', classification: 'derived_annotation_layer' },
+        play: { id: 'play', label: 'Play', detail: 'Authoring input is locked while the preview layer is inspected.', tool: 'select', classification: 'preview_interaction' }
       });
+      const ANNOTATION_TOOLS = new Set(['point', 'circle', 'arrow', 'freehand', 'highlight']);
       let activeMode = 'inspect';
+      let activeAnnotationTool = 'freehand';
       let gesture = null;
       let annotationCounter = 0;
       const annotations = [];
@@ -5173,86 +5253,134 @@
         return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
       }
       function now() { return new Date().toISOString(); }
+      function clone(value) { return value == null ? value : JSON.parse(JSON.stringify(value)); }
       function mode() { return activeMode; }
       function modeDef(id = activeMode) { return MODES[id] || MODES.inspect; }
+      function viewportRect() { return document.getElementById('viewport')?.getBoundingClientRect?.() || { left: 0, top: 0, width: 1, height: 1 }; }
       function viewportPoint(e) {
-        const rect = document.getElementById('viewport')?.getBoundingClientRect?.();
-        return rect ? { x: e.clientX - rect.left, y: e.clientY - rect.top } : { x: e.clientX, y: e.clientY };
+        const rect = viewportRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        return { x: +x.toFixed(1), y: +y.toFixed(1), nx: +(x / Math.max(1, rect.width)).toFixed(6), ny: +(y / Math.max(1, rect.height)).toFixed(6) };
       }
-      function worldPoint(e) {
-        try { return SceneManager.projectPointerToActivePlane(e.clientX, e.clientY); }
-        catch (err) { return { unavailable: true, reason: String(err.message || err) }; }
+      function surfacePoint(e) {
+        try {
+          const resolved = window.BsbV2MapAuthoring?.resolveAnnotationPoint?.(e.clientX, e.clientY);
+          if (resolved) return resolved;
+        } catch (_) { }
+        let world = null;
+        try { world = SceneManager.projectPointerToActivePlane(e.clientX, e.clientY); } catch (_) { }
+        const point = viewportPoint(e);
+        return {
+          surfaceId: 'axiom-viewport',
+          view: 'editor',
+          classification: 'derived_viewport_reference',
+          normalized: { x: point.nx, y: point.ny },
+          world
+        };
       }
       function currentFocusRef() {
         const packet = window.FocusPacketRuntime?.current?.() || null;
         const selected = SceneManager.getSelected?.() || null;
-        return packet ? {
-          focus_id: packet.focus_id,
-          label: packet.label,
-          kind: packet.kind,
-          source: 'FocusPacketRuntime.current'
-        } : selected ? {
-          focus_id: selected.id,
-          label: selected.name,
-          kind: selected.type,
-          source: 'SceneManager.selected'
-        } : null;
+        return packet ? { focus_id: packet.focus_id, label: packet.label, kind: packet.kind, source: 'FocusPacketRuntime.current' }
+          : selected ? { focus_id: selected.id, label: selected.name, kind: selected.type, source: 'SceneManager.selected' }
+          : null;
       }
       function annotationsForFocus(focusId) {
-        return annotations.filter(item => item.focus?.focus_id && item.focus.focus_id === focusId).map(item => ({ ...item }));
+        return annotations.filter(item => item.focus?.focus_id && item.focus.focus_id === focusId).map(clone);
       }
       function status() {
         return {
           ok: true,
-          schema: 'axiom.interaction.mode.v0',
+          schema: 'axiom.interaction.mode.v1',
           activeMode,
+          activeAnnotationTool,
           mode: modeDef(),
-          annotations: annotations.map(item => ({ ...item })),
+          annotations: annotations.map(clone),
           annotationCount: annotations.length,
-          gesture: gesture ? { ...gesture } : null
+          gesture: gesture ? clone(gesture) : null
         };
       }
-      function render() {
-        Object.keys(MODES).forEach(id => {
-          const btn = document.getElementById(`mode-${id}`);
-          if (btn) btn.classList.toggle('active', id === activeMode);
-        });
-        const st = document.getElementById('mode-status');
-        const def = modeDef();
-        const selected = SceneManager.getSelected?.();
-        if (st) {
-          const focusText = selected ? `${selected.name} selected` : 'No target selected';
-          st.innerHTML = `<b>${esc(def.label)}</b><span>${esc(def.detail)}</span><span>${esc(focusText)} | ${annotations.length} annotation${annotations.length === 1 ? '' : 's'}</span>`;
+      function pointInCurrentViewport(point) {
+        const rect = viewportRect();
+        const layerRect = document.getElementById('annotation-layer')?.getBoundingClientRect?.() || rect;
+        const layerOffsetX = layerRect.left - rect.left;
+        const layerOffsetY = layerRect.top - rect.top;
+        const viewportX = Number.isFinite(Number(point?.nx)) ? Number(point.nx) * rect.width : Number(point?.x || 0);
+        const viewportY = Number.isFinite(Number(point?.ny)) ? Number(point.ny) * rect.height : Number(point?.y || 0);
+        const x = viewportX - layerOffsetX;
+        const y = viewportY - layerOffsetY;
+        return { x: +x.toFixed(1), y: +y.toFixed(1) };
+      }
+      function pathData(points) {
+        return points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+      }
+      function annotationSvg(item, index, transient = false) {
+        const points = (item.path || []).map(pointInCurrentViewport);
+        if (!points.length) return '';
+        const first = points[0];
+        const last = points.at(-1) || first;
+        const kind = item.kind || 'freehand';
+        const transientClass = transient ? ' gesture' : '';
+        let shape = '';
+        if (kind === 'point') {
+          shape = `<circle class="annotation-stroke circle${transientClass}" cx="${first.x}" cy="${first.y}" r="8"></circle>`;
+        } else if (kind === 'circle') {
+          const radius = Math.max(8, Math.hypot(last.x - first.x, last.y - first.y));
+          shape = `<circle class="annotation-stroke circle${transientClass}" cx="${first.x}" cy="${first.y}" r="${radius.toFixed(1)}"></circle>`;
+        } else if (kind === 'arrow') {
+          shape = `<line class="annotation-stroke arrow${transientClass}" x1="${first.x}" y1="${first.y}" x2="${last.x}" y2="${last.y}" marker-end="url(#annotation-arrowhead)"></line>`;
+        } else {
+          shape = `<path class="annotation-stroke ${kind}${transientClass}" d="${pathData(points)}"></path>`;
         }
-        renderAnnotations();
+        const badge = transient ? '' : `<g transform="translate(${first.x} ${first.y})"><circle class="annotation-index" r="7"></circle><text class="annotation-index-text" y=".5">${index + 1}</text></g>`;
+        return `${shape}${badge}`;
       }
       function renderAnnotations() {
         const layer = document.getElementById('annotation-layer');
         if (!layer) return;
-        const pins = annotations.map(item => `
-          <div class="annotation-pin" style="left:${Number(item.screen?.x || 0).toFixed(1)}px;top:${Number(item.screen?.y || 0).toFixed(1)}px" title="${esc(item.note)}">
-            <div class="annotation-label">${esc(item.focus?.label || 'viewport')} | ${esc(item.kind)}</div>
-          </div>
-        `).join('');
-        const g = gesture ? (() => {
-          const dx = gesture.current.x - gesture.start.x;
-          const dy = gesture.current.y - gesture.start.y;
-          const radius = Math.max(8, Math.sqrt(dx * dx + dy * dy));
-          return `<div class="annotation-gesture" style="left:${gesture.start.x.toFixed(1)}px;top:${gesture.start.y.toFixed(1)}px;width:${(radius * 2).toFixed(1)}px;height:${(radius * 2).toFixed(1)}px"></div>`;
-        })() : '';
-        layer.innerHTML = pins + g;
+        const content = annotations.map((item, index) => annotationSvg(item, index)).join('');
+        const transient = gesture ? annotationSvg({ kind: gesture.tool, path: gesture.path }, annotations.length, true) : '';
+        layer.innerHTML = `<svg class="annotation-svg" aria-hidden="true"><defs><marker id="annotation-arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ffc53d"></path></marker></defs>${content}${transient}</svg>`;
+      }
+      function render() {
+        Object.keys(MODES).forEach(id => document.getElementById(`mode-${id}`)?.classList.toggle('active', id === activeMode));
+        document.querySelectorAll('[data-annotation-tool]').forEach(button => button.classList.toggle('active', button.dataset.annotationTool === activeAnnotationTool));
+        const toolStrip = document.getElementById('annotation-tool-strip');
+        if (toolStrip) toolStrip.hidden = activeMode !== 'annotate';
+        const layer = document.getElementById('annotation-layer');
+        if (layer) layer.dataset.interactive = activeMode === 'annotate' ? 'true' : 'false';
+        const st = document.getElementById('mode-status');
+        const def = modeDef();
+        const selected = SceneManager.getSelected?.();
+        if (st) {
+          const focusText = selected ? `${selected.name} selected` : 'Viewport context';
+          const annotationText = activeMode === 'annotate' ? `${activeAnnotationTool} · ${annotations.length} mark${annotations.length === 1 ? '' : 's'} · saved with Journal entry` : `${annotations.length} annotation${annotations.length === 1 ? '' : 's'}`;
+          st.innerHTML = `<b>${esc(def.label)}</b><span>${esc(def.detail)}</span><span>${esc(focusText)} | ${esc(annotationText)}</span>`;
+        }
+        renderAnnotations();
       }
       function setMode(nextMode, options = {}) {
         if (!MODES[nextMode]) nextMode = 'inspect';
         activeMode = nextMode;
+        gesture = null;
         if (MODES[nextMode].tool) {
           try { SceneManager.setTool(MODES[nextMode].tool); } catch (_) { }
         }
         render();
         try { EventBus.emit('interaction:modeChanged', status()); } catch (_) { }
+        if (nextMode === 'annotate') {
+          try { window.ProjectDiaryRuntime?.open?.({ source: 'annotate_mode' }); } catch (_) { }
+        }
         if (options.notify !== false) {
           try { notify('info', `Mode: ${MODES[nextMode].label}`); } catch (_) { }
         }
+        return status();
+      }
+      function setAnnotationTool(tool) {
+        activeAnnotationTool = ANNOTATION_TOOLS.has(tool) ? tool : 'freehand';
+        if (activeMode !== 'annotate') setMode('annotate', { notify: false });
+        render();
         return status();
       }
       function handleViewportPointerDown(e) {
@@ -5262,57 +5390,70 @@
           return true;
         }
         if (activeMode !== 'annotate' || e.button !== 0) return false;
-        const p = viewportPoint(e);
+        const point = viewportPoint(e);
         gesture = {
-          schema: 'axiom.annotation.gesture.v0',
-          start: p,
-          current: p,
-          worldStart: worldPoint(e),
+          schema: 'axiom.annotation.gesture.v1',
+          tool: activeAnnotationTool,
+          path: [point],
+          surface: surfacePoint(e),
           focus: currentFocusRef(),
           startedAt: now()
         };
+        e.currentTarget?.setPointerCapture?.(e.pointerId);
         renderAnnotations();
         e.preventDefault();
         return true;
       }
       function handleViewportPointerMove(e) {
         if (!gesture) return false;
-        gesture.current = viewportPoint(e);
+        const point = viewportPoint(e);
+        const last = gesture.path.at(-1);
+        if (!last || Math.hypot(point.x - last.x, point.y - last.y) >= 2 || ['circle', 'arrow'].includes(gesture.tool)) {
+          if (['circle', 'arrow'].includes(gesture.tool)) gesture.path = [gesture.path[0], point];
+          else gesture.path.push(point);
+        }
         renderAnnotations();
         e.preventDefault();
         return true;
       }
       function handleViewportPointerUp(e) {
         if (!gesture) return false;
-        gesture.current = viewportPoint(e);
-        const dx = gesture.current.x - gesture.start.x;
-        const dy = gesture.current.y - gesture.start.y;
-        const radius = Math.sqrt(dx * dx + dy * dy);
+        const point = viewportPoint(e);
+        if (['circle', 'arrow'].includes(gesture.tool)) gesture.path = [gesture.path[0], point];
+        else if (gesture.path.length === 1) gesture.path.push(point);
+        const first = gesture.path[0];
+        const last = gesture.path.at(-1) || first;
+        const distance = Math.hypot(last.x - first.x, last.y - first.y);
         const focus = gesture.focus || currentFocusRef();
+        const kind = gesture.tool === 'point' || (distance < 5 && gesture.tool !== 'highlight') ? 'point' : gesture.tool;
         const item = {
-          id: `ann_${++annotationCounter}`,
-          schema: 'axiom.annotation.v0',
-          kind: radius >= 12 ? 'circle_gesture' : 'point_note',
+          id: `ann_${Date.now()}_${++annotationCounter}`,
+          schema: 'axiom.annotation.v1',
+          kind,
           classification: 'derived_viewport_annotation',
+          path: gesture.path.map(clone),
+          surface: clone(gesture.surface),
           focus,
-          screen: { x: +gesture.current.x.toFixed(1), y: +gesture.current.y.toFixed(1) },
-          world: worldPoint(e),
-          radius: +Math.max(0, radius).toFixed(1),
-          note: focus ? `Annotation for ${focus.label}` : 'Viewport annotation without selected focus',
-          provenance: {
-            createdBy: 'InteractionModeRuntime',
-            createdAt: now(),
-            sourceGesture: gesture.schema
-          }
+          note: focus ? `Annotation for ${focus.label}` : `${kind} annotation on ${gesture.surface?.surfaceId || 'viewport'}`,
+          provenance: { createdBy: 'InteractionModeRuntime', createdAt: now(), sourceGesture: gesture.schema }
         };
         annotations.push(item);
         gesture = null;
         render();
-        try { EventBus.emit('annotation:created', { annotation: item, status: status() }); } catch (_) { }
+        try { EventBus.emit('annotation:created', { annotation: clone(item), status: status() }); } catch (_) { }
         try { window.FocusPacketRuntime?.focusSelected?.({ source: 'annotation_created' }); } catch (_) { }
-        try { notify('ok', `${item.kind.replace(/_/g, ' ')} added${focus ? ` for ${focus.label}` : ''}`); } catch (_) { }
+        try { notify('ok', `${kind} added to Journal draft`); } catch (_) { }
         e.preventDefault();
         return true;
+      }
+      function loadAnnotations(values = [], options = {}) {
+        annotations.length = 0;
+        (Array.isArray(values) ? values : []).slice(0, 24).forEach(item => annotations.push(clone(item)));
+        annotationCounter = Math.max(annotationCounter, annotations.length);
+        gesture = null;
+        render();
+        try { EventBus.emit('annotation:loaded', { source: options.source || 'journal_entry', status: status() }); } catch (_) { }
+        return status();
       }
       function clearAnnotations() {
         annotations.length = 0;
@@ -5321,19 +5462,62 @@
         try { EventBus.emit('annotation:cleared', status()); } catch (_) { }
         return status();
       }
+      function exportPreviewPng() {
+        if (!annotations.length) return null;
+        const canvas = document.createElement('canvas');
+        canvas.width = 480;
+        canvas.height = 270;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#090b0f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        annotations.forEach((item, index) => {
+          const points = (item.path || []).map(point => ({ x: Number(point.nx ?? 0) * canvas.width, y: Number(point.ny ?? 0) * canvas.height }));
+          if (!points.length) return;
+          const first = points[0];
+          const last = points.at(-1) || first;
+          ctx.strokeStyle = '#ffc53d';
+          ctx.fillStyle = 'rgba(255,197,61,.05)';
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.lineWidth = item.kind === 'highlight' ? 12 : 3;
+          ctx.globalAlpha = item.kind === 'highlight' ? .28 : 1;
+          ctx.beginPath();
+          if (item.kind === 'point') ctx.arc(first.x, first.y, 8, 0, Math.PI * 2);
+          else if (item.kind === 'circle') ctx.arc(first.x, first.y, Math.max(8, Math.hypot(last.x - first.x, last.y - first.y)), 0, Math.PI * 2);
+          else { points.forEach((point, pointIndex) => pointIndex ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y)); }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = '#ffe2a3';
+          ctx.font = '12px monospace';
+          ctx.fillText(String(index + 1), first.x + 8, first.y - 8);
+        });
+        return canvas.toDataURL('image/png');
+      }
+      function bindLayer() {
+        const layer = document.getElementById('annotation-layer');
+        if (!layer || layer.dataset.bound === 'true') return;
+        layer.dataset.bound = 'true';
+        layer.addEventListener('pointerdown', handleViewportPointerDown);
+        layer.addEventListener('pointermove', handleViewportPointerMove);
+        layer.addEventListener('pointerup', handleViewportPointerUp);
+        layer.addEventListener('pointercancel', event => { gesture = null; renderAnnotations(); event.preventDefault(); });
+      }
       function init() {
+        bindLayer();
         setMode(activeMode, { notify: false });
         try { EventBus.on('scene:selectionChanged', render); } catch (_) { }
         try { EventBus.on('focus:packetChanged', render); } catch (_) { }
         return status();
       }
-      return { init, status, mode, setMode, handleViewportPointerDown, handleViewportPointerMove, handleViewportPointerUp, annotationsForFocus, clearAnnotations };
+      return { init, status, mode, setMode, setAnnotationTool, handleViewportPointerDown, handleViewportPointerMove, handleViewportPointerUp, annotationsForFocus, loadAnnotations, clearAnnotations, exportPreviewPng };
     })();
     window.InteractionModeRuntime = InteractionModeRuntime;
     window.AXIOM_INTERACTION = {
       status: () => InteractionModeRuntime.status(),
       mode: () => InteractionModeRuntime.mode(),
       setMode: (...args) => InteractionModeRuntime.setMode(...args),
+      setAnnotationTool: (...args) => InteractionModeRuntime.setAnnotationTool(...args),
+      loadAnnotations: (...args) => InteractionModeRuntime.loadAnnotations(...args),
       clearAnnotations: () => InteractionModeRuntime.clearAnnotations()
     };
 
@@ -6193,6 +6377,7 @@
     // and refuse/record mismatches instead of pretending the first tool result succeeded.
     const AgenticToolUseLoop = (() => {
       const FAILURE_KEY = 'axiom.tooluse.failures';
+      const MAPFORGE_PROPOSAL_CONTRACT = 'axiom.mapforge-agent-proposal.v1';
 
       const LANES = {
         scene_action: ['axiom_create_object', 'axiom_get_scene'],
@@ -6403,6 +6588,44 @@
         }
         if (quotedId) parameters.treeId = quotedId;
         return { command: 'mcp_call', tool: 'axiom_tree_apply', parameters, source: 'AgenticToolUseLoop.tree_action' };
+      }
+
+      function buildMapForgeProposal(userText, ctx = {}) {
+        const lane = classifyGoal(userText);
+        if (lane !== 'tree_action') return { handled: false, lane };
+        if (!hasTool(ctx, 'axiom_tree_apply')) {
+          return { handled: true, ok: false, lane, reason: 'tree_tool_missing:axiom_tree_apply' };
+        }
+        const workspace = window.FileManagerRuntime?.getWorkspaceContext?.() || null;
+        const mapState = window.BsbV2MapAuthoring?.workspaceState?.() || null;
+        if (workspace?.project?.id !== 'black-sky-bound-v2-demo' || mapState?.active !== true || !Number.isInteger(mapState?.revision)) {
+          return { handled: true, ok: false, lane, reason: 'active_mapforge_document_required' };
+        }
+        const command = parseTreeCommand(userText);
+        if (!command || command.parameters?.op !== 'create') {
+          return { handled: true, ok: false, lane, reason: 'tree_create_intent_requires_explicit_tile_coordinates' };
+        }
+        const proposalId = `mapforge_proposal_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        command.parameters = {
+          ...command.parameters,
+          expectedRevision: mapState.revision,
+          proposalId
+        };
+        const proposal = Object.freeze({
+          contract: MAPFORGE_PROPOSAL_CONTRACT,
+          id: proposalId,
+          classification: 'projection',
+          status: 'ready',
+          owner: 'BsbV2MapAuthoring',
+          lane,
+          expectedRevision: mapState.revision,
+          mapId: mapState.mapId,
+          catalogueMapId: mapState.catalogueMapId,
+          command,
+          summary: `Place ${command.parameters.species || 'old_pine'} tree at tile ${command.parameters.x},${command.parameters.y}`,
+          promotionGate: 'explicit_user_approval_then_revision_bound_apply'
+        });
+        return { handled: true, ok: true, lane, proposal };
       }
 
       function parseUndergrowthCommand(text) {
@@ -6656,7 +6879,7 @@
       }
 
       async function callAndInspect(ctx, userText, lane, cmd) {
-        const receipt = await ctx.executeAICommand(cmd);
+        const receipt = await ctx.executeAICommand(cmd, ctx.activity || {});
         const inspected = inspectReceipt({ lane, userText, cmd, receipt });
         if (!inspected.ok) {
           storeFailure({ userText, lane, attemptedTool: cmd.tool, receipt, mismatch: inspected });
@@ -6725,10 +6948,9 @@
         }
 
         if (lane === 'tree_action') {
-          if (!hasTool(ctx, 'axiom_tree_apply')) return blocked(ctx, userText, lane, 'tree_tool_missing:axiom_tree_apply');
-          const cmd = parseTreeCommand(userText);
-          if (!cmd) return blocked(ctx, userText, lane, 'tree_intent_missing_target_or_parameters');
-          return callAndInspect(ctx, userText, lane, cmd);
+          const proposed = buildMapForgeProposal(userText, ctx);
+          if (!proposed.ok) return blocked(ctx, userText, lane, proposed.reason);
+          return proposed;
         }
 
         if (lane === 'undergrowth_action') {
@@ -6790,7 +7012,7 @@
         return { handled: false, lane };
       }
 
-      return { classifyGoal, isFileLane, inspectReceipt, handle, storeFailure };
+      return { classifyGoal, isFileLane, buildMapForgeProposal, inspectReceipt, handle, storeFailure };
     })();
     window.AgenticToolUseLoop = AgenticToolUseLoop;
 
@@ -6801,6 +7023,33 @@
       // ── queue: allows concurrent input while a turn is running ──────────────
       let activeRuns = 0;
       const ACTIVE_TASK_CONTEXT_KEY = 'axiom.chat.activeTaskContext.v1';
+
+      function activityBegin(userText, options = {}) {
+        const workspace = window.FileManagerRuntime?.getWorkspaceContext?.() || null;
+        return window.AgentActivityRuntime?.begin?.({
+          sourceSurface: options.sourceSurface || 'chat',
+          displayText: options.displayText || userText,
+          userText,
+          workspace: workspace ? {
+            projectId: workspace.project?.id || null,
+            projectName: workspace.project?.name || null,
+            mapId: workspace.scene?.mapId || workspace.scene?.catalogueMapId || null,
+            revision: workspace.authoring?.revision ?? null
+          } : null
+        }) || null;
+      }
+
+      function activityStage(attemptId, phase, input = {}) {
+        return attemptId ? window.AgentActivityRuntime?.stage?.(attemptId, phase, input) : null;
+      }
+
+      function activityReceipt(attemptId, receipt, input = {}) {
+        return attemptId ? window.AgentActivityRuntime?.receipt?.(attemptId, receipt, input) : null;
+      }
+
+      function activityComplete(attemptId, input = {}) {
+        return attemptId ? window.AgentActivityRuntime?.complete?.(attemptId, input) : null;
+      }
 
       // ── agent phase state bar ────────────────────────────────────────────────
       function setPhase(phase, label, turnN) {
@@ -6895,9 +7144,15 @@
         ].join('\n');
       }
 
-      async function handleViewportNavigationShortcut(userText) {
+      async function handleViewportNavigationShortcut(userText, activity = {}) {
         const resolved = resolveEffectiveUserText(userText);
         if (!isViewportNavigationRequest(resolved.text)) return { handled: false };
+
+        activityStage(activity.attemptId, 'route', {
+          label: 'Native viewport route selected',
+          status: 'running',
+          summary: 'Using the existing viewport controls; no plugin or engine mutation is required.'
+        });
 
         writeActiveTaskContext({
           domain: 'viewport_navigation',
@@ -6928,6 +7183,10 @@
         ].join('\n'));
 
         history.push({ role: 'assistant', content: 'Native viewport foundation controls reported.' });
+        activityComplete(activity.attemptId, {
+          status: state ? 'completed' : 'blocked',
+          summary: state ? 'Native viewport controls were applied.' : 'Viewport state was unavailable.'
+        });
         setPhase('idle');
         activeRuns = Math.max(0, activeRuns - 1);
         return { handled: true, ok: !!state, state };
@@ -7054,6 +7313,93 @@
         return { el: card, setStep, showActivate };
       }
 
+      function createCapabilityAcquisitionCard({ requiredCapability, reason }, onActivate, onStop) {
+        const stages = [
+          'Inventory existing capability',
+          'Build, validate and register',
+          'Inspect executable contract',
+          'Activate and verify callable tool',
+          'Resume original request'
+        ];
+        const card = createPipelineCard(stages.map(label => ({ label })), onActivate, onStop);
+        card.el.classList.add('capability-acquisition-card');
+        const title = card.el.querySelector('.pipeline-title');
+        if (title) title.textContent = '◇ CAPABILITY ACQUISITION · ONE BOUNDED ATTEMPT';
+        const context = document.createElement('div');
+        context.style.cssText = 'margin:0 0 5px;padding:5px 6px;border-left:2px solid var(--amber);background:rgba(255,190,45,.035);font-size:9px;line-height:1.25;color:var(--text2)';
+        const capability = document.createElement('div');
+        capability.style.color = 'var(--text0)';
+        capability.textContent = requiredCapability;
+        const why = document.createElement('div');
+        why.textContent = reason;
+        const preparedIdentity = document.createElement('div');
+        preparedIdentity.style.cssText = 'margin-top:5px;color:var(--cyan);display:none';
+        context.append(capability, why, preparedIdentity);
+        title?.insertAdjacentElement('afterend', context);
+        const activateButton = card.el.querySelector('#pactivate');
+        if (activateButton) activateButton.textContent = 'Activate plugin & resume';
+        const dismissButton = card.el.querySelector('#pdismiss');
+        if (dismissButton) dismissButton.textContent = 'Stop';
+
+        const stageIndex = {
+          inventory: 0,
+          package: 1,
+          register: 1,
+          build_validate_register: 1,
+          inspect_registered: 2,
+          awaiting_activation: 3,
+          activate: 3,
+          verify_activation: 3,
+          resume: 4
+        };
+        function update(event = {}) {
+          const index = stageIndex[event.stage];
+          if (!Number.isInteger(index)) return;
+          const state = event.status === 'failed' || event.status === 'blocked'
+            ? 'error'
+            : event.status === 'completed'
+              ? 'done'
+              : event.status === 'awaiting_user'
+                ? 'pending'
+                : 'running';
+          const tag = event.status === 'awaiting_user' ? 'approval' : event.status;
+          card.setStep(index, state, tag || '', state === 'error' ? 'warn' : state === 'done' ? 'ok' : '');
+        }
+        function ready(proposal) {
+          preparedIdentity.textContent = `Plugin: ${proposal.pluginId} · Tool: ${proposal.declaredTools.map(tool => tool.name).join(', ')}`;
+          preparedIdentity.style.display = 'block';
+          card.setStep(0, 'done', 'found/created', 'ok');
+          card.setStep(1, 'done', proposal.lifecycle?.status || 'registered', 'ok');
+          card.setStep(2, 'done', `${proposal.declaredTools.length} tool`, 'ok');
+          card.setStep(3, 'pending', 'approval', '');
+          card.showActivate(true);
+          requestAnimationFrame(() => activateButton?.scrollIntoView({ block: 'end', inline: 'nearest' }));
+        }
+        function fail(message) {
+          const activeIndex = [...card.el.querySelectorAll('.ps-icon')].findIndex(icon => icon.classList.contains('running') || icon.classList.contains('pending'));
+          card.setStep(activeIndex >= 0 ? activeIndex : 1, 'error', 'blocked', 'warn');
+          const detail = document.createElement('div');
+          detail.style.cssText = 'margin-top:8px;color:var(--red);font-size:9px;line-height:1.45;white-space:pre-wrap';
+          detail.textContent = message;
+          card.el.appendChild(detail);
+          card.showActivate(false);
+          if (activateButton) activateButton.style.display = 'none';
+        }
+        function activated(toolNames) {
+          card.setStep(3, 'done', `${toolNames.length} callable`, 'ok');
+          card.setStep(4, 'running', 'fresh model pass', '');
+          if (activateButton) {
+            activateButton.textContent = '✓ Active';
+            activateButton.disabled = true;
+          }
+          if (dismissButton) dismissButton.textContent = 'Close';
+        }
+        function resumed() {
+          card.setStep(4, 'done', 'resumed', 'ok');
+        }
+        return { ...card, update, ready, fail, activated, resumed };
+      }
+
       // ── clarify card ──────────────────────────────────────────────────────────
       function createClarifyCard(question, options, onChoice) {
         const msgs = getMessages();
@@ -7113,22 +7459,128 @@
         return asksForImplementation && !pureSceneObject && !explicitDeterministic;
       }
 
-      async function tryAgenticFileLaneCommand(userText) {
+      async function tryAgenticFileLaneCommand(userText, activity = {}) {
         const lane = window.AgenticToolUseLoop?.classifyGoal?.(userText) || 'unknown';
         if (!window.AgenticToolUseLoop?.isFileLane?.(lane)) return { handled: false, lane };
-        const pipelineCard = createPipelineCard([
-          { label: `Classify file lane: ${lane}`, key: 'file_lane' },
-          { label: 'Route through FileManager', key: 'file_manager_action' },
-          { label: 'Receipt / blocked status', key: 'receipt' }
-        ], null, () => {});
-        pipelineCard.setStep(0, 'done', lane, 'ok');
-        pipelineCard.setStep(1, 'running');
-        const result = await window.AgenticToolUseLoop.handle(userText, { addMsg, executeAICommand, getAvailableMcpTools, tryHandleMSOLMutationIntent });
+        activityStage(activity.attemptId, 'route', {
+          label: 'File request routed',
+          status: 'running',
+          summary: `Using the governed FileManager ${lane.replace(/_/g, ' ')} lane.`,
+          detail: { lane }
+        });
+        const result = await window.AgenticToolUseLoop.handle(userText, {
+          addMsg, executeAICommand, getAvailableMcpTools, tryHandleMSOLMutationIntent, activity
+        });
         const receipt = result?.fileReceipt || result?.receipt || result?.result?.receipt || result?.result?.result?.receipt || null;
-        const receiptId = receipt?.receiptId || (result?.reason ? 'blocked' : 'none');
-        pipelineCard.setStep(1, result?.handled ? (result.ok === false ? 'error' : 'done') : 'error', result?.intent?.action || 'no action', result?.ok === false ? 'warn' : 'ok');
-        pipelineCard.setStep(2, result?.ok === false ? 'error' : 'done', receiptId, result?.ok === false ? 'err' : 'ok');
-        return { ...(result || {}), handled: Boolean(result?.handled), lane, pipelineCard };
+        if (receipt) activityReceipt(activity.attemptId, receipt, {
+          label: 'FileManager receipt',
+          status: result?.ok === false ? 'failed' : 'completed',
+          attemptStatus: result?.ok === false ? 'blocked' : undefined
+        });
+        activityComplete(activity.attemptId, {
+          status: result?.ok === false ? 'blocked' : 'completed',
+          summary: result?.ok === false
+            ? `File request blocked: ${result?.reason || result?.error || 'FileManager rejected the action.'}`
+            : `FileManager completed ${result?.intent?.action || lane.replace(/_/g, ' ')}.`
+        });
+        return { ...(result || {}), handled: Boolean(result?.handled), lane };
+      }
+
+      function tryMapForgeAuthoringProposal(userText, activity = {}) {
+        const proposed = window.AgenticToolUseLoop?.buildMapForgeProposal?.(userText, {
+          getAvailableMcpTools
+        }) || { handled: false };
+        if (!proposed.handled) return proposed;
+
+        activityStage(activity.attemptId, 'route', {
+          label: 'Map Forge authoring route selected',
+          status: proposed.ok ? 'completed' : 'blocked',
+          attemptStatus: proposed.ok ? 'running' : 'blocked',
+          summary: proposed.ok
+            ? 'The request is grounded to the active canonical Map Forge document.'
+            : `Map Forge proposal blocked: ${proposed.reason || 'authoring route unavailable'}.`,
+          detail: { lane: proposed.lane, reason: proposed.reason || null }
+        });
+
+        if (!proposed.ok || !proposed.proposal) {
+          addMsg('system', `Map Forge authoring blocked: ${proposed.reason || 'proposal unavailable'}`);
+          activityComplete(activity.attemptId, {
+            status: 'blocked',
+            summary: `Map Forge authoring blocked: ${proposed.reason || 'proposal unavailable'}.`
+          });
+          return { ...proposed, handled: true };
+        }
+
+        const proposal = proposed.proposal;
+        const intentValidation = validateAxiomIntent(proposal.command);
+        if (!intentValidation.ok) {
+          addMsg('system', `Map Forge proposal rejected: ${intentValidation.errors.join(', ')}`);
+          activityComplete(activity.attemptId, {
+            status: 'blocked',
+            summary: `Map Forge proposal rejected: ${intentValidation.errors.join(', ')}.`
+          });
+          return { handled: true, ok: false, lane: proposed.lane, proposal, validation: intentValidation };
+        }
+
+        activity.proposalId = proposal.id;
+        activityStage(activity.attemptId, 'proposal', {
+          label: 'Map Forge change proposed',
+          status: 'completed',
+          attemptStatus: 'running',
+          summary: `${proposal.summary}. Nothing has changed yet.`,
+          detail: proposal
+        });
+        activityStage(activity.attemptId, 'verify', {
+          label: 'Proposal contract checked',
+          status: 'completed',
+          attemptStatus: 'running',
+          summary: `Tool and active revision ${proposal.expectedRevision} are available.`,
+          detail: { tool: proposal.command.tool, expectedRevision: proposal.expectedRevision }
+        });
+
+        const steps = [
+          { label: 'Bind active Map Forge document', key: 'observe' },
+          { label: proposal.summary, key: 'proposal' },
+          { label: `Guard revision ${proposal.expectedRevision}`, key: 'verify' },
+          { label: 'Apply and read back canonical state', key: 'activate' }
+        ];
+        let pipelineCard = null;
+        pipelineCard = createPipelineCard(
+          steps,
+          async (element) => {
+            const button = element.querySelector('#pactivate');
+            if (button) {
+              button.disabled = true;
+              button.textContent = 'Applying to Map Forge…';
+            }
+            pipelineCard?.setStep(3, 'running', 'applying', '');
+            const activation = await activatePipelineResult(
+              { type: 'mcp', intent: proposal.command, proposal },
+              element,
+              { intent_summary: proposal.summary },
+              activity
+            );
+            pipelineCard?.setStep(3, activation?.ok ? 'done' : 'error', activation?.ok ? 'verified' : 'not applied', activation?.ok ? 'ok' : 'err');
+          },
+          () => activityComplete(activity.attemptId, {
+            status: 'cancelled',
+            summary: 'Map Forge proposal dismissed without changing the map.'
+          })
+        );
+        for (let index = 0; index < 3; index += 1) pipelineCard.setStep(index, 'done', index === 2 ? 'ready' : '✓', 'ok');
+        pipelineCard.showActivate(true);
+        const activateButton = pipelineCard.el.querySelector('#pactivate');
+        if (activateButton) activateButton.textContent = 'Apply to Map Forge';
+
+        addMsg('assistant', `Proposed — not applied: ${proposal.summary}. Review it, then choose Apply to Map Forge.`);
+        activityStage(activity.attemptId, 'approval', {
+          label: 'Waiting for Map Forge approval',
+          status: 'awaiting_user',
+          attemptStatus: 'awaiting_user',
+          summary: `${proposal.summary}. The canonical document is still revision ${proposal.expectedRevision}.`,
+          detail: { proposalId: proposal.id, classification: proposal.classification, promotionGate: proposal.promotionGate }
+        });
+        return { handled: true, ok: true, awaitingApproval: true, lane: proposed.lane, proposal };
       }
 
       async function resolveSceneSequenceIntent(userText) {
@@ -7218,7 +7670,181 @@ Interpret references using the sequence's labels, phases, and current values. Th
         }
       }
 
-      async function send(userText) {
+      function buildNaturalLanguageCapabilities({ workspaceContext, mapForgeContext, levelDesignStatus, mcpTools }) {
+        const capabilities = [
+          {
+            id: 'conversation.respond',
+            description: 'Respond without changing editor or project state. Select only for explanation, discussion, or questions that genuinely require no action.',
+            operation: 'respond',
+            arguments: {}
+          },
+          {
+            id: 'system.capability_gap',
+            description: 'Record and expose a requested action that no registered capability can currently perform. This is a visible blocker, never a conversational fallback.',
+            operation: 'report_gap',
+            arguments: { requiredCapability: 'string', reason: 'string' }
+          }
+        ];
+        if (workspaceContext?.project?.id && window.LevelDesignSessionRuntime?.startGoal) {
+          capabilities.push({
+            id: 'mapforge.level_design.start',
+            description: 'Start a broad, persistent, inspectable Map Forge level-design or environmental-art goal after model-led map intent and playable-space preflight.',
+            operation: 'start_goal',
+            arguments: { brief: 'the user request, preserved in natural language' }
+          });
+        }
+        const activeLevelDesign = levelDesignStatus?.session && !['completed', 'stopped', 'blocked'].includes(levelDesignStatus.session.state);
+        if (activeLevelDesign) {
+          capabilities.push({
+            id: 'mapforge.level_design.redirect',
+            description: 'Queue a natural-language direction into the currently active level-design session at its next safe boundary.',
+            operation: 'add_direction',
+            arguments: { direction: 'string' }
+          });
+        }
+        if (mapForgeContext?.contract === 'axiom.map-forge-terrain-context.v1') {
+          if (mapForgeContext.boundaryEvidence?.obsoleteEnclosureCandidateIds?.length) {
+            capabilities.push({
+              id: 'mapforge.enclosure.relocate',
+              description: 'Move one obsolete disconnected enclosure to a larger live Map Forge region. This atomic domain operation replaces the old component with its adjacent dominant floor and traces the destination with the original boundary material. Use it instead of composing replace_component plus trace_region_boundary.',
+              operation: 'preview_relocation',
+              arguments: {
+                expectedRevision: mapForgeContext.revision,
+                label: 'concise visible description',
+                componentId: mapForgeContext.boundaryEvidence.obsoleteEnclosureCandidateIds,
+                regionId: mapForgeContext.boundaryEvidence.expandedPlayerAreaRegionId,
+                replacementTerrain: 'adjacent_dominant',
+                thickness: 'integer 1-4'
+              },
+              inputSchema: {
+                type: 'object', additionalProperties: false,
+                required: ['expectedRevision', 'label', 'componentId', 'regionId', 'replacementTerrain', 'thickness'],
+                properties: {
+                  expectedRevision: { type: 'integer', const: mapForgeContext.revision },
+                  label: { type: 'string' },
+                  componentId: { type: 'string', enum: mapForgeContext.boundaryEvidence.obsoleteEnclosureCandidateIds },
+                  regionId: { type: 'string', enum: mapForgeContext.regions.map(region => region.id) },
+                  replacementTerrain: { const: 'adjacent_dominant' },
+                  thickness: { type: 'integer', minimum: 1, maximum: 4 }
+                }
+              }
+            });
+          }
+          capabilities.push({
+            id: 'mapforge.terrain.patch',
+            description: 'Preview one revision-bound low-level terrain edit on the active canonical Map Forge document. Compose replace_component, trace_region_boundary, and paint_strokes using exact live ids. When mapforge.enclosure.relocate is registered, do not use this generic capability to move an old enclosure to a larger region. Nothing mutates until explicit Apply.',
+            operation: 'preview_patch',
+            arguments: {
+              expectedRevision: mapForgeContext.revision,
+              label: 'concise visible description',
+              operations: mapForgeContext.operations,
+              availableRockComponents: mapForgeContext.rockComponents,
+              availableRegions: mapForgeContext.regions
+            },
+            inputSchema: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['expectedRevision', 'label', 'operations'],
+              properties: {
+                expectedRevision: { type: 'integer', const: mapForgeContext.revision },
+                label: { type: 'string' },
+                operations: {
+                  type: 'array', minItems: 1, maxItems: 24,
+                  items: {
+                    oneOf: [
+                      ...(mapForgeContext.boundaryEvidence?.obsoleteEnclosureCandidateIds?.length ? [{
+                        type: 'object', additionalProperties: false, required: ['op', 'componentId', 'regionId', 'replacementTerrain', 'thickness'],
+                        properties: {
+                          op: { const: 'relocate_enclosure' },
+                          componentId: { type: 'string', enum: mapForgeContext.boundaryEvidence.obsoleteEnclosureCandidateIds },
+                          regionId: { type: 'string', enum: mapForgeContext.regions.map(region => region.id) },
+                          replacementTerrain: { type: 'string', enum: ['grass', 'forest', 'dirt', 'water', 'rock', 'scorched', 'adjacent_dominant'] },
+                          thickness: { type: 'integer', minimum: 1, maximum: 4 }
+                        }
+                      }] : []),
+                      {
+                        type: 'object', additionalProperties: false, required: ['op', 'componentId', 'terrain'],
+                        properties: {
+                          op: { const: 'replace_component' },
+                          componentId: { type: 'string', enum: mapForgeContext.rockComponents.map(component => component.id) },
+                          terrain: { type: 'string', enum: ['grass', 'forest', 'dirt', 'water', 'rock', 'scorched', 'adjacent_dominant'] }
+                        }
+                      },
+                      {
+                        type: 'object', additionalProperties: false, required: ['op', 'regionId', 'terrain', 'thickness'],
+                        properties: {
+                          op: { const: 'trace_region_boundary' },
+                          regionId: { type: 'string', enum: mapForgeContext.regions.map(region => region.id) },
+                          terrain: { type: 'string', enum: ['grass', 'forest', 'dirt', 'water', 'rock', 'scorched'] },
+                          thickness: { type: 'integer', minimum: 1, maximum: 4 }
+                        }
+                      },
+                      {
+                        type: 'object', additionalProperties: false, required: ['op', 'terrain', 'radius', 'centers'],
+                        properties: {
+                          op: { const: 'paint_strokes' },
+                          terrain: { type: 'string', enum: ['grass', 'forest', 'dirt', 'water', 'rock', 'scorched'] },
+                          radius: { type: 'integer', minimum: 0, maximum: 8 },
+                          centers: { type: 'array', minItems: 1, items: { type: 'object', additionalProperties: false, required: ['x', 'y'], properties: { x: { type: 'integer' }, y: { type: 'integer' } } } }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          });
+        }
+        capabilities.push(
+          {
+            id: 'viewport.navigate',
+            description: 'Navigate, frame, focus, orbit, pan, or zoom the editor viewport.',
+            operation: 'navigate',
+            arguments: { request: 'natural-language viewport request' }
+          },
+          {
+            id: 'scene.object.create',
+            description: 'Create one primitive scene object using the governed scene-object tool.',
+            operation: 'create',
+            arguments: { type: 'cube | sphere | plane | cylinder | cone | point_light | directional_light', position: { x: 0, y: 0, z: 0 }, select: true }
+          },
+          {
+            id: 'scene.sequence.edit',
+            description: 'Edit the active authored transition sequence through its bounded semantic resolver.',
+            operation: 'edit',
+            arguments: { request: 'natural-language sequence edit' }
+          },
+          {
+            id: 'file_manager.intent',
+            description: 'Read, inspect, validate, propose, save, load, or otherwise operate on project files through FileManager governance.',
+            operation: 'handle',
+            arguments: { request: 'natural-language file request' }
+          },
+          {
+            id: 'msol.mutation.propose',
+            description: 'Propose a governed MSOL capability-graph mutation. This does not claim runtime implementation.',
+            operation: 'propose',
+            arguments: { request: 'natural-language ontology mutation request' }
+          },
+          {
+            id: 'implementation.governed',
+            description: 'Modify AXIOM source code or implement a missing runtime capability only when the user explicitly asks for code/system implementation and no registered domain capability owns the requested state. Never use this for map, terrain, tile, scene, viewport, or file actions already covered above.',
+            operation: 'implement',
+            arguments: { request: 'natural-language implementation request' }
+          }
+        );
+        if (mcpTools.length) {
+          capabilities.push({
+            id: 'mcp.call',
+            description: 'Call one currently registered MCP tool. Use the exact tool name and input schema from live evidence.',
+            operation: 'call',
+            arguments: { tool: 'registered tool name', parameters: 'object matching its input schema' }
+          });
+        }
+        return capabilities;
+      }
+
+      async function send(userText, options = {}) {
         if (!userText.trim()) return;
         // ── input is ALWAYS available — we never lock the textarea ───────────
         document.getElementById('send-btn').disabled = true;
@@ -7227,27 +7853,30 @@ Interpret references using the sequence's labels, phases, and current values. Th
         const runId = ++activeRuns;
         const turnStart = Date.now();
 
-        addMsg('user', userText);
-        history.push({ role: 'user', content: userText });
-
-        const sceneSequenceCommand = await tryAgenticSceneSequenceCommand(userText);
-        if (sceneSequenceCommand?.handled) {
-          activeRuns = Math.max(0, activeRuns - 1);
-          return sceneSequenceCommand;
+        const displayText = String(options.displayText || userText).trim() || 'Review the current Journal context.';
+        const attemptId = activityBegin(userText, { ...options, displayText });
+        const activity = { attemptId, sourceSurface: options.sourceSurface || 'chat' };
+        if (options.resumeFromAcquisition) {
+          addMsg('system', `RESUMING · capability verified · ${options.acquiredPluginId || 'runtime plugin'}. Re-observing tools before acting on the original request.`);
+        } else {
+          addMsg('user', displayText);
+          history.push({ role: 'user', content: userText });
         }
 
-        // ── 0. FILE / SKILL shortcuts (deterministic — bypass agent) ─────────
-        const agenticFileCommand = await tryAgenticFileLaneCommand(userText);
-        if (agenticFileCommand?.handled) {
+        // Explicit slash commands remain deterministic control syntax. Ordinary prose
+        // never enters a handwritten semantic router before the model.
+        if (/^\/skills?\b/i.test(userText.trim())) {
+          const skillCommand = await window.SkillRuntime?.handleChatCommand?.(userText, { addMsg });
+          activityComplete(attemptId, { status: skillCommand?.ok === false ? 'blocked' : 'completed', summary: skillCommand?.ok === false ? 'Skill command was blocked.' : 'Skill command completed.' });
           activeRuns = Math.max(0, activeRuns - 1);
-          return agenticFileCommand;
+          return skillCommand;
         }
-
-        const fileCommand = await window.FileManagerRuntime?.handleChatCommand?.(userText, { addMsg });
-        if (fileCommand?.handled) { activeRuns = Math.max(0, activeRuns - 1); return fileCommand; }
-
-        const skillCommand = await window.SkillRuntime?.handleChatCommand?.(userText, { addMsg });
-        if (skillCommand?.handled) { activeRuns = Math.max(0, activeRuns - 1); return skillCommand; }
+        if (/^\/mcp\b/i.test(userText.trim())) {
+          const direct = await window.AgenticToolUseLoop?.handle?.(userText, { addMsg, executeAICommand, getAvailableMcpTools, activity });
+          activityComplete(attemptId, { status: direct?.ok === false ? 'blocked' : 'completed', summary: direct?.ok === false ? `Explicit MCP command blocked: ${direct.reason || 'unknown'}` : 'Explicit MCP command completed.' });
+          activeRuns = Math.max(0, activeRuns - 1);
+          return direct;
+        }
 
         // ── skill context note ────────────────────────────────────────────────
         const skillRoute = window.SkillRuntime?.ensureForPrompt?.(userText);
@@ -7256,9 +7885,6 @@ Interpret references using the sequence's labels, phases, and current values. Th
         }
 
         // ════════════════════════════════════════════════════════════════════
-        const viewportNavigationShortcut = await handleViewportNavigationShortcut(userText);
-        if (viewportNavigationShortcut?.handled) return;
-
         //  COGNITIVE LOOP
         // ════════════════════════════════════════════════════════════════════
 
@@ -7278,6 +7904,19 @@ Interpret references using the sequence's labels, phases, and current values. Th
         const activeSkillContext = [skillFrag, focusFrag].filter(Boolean).join('\n\n');
         const workspaceContext = window.FileManagerRuntime?.getWorkspaceContext?.() || null;
         const files      = window.FileManagerRuntime?.getRuntimeContext?.(userText) || { available: false };
+        const levelDesignStatus = window.LevelDesignSessionRuntime?.status?.() || null;
+        let mapForgeContext = null;
+        try { mapForgeContext = window.BsbV2MapAuthoring?.agent?.describeTerrain?.() || null; }
+        catch (error) {
+          activityStage(attemptId, 'observe_mapforge', {
+            label: 'Map Forge terrain context unavailable',
+            status: 'degraded',
+            attemptStatus: 'running',
+            summary: String(error?.message || error),
+            detail: { error: String(error?.message || error) }
+          });
+        }
+        const naturalLanguageCapabilities = buildNaturalLanguageCapabilities({ workspaceContext, mapForgeContext, levelDesignStatus, mcpTools });
 
         obsThink.addStep(workspaceContext?.project?.id ? '✓' : '⚠', workspaceContext?.project?.id ? 'ok' : 'spin',
                           `Project: ${workspaceContext?.project?.name || 'unavailable'} · ${workspaceContext?.scene?.catalogueMapId || workspaceContext?.scene?.id || 'no active surface'}`);
@@ -7293,6 +7932,24 @@ Interpret references using the sequence's labels, phases, and current values. Th
                           `Focus: ${focusPacket ? `${focusPacket.label} (${focusPacket.focus_id})` : 'none'}`);
         obsThink.addStep(files.available ? '✓' : '○', files.available ? 'ok' : 'skip',
                           `File bridge: ${files.available ? 'online' : 'offline'}`);
+
+        activityStage(attemptId, 'observe', {
+          label: 'Workspace observed',
+          status: 'completed',
+          attemptStatus: 'running',
+          summary: workspaceContext?.project?.id
+            ? `${workspaceContext.project.name || workspaceContext.project.id} · ${workspaceContext.scene?.catalogueMapId || workspaceContext.scene?.mapId || 'no active map'} · ${mcpTools.length} tools`
+            : `Workspace unavailable · ${mcpTools.length} tools`,
+          detail: {
+            project: workspaceContext?.project || null,
+            authoring: workspaceContext?.authoring || null,
+            selection: workspaceContext?.scene?.selection || null,
+            mcpTools: mcpTools.map(tool => tool.name),
+            capabilities: naturalLanguageCapabilities.map(capability => capability.id),
+            bridge: window.SSEBridge?.status?.() || null,
+            sourceSurface: activity.sourceSurface
+          }
+        });
 
         await tick();
 
@@ -7311,61 +7968,304 @@ Interpret references using the sequence's labels, phases, and current values. Th
           },
           focus: focusPacket ? { active: true, packet: focusPacket } : { active: false },
           entities: entities.map(e => ({ id: e.id, name: e.name, type: e.type, components: e.components })),
-          mcpTools: mcpTools.map(t => ({ name: t.name, description: t.description })),
+          mcpTools: mcpTools.map(t => ({ name: t.name, description: t.description, inputSchema: t.inputSchema || null })),
           msol: msolCtx ? { available: true, capabilityCount: msolCtx.capabilities?.length, systemEntropy: msolCtx.systemEntropy } : { available: false },
           files: files.promptContext || { available: files.available },
-          skills: { active: !!skillFrag }
+          skills: { active: !!skillFrag },
+          levelDesign: levelDesignStatus,
+          mapForge: mapForgeContext,
+          registeredCapabilities: naturalLanguageCapabilities.map(capability => capability.id)
         };
 
-        const thinkSystem = `You are AXIOM AI — an embedded AI agent inside a 3D game editor. 
-You have just received a user request and observed the editor's live state.
-
-OBSERVED SCOPE:
-${JSON.stringify(observeContext, null, 2)}
-
-ACTIVE SKILLS:
-${activeSkillContext || 'none'}
-
-Your job in this phase is to THINK — reason carefully before acting.
-Return a JSON object with this exact shape (no markdown, no prose):
-{
-  "intent_clear": true,
-  "intent_summary": "one sentence describing what the user wants",
-  "ambiguous": false,
-  "clarify_question": null,
-  "clarify_options": [],
-  "requires_action": true,
-  "action_type": "scene_object | mcp_tool | msol_mutation | implementation | conversation",
-  "plan_steps": ["step 1", "step 2"],
-  "relevant_tools": ["tool_name"],
-  "relevant_capabilities": [],
-  "confidence": 0.9,
-  "think_notes": "brief reasoning"
-}
-
-If the intent is ambiguous, set ambiguous:true, clarify_question to a concise question, and clarify_options to 2-4 short choices.
-If it's just conversation/explanation, set requires_action:false, action_type:"conversation".`;
+        const actionTypeForCapability = (capability) => ({
+          'conversation.respond': 'conversation',
+          'system.capability_gap': 'capability_gap',
+          'mapforge.level_design.start': 'level_design_start',
+          'mapforge.level_design.redirect': 'level_design_redirect',
+          'mapforge.enclosure.relocate': 'mapforge_terrain',
+          'mapforge.terrain.patch': 'mapforge_terrain',
+          'viewport.navigate': 'viewport_navigation',
+          'scene.object.create': 'scene_object',
+          'scene.sequence.edit': 'scene_sequence',
+          'file_manager.intent': 'file_action',
+          'msol.mutation.propose': 'msol_mutation',
+          'implementation.governed': 'implementation',
+          'mcp.call': 'mcp_tool'
+        }[capability] || 'capability_gap');
 
         let thinkResult = null;
+        activityStage(attemptId, 'interpret', {
+          label: 'Local model interpreting request',
+          status: 'running',
+          summary: 'Waiting for a structured intent decision.'
+        });
         try {
-          const thinkRaw = await ModelBus.complete(
-            [{ role: 'user', content: userText }],
-            { system: thinkSystem, max_tokens: 600 }
-          );
-          thinkResult = tryParseJsonObject(thinkRaw);
+          if (!window.AxiomNaturalLanguageAgent?.interpret) {
+            throw new Error('natural_language_kernel_unavailable');
+          }
+          const kernelResult = await window.AxiomNaturalLanguageAgent.interpret({
+            complete: (messages, requestOptions) => ModelBus.complete(messages, requestOptions),
+            userText,
+            observation: { ...observeContext, activeSkills: activeSkillContext || null },
+            capabilities: naturalLanguageCapabilities,
+            onAttempt: (attempt) => {
+              if (!attempt.ok) {
+                activityStage(attemptId, 'interpret', {
+                  label: attempt.index === 1 ? 'Intent contract needs repair' : 'Intent repair failed',
+                  status: attempt.index === 1 ? 'running' : 'blocked',
+                  attemptStatus: attempt.index === 1 ? 'running' : 'blocked',
+                  summary: attempt.errors.join(', '),
+                  detail: attempt
+                });
+              }
+            }
+          });
+          const decision = kernelResult.intent;
+          const step = decision.plan[0] || null;
+          thinkResult = {
+            intent_clear: decision.outcome !== 'clarify',
+            intent_summary: decision.intentSummary,
+            ambiguous: decision.outcome === 'clarify',
+            clarify_question: decision.clarification?.question || null,
+            clarify_options: decision.clarification?.options || [],
+            requires_action: decision.outcome === 'act',
+            action_type: decision.outcome === 'conversation' ? 'conversation' : actionTypeForCapability(step?.capability),
+            plan_steps: step ? [step.reason] : [],
+            relevant_tools: step?.capability === 'mcp.call' ? [step.arguments?.tool].filter(Boolean) : [],
+            relevant_capabilities: step ? [step.capability] : [],
+            confidence: decision.confidence,
+            think_notes: step?.reason || null,
+            kernelDecision: decision,
+            kernelRepaired: kernelResult.repaired
+          };
         } catch (e) {
-          thinkResult = null;
+          const errorText = String(e.message || e);
+          thinkBubble.addStep('✕', 'err', 'Intent contract blocked');
+          activityStage(attemptId, 'interpret', {
+            label: 'Natural-language intent blocked',
+            status: 'blocked',
+            attemptStatus: 'blocked',
+            summary: errorText,
+            detail: { code: e.code || 'intent_contract_invalid', contract: e.contract || 'axiom.agent-intent.v1', error: errorText, ...(e.detail || {}) }
+          });
+          addMsg('system', `BLOCKED · intent_contract_invalid: ${errorText}. No tool call or mutation was attempted.`);
+          activityComplete(attemptId, {
+            status: 'blocked',
+            summary: 'The local model did not produce a valid, executable intent contract after one visible repair attempt.'
+          });
+          obsThink.collapse();
+          setPhase('idle');
+          activeRuns = Math.max(0, activeRuns - 1);
+          return { handled: true, ok: false, status: 'blocked', reason: 'intent_contract_invalid', detail: e.detail || null };
         }
 
-        if (!thinkResult) {
-          thinkBubble.addStep('⚠', 'spin', 'Think parse failed — falling back to conversation mode');
-          thinkResult = { intent_clear: true, requires_action: false, action_type: 'conversation', confidence: 0.5, think_notes: 'parse_failed' };
-        } else {
-          thinkBubble.addStep('✓', 'ok',   `Intent: ${thinkResult.intent_summary || '—'}`);
-          thinkBubble.addStep('✓', 'ok',   `Action type: ${thinkResult.action_type}`);
-          thinkBubble.addStep('✓', 'ok',   `Confidence: ${Math.round((thinkResult.confidence||0)*100)}%`);
-          if (thinkResult.think_notes) {
-            thinkBubble.appendText(thinkResult.think_notes);
+        thinkBubble.addStep('✓', 'ok',   `Intent: ${thinkResult.intent_summary || '—'}`);
+        thinkBubble.addStep('✓', 'ok',   `Capability: ${thinkResult.relevant_capabilities?.[0] || thinkResult.action_type}`);
+        thinkBubble.addStep('✓', 'ok',   `Confidence: ${Math.round((thinkResult.confidence||0)*100)}%`);
+        if (thinkResult.kernelRepaired) thinkBubble.addStep('✓', 'ok', 'Contract repaired on attempt 2');
+        if (thinkResult.think_notes) thinkBubble.appendText(thinkResult.think_notes);
+        activityStage(attemptId, 'interpret', {
+          label: 'Intent contract accepted',
+          status: 'completed',
+          attemptStatus: 'running',
+          summary: `${thinkResult.relevant_capabilities?.[0] || thinkResult.action_type} · ${thinkResult.intent_summary || 'no summary'}`,
+          detail: thinkResult.kernelDecision
+        });
+
+        const kernelStep = thinkResult.kernelDecision?.plan?.[0] || null;
+        if (thinkResult.action_type === 'capability_gap') {
+          const required = kernelStep?.arguments?.requiredCapability || 'unregistered capability';
+          const reason = kernelStep?.arguments?.reason || kernelStep?.reason || 'No registered executor can perform the requested action.';
+          obsThink.collapse();
+          thinkBubble.collapse();
+          if (Number(options.acquisitionDepth || 0) >= 1) {
+            thinkBubble.addStep('✕', 'err', `Capability still missing after acquisition: ${required}`);
+            activityStage(attemptId, 'capability_gap', {
+              label: 'Acquisition limit reached',
+              status: 'blocked',
+              attemptStatus: 'blocked',
+              summary: `${required}: the one bounded acquisition did not close the original task gap.`,
+              detail: { kernelStep, acquiredPluginId: options.acquiredPluginId || null, acquisitionDepth: options.acquisitionDepth }
+            });
+            addMsg('system', `BLOCKED · acquisition_did_not_close_gap · ${required}: ${reason}. The generated plugin remains inspectable; AXIOM will not silently create a second tool or fall back to conversation.`);
+            activityComplete(attemptId, { status: 'blocked', summary: `Acquired plugin did not provide the required executor: ${required}` });
+            setPhase('idle');
+            activeRuns = Math.max(0, activeRuns - 1);
+            return { handled: true, ok: false, status: 'blocked', reason: 'acquisition_did_not_close_gap', requiredCapability: required };
+          }
+
+          thinkBubble.addStep('!', 'warn', `Capability gap: ${required}`);
+          activityStage(attemptId, 'capability_gap', {
+            label: 'Material capability gap detected',
+            status: 'completed',
+            attemptStatus: 'running',
+            summary: `${required}: ${reason}`,
+            detail: kernelStep
+          });
+
+          if (!window.AxiomCapabilityAcquisition?.prepare || !window.AXIOM_PLUGIN_RUNTIME?.runtimeAuthoringContract) {
+            addMsg('system', `BLOCKED · capability_acquisition_runtime_unavailable · ${required}: ${reason}`);
+            activityComplete(attemptId, { status: 'blocked', summary: 'Capability acquisition runtime is unavailable.' });
+            setPhase('idle');
+            activeRuns = Math.max(0, activeRuns - 1);
+            return { handled: true, ok: false, status: 'blocked', reason: 'capability_acquisition_runtime_unavailable', requiredCapability: required };
+          }
+
+          setPhase('act', 'Acquiring one bounded capability…');
+          let proposal = null;
+          const acquisitionCard = createCapabilityAcquisitionCard({ requiredCapability: required, reason }, async (cardElement) => {
+            const activateButton = cardElement.querySelector('#pactivate');
+            if (activateButton) {
+              activateButton.disabled = true;
+              activateButton.textContent = 'Activating & verifying…';
+            }
+            try {
+              const activationReceipt = await window.AxiomCapabilityAcquisition.activateAndVerify({
+                proposal,
+                activate: async (pluginId) => executeAICommand({
+                  command: 'mcp_call',
+                  tool: 'axiom_plugin_activate',
+                  parameters: { plugin_id: pluginId }
+                }, { ...activity, proposalId: proposal?.requestId }),
+                runtimeStatus: async () => window.AXIOM_PLUGIN_RUNTIME.status(),
+                runtimeTools: async () => getAvailableMcpTools(),
+                events: {
+                  onStage(event) {
+                    acquisitionCard.update(event);
+                    activityStage(attemptId, `capability_${event.stage}`, {
+                      label: event.stage.replace(/_/g, ' '),
+                      status: event.status,
+                      attemptStatus: event.status === 'failed' ? 'failed' : 'running',
+                      summary: event.summary || `${event.stage} ${event.status}`,
+                      detail: { pluginId: event.pluginId || proposal?.pluginId || null }
+                    });
+                  },
+                  onReceipt(event) {
+                    const response = event.response || {};
+                    activityReceipt(attemptId, {
+                      contract: response.contract || 'axiom.capability-acquisition-stage-receipt.v1',
+                      stage: event.stage,
+                      tool: event.tool || null,
+                      ok: response.ok !== false,
+                      pluginId: response.pluginId || response.parameters?.plugin_id || proposal?.pluginId || null,
+                      status: response.status || response.result?.status || null,
+                      errors: response.errors || [],
+                      receipt: response.receipt || null,
+                      verifiedAt: response.verifiedAt || new Date().toISOString()
+                    }, { label: `Capability ${event.stage} receipt` });
+                  }
+                }
+              });
+              acquisitionCard.activated(activationReceipt.callableTools);
+              activityReceipt(attemptId, activationReceipt, { label: 'Callable plugin verification receipt' });
+              activityComplete(attemptId, {
+                status: 'completed',
+                summary: `${proposal.pluginId} activated with callable tool ${activationReceipt.callableTools.join(', ')}. Resuming the original request.`
+              });
+              acquisitionCard.resumed();
+              await send(userText, {
+                ...options,
+                resumeFromAcquisition: true,
+                acquisitionDepth: 1,
+                acquiredPluginId: proposal.pluginId,
+                displayText: userText,
+                sourceSurface: activity.sourceSurface
+              });
+            } catch (error) {
+              const message = String(error?.message || error);
+              acquisitionCard.fail(message);
+              activityStage(attemptId, 'capability_activation_failed', {
+                label: 'Capability activation failed',
+                status: 'failed',
+                attemptStatus: 'failed',
+                summary: message,
+                detail: error?.detail || null
+              });
+              addMsg('system', `BLOCKED · capability_activation_failed · ${message}`);
+              activityComplete(attemptId, { status: 'failed', summary: `Capability activation failed: ${message}` });
+              setPhase('idle');
+            }
+          }, () => {
+            activityComplete(attemptId, { status: 'blocked', summary: 'Capability activation was stopped by the user. The registered plugin remains inactive.' });
+            setPhase('idle');
+          });
+
+          const compactReceipt = (event) => {
+            const response = event.response || {};
+            activityReceipt(attemptId, {
+              contract: 'axiom.capability-acquisition-stage-receipt.v1',
+              stage: event.stage,
+              tool: event.tool || null,
+              ok: response.ok !== false,
+              pluginId: response.plugin_id || null,
+              status: response.status || null,
+              errors: response.errors || [],
+              validation: response.validation || null,
+              receipt: response.receipt || null,
+              receivedAt: new Date().toISOString()
+            }, { label: `Capability ${event.stage} receipt` });
+          };
+
+          try {
+            proposal = await window.AxiomCapabilityAcquisition.prepare({
+              requiredCapability: required,
+              reason,
+              originalRequest: userText,
+              runtimeContract: window.AXIOM_PLUGIN_RUNTIME.runtimeAuthoringContract(),
+              callTool: async (tool, parameters) => {
+                const bridged = await window.EDITOR.mcp.call(tool, parameters, {
+                  attemptId,
+                  proposalId: parameters.request_id || null,
+                  sourceSurface: activity.sourceSurface
+                });
+                return bridged?.command === 'remote_mcp_call' && bridged?.result
+                  ? { ...bridged.result, meta: bridged.meta || bridged.result?.meta || null }
+                  : bridged;
+              },
+              model: ModelBus.getCurrent?.()?.model || 'qwen3.5:9b',
+              timeoutMs: 90000,
+              events: {
+                onStage(event) {
+                  acquisitionCard.update(event);
+                  activityStage(attemptId, `capability_${event.stage}`, {
+                    label: event.stage.replace(/_/g, ' '),
+                    status: event.status,
+                    attemptStatus: event.status === 'failed' ? 'failed' : event.status === 'awaiting_user' ? 'awaiting_user' : 'running',
+                    summary: event.summary || `${event.stage} ${event.status}`,
+                    detail: { pluginId: event.pluginId || null }
+                  });
+                },
+                onReceipt: compactReceipt
+              }
+            });
+            acquisitionCard.ready(proposal);
+            addMsg('assistant', `Capability prepared — not active: ${proposal.pluginId} is validated, packaged and registered with tool ${proposal.declaredTools.map(tool => tool.name).join(', ')}. Activate it to verify the real runtime executor and resume your original request.`);
+            requestAnimationFrame(() => acquisitionCard.el.querySelector('#pactivate')?.scrollIntoView({ block: 'end', inline: 'nearest' }));
+            activityStage(attemptId, 'capability_approval', {
+              label: 'Waiting for plugin activation',
+              status: 'awaiting_user',
+              attemptStatus: 'awaiting_user',
+              summary: `${proposal.pluginId} is registered but inactive.`,
+              detail: proposal
+            });
+            setPhase('idle');
+            activeRuns = Math.max(0, activeRuns - 1);
+            return { handled: true, ok: true, status: 'awaiting_user', reason: 'capability_activation_required', proposal };
+          } catch (error) {
+            const message = String(error?.message || error);
+            acquisitionCard.fail(message);
+            activityStage(attemptId, 'capability_acquisition_failed', {
+              label: 'Capability acquisition failed',
+              status: 'failed',
+              attemptStatus: 'failed',
+              summary: message,
+              detail: { code: error?.code || 'capability_acquisition_failed', result: error?.detail || null, receipts: error?.receipts || [] }
+            });
+            addMsg('system', `BLOCKED · capability_acquisition_failed · ${message}. No plugin was activated and the original request was not disguised as conversation.`);
+            activityComplete(attemptId, { status: 'failed', summary: `Capability acquisition failed: ${message}` });
+            setPhase('idle');
+            activeRuns = Math.max(0, activeRuns - 1);
+            return { handled: true, ok: false, status: 'failed', reason: 'capability_acquisition_failed', requiredCapability: required, detail: error?.detail || null };
           }
         }
 
@@ -7381,12 +8281,21 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
             ? thinkResult.clarify_options
             : ['Please clarify', 'Proceed with best guess'];
 
+          activityStage(attemptId, 'clarify', {
+            label: 'Waiting for clarification',
+            status: 'awaiting_user',
+            attemptStatus: 'awaiting_user',
+            summary: thinkResult.clarify_question,
+            detail: { options: opts }
+          });
+
           createClarifyCard(thinkResult.clarify_question, opts, async (chosen, cCard) => {
             cCard.remove();
             const augmented = `${userText}\n[User clarified: ${chosen}]`;
             history[history.length - 1] = { role: 'user', content: augmented };
+            activityComplete(attemptId, { status: 'completed', summary: `Clarification captured: ${chosen}` });
             activeRuns = Math.max(0, activeRuns - 1);
-            await send(augmented);
+            await send(augmented, { ...options, displayText: chosen });
           });
 
           activeRuns = Math.max(0, activeRuns - 1);
@@ -7403,6 +8312,13 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
           const convSystem = buildRuntimeSystemPrompt(userText, observeContext, activeSkillContext);
           const streamBubble = createStreamBubble();
           let replyText = '';
+          activityStage(attemptId, 'respond', {
+            label: 'Responding without a tool call',
+            status: 'running',
+            attemptStatus: 'running',
+            summary: 'The model explicitly classified this turn as conversation; no tool or Map Forge mutation was requested.',
+            detail: { actionType: thinkResult.action_type, requiresAction: thinkResult.requires_action }
+          });
           try {
             replyText = await ModelBus.stream(
               history.slice(-12),
@@ -7411,15 +8327,88 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
             );
             streamBubble.finalise(replyText);
             history.push({ role: 'assistant', content: replyText });
+            activityComplete(attemptId, {
+              status: 'completed',
+              summary: 'Reply delivered; no tool was called.'
+            });
           } catch (e) {
             streamBubble.el.remove();
             addMsg('system', `⚠ ${e.message}`);
+            activityComplete(attemptId, { status: 'failed', summary: `Response failed: ${String(e.message || e)}` });
           }
           obsThink.collapse();
           thinkBubble.collapse();
           setPhase('idle');
           activeRuns = Math.max(0, activeRuns - 1);
           return;
+        }
+
+        // Model-selected semantic routes may delegate parsing details to their
+        // bounded executor, but ordinary prose reaches this point only after the
+        // natural-language intent contract has selected the capability.
+        if (thinkResult.action_type === 'level_design_start') {
+          obsThink.collapse();
+          thinkBubble.collapse();
+          setPhase('act', 'Starting level-design preflight…');
+          const result = await window.LevelDesignSessionRuntime.startGoal(
+            kernelStep?.arguments?.brief || userText,
+            { attemptId, sourceSurface: activity.sourceSurface, addMsg }
+          );
+          if (result?.handled === false || result?.ok === false) {
+            activityComplete(attemptId, { status: 'blocked', summary: `Level-design start blocked: ${result?.reason || 'unknown'}` });
+          }
+          setPhase('idle');
+          activeRuns = Math.max(0, activeRuns - 1);
+          return result;
+        }
+
+        if (thinkResult.action_type === 'level_design_redirect') {
+          obsThink.collapse();
+          thinkBubble.collapse();
+          const direction = kernelStep?.arguments?.direction || userText;
+          const redirected = window.LevelDesignSessionRuntime?.addDirection
+            ? await window.LevelDesignSessionRuntime.addDirection(direction, activity.sourceSurface)
+            : null;
+          const result = redirected ? { handled: true, ok: true, session: redirected } : { handled: true, ok: false, reason: 'level_design_redirect_unavailable' };
+          addMsg(result.ok === false ? 'system' : 'assistant', result.ok === false
+            ? `BLOCKED · ${result.reason || 'level_design_redirect_failed'}`
+            : 'Direction queued for the active Map Forge level-design session.');
+          activityComplete(attemptId, {
+            status: result.ok === false ? 'blocked' : 'completed',
+            summary: result.ok === false ? `Direction was not queued: ${result.reason || 'unknown'}` : 'Direction queued at the next safe session boundary.'
+          });
+          setPhase('idle');
+          activeRuns = Math.max(0, activeRuns - 1);
+          return result;
+        }
+
+        if (thinkResult.action_type === 'viewport_navigation') {
+          obsThink.collapse();
+          thinkBubble.collapse();
+          const result = await handleViewportNavigationShortcut(kernelStep?.arguments?.request || userText, activity);
+          if (!result?.handled) {
+            addMsg('system', 'BLOCKED · viewport_executor_rejected_intent. No camera state was changed.');
+            activityComplete(attemptId, { status: 'blocked', summary: 'The viewport executor could not apply the model-selected request.' });
+          }
+          setPhase('idle');
+          activeRuns = Math.max(0, activeRuns - 1);
+          return result;
+        }
+
+        if (thinkResult.action_type === 'file_action') {
+          obsThink.collapse();
+          thinkBubble.collapse();
+          const request = kernelStep?.arguments?.request || userText;
+          const result = await window.FileManagerRuntime?.handleChatCommand?.(request, { addMsg, activity })
+            || { handled: false, ok: false, reason: 'file_intent_executor_unavailable' };
+          if (!result?.handled) addMsg('system', `BLOCKED · ${result?.reason || 'file_intent_executor_rejected_request'}. No file mutation was attempted.`);
+          activityComplete(attemptId, {
+            status: result?.handled && result?.ok !== false ? 'completed' : 'blocked',
+            summary: result?.handled ? 'File Manager completed the model-selected request.' : 'File Manager could not execute the selected request.'
+          });
+          setPhase('idle');
+          activeRuns = Math.max(0, activeRuns - 1);
+          return result;
         }
 
         // ── 5. PLAN — for actions, build a deterministic pipeline ─────────────
@@ -7444,10 +8433,18 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
           async (card) => {
             card.querySelector('#pactivate').disabled = true;
             card.querySelector('#pactivate').textContent = 'Activating…';
-            await activatePipelineResult(pendingResult, card, thinkResult);
+            await activatePipelineResult(pendingResult, card, thinkResult, activity);
           },
-          () => {}
+          () => activityComplete(attemptId, { status: 'cancelled', summary: 'Proposed action dismissed before activation.' })
         );
+
+        activityStage(attemptId, 'plan', {
+          label: 'Action plan prepared',
+          status: 'completed',
+          attemptStatus: 'running',
+          summary: `${thinkResult.action_type || 'action'} · ${planSteps.length} planned step${planSteps.length === 1 ? '' : 's'}`,
+          detail: { planSteps, relevantTools: thinkResult.relevant_tools || [] }
+        });
 
         pipelineCard.setStep(0, 'done', '✓', 'ok');
         pipelineCard.setStep(1, 'done', '✓', 'ok');
@@ -7461,6 +8458,7 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
 
         let pendingResult = null;
         let execOk = true;
+        const executionErrors = [];
 
         for (let i = 2; i < pipelineSteps.length - 2; i++) {
           pipelineCard.setStep(i, 'running');
@@ -7469,31 +8467,68 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
             const stepLabel = pipelineSteps[i].label;
 
             if (thinkResult.action_type === 'scene_object') {
-              // deterministic object creation
-              const intent = deterministicIntentFromText(userText);
-              if (intent) {
-                pendingResult = { type: 'scene_object', intent, sceneSnapshot: sceneState };
+              const args = kernelStep?.arguments || {};
+              const typeAliases = { point_light: 'light-point', directional_light: 'light-dir' };
+              const intent = {
+                command: 'mcp_call',
+                tool: 'axiom_create_object',
+                parameters: {
+                  type: typeAliases[args.type] || args.type,
+                  position: normaliseVec3(args.position),
+                  select: args.select !== false
+                },
+                confidence: thinkResult.confidence,
+                source: 'axiom.agent-intent.v1'
+              };
+              pendingResult = { type: 'scene_object', intent, sceneSnapshot: sceneState, decision: thinkResult.kernelDecision };
+              pipelineCard.setStep(i, 'done', '✓', 'ok');
+
+            } else if (thinkResult.action_type === 'mcp_tool') {
+              const args = kernelStep?.arguments || {};
+              const contractIntent = args.tool ? {
+                command: 'mcp_call',
+                tool: args.tool,
+                parameters: args.parameters || {},
+                confidence: thinkResult.confidence,
+                source: 'axiom.agent-intent.v1'
+              } : null;
+              if (contractIntent) {
+                pendingResult = { type: 'mcp', intent: contractIntent, decision: thinkResult.kernelDecision };
                 pipelineCard.setStep(i, 'done', '✓', 'ok');
               } else {
-                pipelineCard.setStep(i, 'error', 'parse failed', 'err');
+                pipelineCard.setStep(i, 'error', 'tool missing', 'warn');
                 execOk = false;
               }
 
-            } else if (thinkResult.action_type === 'mcp_tool') {
-              // build intent via model
-              const contractIntent = await requestIntentFromModel(userText);
-              if (contractIntent && contractIntent.command !== 'none') {
-                pendingResult = { type: 'mcp', intent: contractIntent };
-                pipelineCard.setStep(i, 'done', '✓', 'ok');
+            } else if (thinkResult.action_type === 'mapforge_terrain') {
+              const args = kernelStep?.arguments || {};
+              const expectedRevision = Number.isInteger(args.expectedRevision) ? args.expectedRevision : mapForgeContext?.revision;
+              const operations = kernelStep?.capability === 'mapforge.enclosure.relocate'
+                ? [{
+                    op: 'relocate_enclosure',
+                    componentId: args.componentId,
+                    regionId: args.regionId,
+                    replacementTerrain: args.replacementTerrain,
+                    thickness: args.thickness
+                  }]
+                : args.operations;
+              const preview = window.BsbV2MapAuthoring?.agent?.previewTerrainPatch?.({
+                expectedRevision,
+                label: args.label || thinkResult.intent_summary,
+                operations
+              });
+              if (preview?.contract === 'axiom.map-forge-terrain-patch-preview.v1') {
+                pendingResult = { type: 'mapforge_terrain', preview, decision: thinkResult.kernelDecision };
+                pipelineCard.setStep(i, 'done', `✓ ${preview.candidateCount} tiles`, 'ok');
               } else {
-                pipelineCard.setStep(i, 'error', 'no tool matched', 'warn');
+                pipelineCard.setStep(i, 'error', 'preview unavailable', 'warn');
                 execOk = false;
               }
 
             } else if (thinkResult.action_type === 'msol_mutation') {
               const mutResult = await requestMSOLMutationIntent(userText);
               if (mutResult?.ok) {
-                pendingResult = { type: 'msol', mutation: mutResult.mutation };
+                pendingResult = { type: 'msol', mutation: mutResult.mutation, decision: thinkResult.kernelDecision };
                 pipelineCard.setStep(i, 'done', '✓', 'ok');
               } else {
                 pipelineCard.setStep(i, 'error', 'mutation build failed', 'warn');
@@ -7503,9 +8538,9 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
             } else if (thinkResult.action_type === 'implementation') {
               // run governed apply
               const govResult = window.AgenticExecutionRuntime?.runGovernedApply
-                ? await AgenticExecutionRuntime.runGovernedApply(userText, { addMsg, executeAICommand, getAvailableMcpTools, tryHandleMSOLMutationIntent })
+                ? await AgenticExecutionRuntime.runGovernedApply(userText, { addMsg, executeAICommand, getAvailableMcpTools, tryHandleMSOLMutationIntent, activity })
                 : { handled: false };
-              pendingResult = { type: 'governed', result: govResult };
+              pendingResult = { type: 'governed', result: govResult, decision: thinkResult.kernelDecision };
               pipelineCard.setStep(i, govResult?.handled ? 'done' : 'error',
                 govResult?.handled ? '✓' : 'needs review', govResult?.handled ? 'ok' : 'warn');
               execOk = govResult?.handled;
@@ -7515,11 +8550,23 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
             }
 
           } catch (e) {
-            pipelineCard.setStep(i, 'error', e.message.slice(0, 28), 'err');
+            const executionError = String(e?.message || e);
+            executionErrors.push(executionError);
+            pipelineCard.setStep(i, 'error', executionError.slice(0, 48), 'err');
             execOk = false;
           }
           await tick();
         }
+
+        activityStage(attemptId, 'proposal', {
+          label: pendingResult ? 'Action proposal built' : 'No executable proposal',
+          status: pendingResult && execOk ? 'completed' : 'blocked',
+          attemptStatus: pendingResult && execOk ? 'running' : 'blocked',
+          summary: pendingResult && execOk
+            ? `${pendingResult.type.replace(/_/g, ' ')} proposal is ready for validation.`
+            : `The selected executor did not produce a proposal${executionErrors.length ? `: ${executionErrors.join(', ')}` : '.'}`,
+          detail: { pendingResult, executionErrors, capability: kernelStep?.capability || null, arguments: kernelStep?.arguments || null }
+        });
 
         // ── 7. VERIFY: test result against constraints ────────────────────────
         const verifyIdx = pipelineSteps.length - 2;
@@ -7542,10 +8589,27 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
           const v = window.MSOL?.validateMutation?.(pendingResult.mutation);
           verifyOk = v?.ok !== false;
           verifyNote = v?.errors?.join(', ') || '✓';
+        } else if (pendingResult?.type === 'mapforge_terrain') {
+          const liveTerrain = window.BsbV2MapAuthoring?.agent?.describeTerrain?.();
+          verifyOk = pendingResult.preview.contract === 'axiom.map-forge-terrain-patch-preview.v1'
+            && pendingResult.preview.classification === 'projection'
+            && pendingResult.preview.mapId === liveTerrain?.mapId
+            && pendingResult.preview.sourceRevision === liveTerrain?.revision
+            && pendingResult.preview.candidateCount > 0;
+          verifyNote = verifyOk
+            ? `${pendingResult.preview.candidateCount} exact tile changes at revision ${pendingResult.preview.sourceRevision}`
+            : 'terrain_preview_stale_or_invalid';
         }
 
         pipelineCard.setStep(verifyIdx, verifyOk ? 'done' : 'error',
           verifyOk ? '✓' : 'fail', verifyOk ? 'ok' : 'err');
+        activityStage(attemptId, 'verify', {
+          label: 'Proposal contract checked',
+          status: verifyOk ? 'completed' : 'blocked',
+          attemptStatus: verifyOk ? 'running' : 'blocked',
+          summary: verifyOk ? 'The proposed command matches an available tool contract.' : `Proposal rejected: ${verifyNote || 'contract validation failed'}`,
+          detail: { verifyOk, verifyNote }
+        });
 
         // ── 8. VALIDATE: "does this match user intent?" self-check ────────────
         const validateIdx = pipelineSteps.length - 1;
@@ -7554,8 +8618,15 @@ If it's just conversation/explanation, set requires_action:false, action_type:"c
 
         let matchesIntent = true;
         let retryCount = 0;
+        let intentCheckDegraded = false;
 
         if (pendingResult && execOk && verifyOk) {
+          if (thinkResult.kernelDecision) {
+            // The accepted kernel contract already binds user meaning, selected
+            // capability, arguments, and success criteria. Do not ask a second
+            // model call to silently reinterpret or override that decision.
+            matchesIntent = pendingResult.decision?.contract === 'axiom.agent-intent.v1';
+          } else {
           // Ask the model: does this plan satisfy the user's intent?
           const checkSystem = `You are AXIOM AI validating a planned action before activation.
 User said: "${userText}"
@@ -7584,7 +8655,14 @@ If matches_intent is false, the system will retry.`;
               }
             }
           } catch (e) {
-            matchesIntent = true; // if check fails, trust the plan
+            matchesIntent = false;
+            activityStage(attemptId, 'intent_check', {
+              label: 'Intent self-check blocked',
+              status: 'blocked',
+              attemptStatus: 'blocked',
+              summary: `The proposal is not activatable because the model self-check failed: ${String(e.message || e)}`
+            });
+          }
           }
         } else {
           matchesIntent = execOk && verifyOk;
@@ -7592,30 +8670,34 @@ If matches_intent is false, the system will retry.`;
 
         pipelineCard.setStep(validateIdx, matchesIntent ? 'done' : 'error',
           matchesIntent ? '✓ matches' : '✗ mismatch', matchesIntent ? 'ok' : 'err');
+        if (matchesIntent && !intentCheckDegraded) {
+          activityStage(attemptId, 'intent_check', {
+            label: 'Intent check complete',
+            status: 'completed',
+            attemptStatus: 'running',
+            summary: 'The proposal was accepted for user review.'
+          });
+        }
 
         // ── 9. SURFACE RESULT ────────────────────────────────────────────────
         setPhase('done', 'Ready');
         await tick();
 
         if (!execOk || !verifyOk || !matchesIntent) {
-          // Can't activate — stream a conversational recovery response
+          // Can't activate. Preserve the failure as a visible blocked outcome;
+          // never convert an action failure into a plausible conversation reply.
           pipelineCard.el.remove();
-          setPhase('act', 'Recovering…');
-          const convSystem = buildRuntimeSystemPrompt(userText, observeContext, activeSkillContext);
-          const streamBubble = createStreamBubble();
-          let replyText = '';
-          try {
-            replyText = await ModelBus.stream(
-              history.slice(-10),
-              { system: convSystem, max_tokens: 800 },
-              (delta) => { replyText += delta; streamBubble.update(formatMsg(replyText)); }
-            );
-            streamBubble.finalise(replyText);
-            history.push({ role: 'assistant', content: replyText });
-          } catch (e) {
-            streamBubble.el.remove();
-            addMsg('system', `⚠ ${e.message}`);
-          }
+          const blockedSummary = !execOk
+            ? `Blocked before activation: ${executionErrors.join(', ') || 'the selected executor did not produce an exact proposal.'}`
+            : !verifyOk
+              ? `Blocked before activation: ${verifyNote || 'tool contract validation failed.'}`
+              : 'Blocked before activation: the proposal did not match the accepted intent contract.';
+          setPhase('done', 'Blocked');
+          addMsg('system', `BLOCKED · action_not_activatable · ${blockedSummary} No mutation was attempted.`);
+          activityComplete(attemptId, {
+            status: 'blocked',
+            summary: blockedSummary
+          });
           setPhase('idle');
           activeRuns = Math.max(0, activeRuns - 1);
           return;
@@ -7623,62 +8705,126 @@ If matches_intent is false, the system will retry.`;
 
         // ── Pipeline complete — show ACTIVATE button ──────────────────────────
         pipelineCard.showActivate(true);
+        if (pendingResult?.type === 'mapforge_terrain') {
+          pipelineCard.el.querySelector('#pactivate').textContent = `Apply ${pendingResult.preview.candidateCount} tiles`;
+        }
+        activityStage(attemptId, 'approval', {
+          label: 'Waiting for activation',
+          status: 'awaiting_user',
+          attemptStatus: 'awaiting_user',
+          summary: 'The proposal has not changed MapForge or project files. Activate to perform the tool call.',
+          detail: pendingResult
+        });
         setPhase('idle');
 
-        // Also stream a summary of what's about to happen
-        const summaryBubble = createStreamBubble();
-        const summarySystem = `You are AXIOM AI. The pipeline has completed successfully. 
+        if (thinkResult.kernelDecision) {
+          const summary = `Proposed — not applied: ${thinkResult.intent_summary} ${pendingResult?.type === 'mapforge_terrain' ? `The visible Map Forge projection contains ${pendingResult.preview.candidateCount} exact tile changes at revision ${pendingResult.preview.sourceRevision}.` : 'Review the proposal, then activate it to perform the governed action.'}`;
+          addMsg('assistant', summary);
+          history.push({ role: 'assistant', content: summary });
+        } else {
+          // Legacy explicit-control paths may still request a generated summary.
+          const summaryBubble = createStreamBubble();
+          const summarySystem = `You are AXIOM AI. The pipeline has completed successfully.
 Summarise in 1-2 sentences what will happen when the user clicks ACTIVATE.
 Intent: ${thinkResult.intent_summary}
 Plan: ${JSON.stringify(pipelineSteps.slice(2,-2).map(s=>s.label))}
 Be concise and confident.`;
-        let summaryText = '';
-        try {
-          summaryText = await ModelBus.stream(
-            [{ role: 'user', content: 'Summarise the pending activation.' }],
-            { system: summarySystem, max_tokens: 180 },
-            (d) => { summaryText += d; summaryBubble.update(formatMsg(summaryText)); }
-          );
-          summaryBubble.finalise(summaryText);
-        } catch (e) {
-          summaryBubble.el.remove();
+          let summaryText = '';
+          try {
+            summaryText = await ModelBus.stream(
+              [{ role: 'user', content: 'Summarise the pending activation.' }],
+              { system: summarySystem, max_tokens: 180 },
+              (d) => { summaryText += d; summaryBubble.update(formatMsg(summaryText)); }
+            );
+            summaryBubble.finalise(summaryText);
+          } catch (e) {
+            summaryBubble.el.remove();
+          }
         }
+
+        requestAnimationFrame(() => pipelineCard.el.scrollIntoView({ block: 'center', inline: 'nearest' }));
 
         activeRuns = Math.max(0, activeRuns - 1);
       }
 
       // ── activate pending result ───────────────────────────────────────────────
-      async function activatePipelineResult(pendingResult, card, thinkResult) {
-        if (!pendingResult) { notify('warn', 'Nothing to activate'); return; }
+      async function activatePipelineResult(pendingResult, card, thinkResult, activity = {}) {
+        if (!pendingResult) { notify('warn', 'Nothing to activate'); return { ok: false, error: 'missing_pending_result' }; }
 
+        let activation = { ok: false, error: 'activation_not_completed' };
+
+        activityStage(activity.attemptId, 'activate', {
+          label: 'Activation started',
+          status: 'running',
+          attemptStatus: 'running',
+          summary: 'The approved proposal is now entering its real tool or mutation path.'
+        });
         try {
           if (pendingResult.type === 'scene_object' || pendingResult.type === 'mcp') {
-            const receipt = await executeAICommand(pendingResult.intent);
+            const receipt = await executeAICommand(pendingResult.intent, activity);
             if (receipt?.ok) {
-              notify('ok', 'Activated ✓');
-              addMsg('assistant', `Activated.\n\`\`\`json\n${JSON.stringify(receipt, null, 2)}\n\`\`\``);
+              const summary = window.AgentActivityRuntime
+                ? 'Activated. The correlated tool and client receipts are available in Co-Pilot activity.'
+                : `Activated ${receipt.tool || 'tool'}.`;
+              addMsg('assistant', summary);
               history.push({ role: 'assistant', content: `Action activated: ${JSON.stringify(receipt)}` });
+              activityComplete(activity.attemptId, {
+                status: 'completed',
+                summary: receipt.applied
+                  ? `${receipt.tool || 'Tool'} applied to Map Forge revision ${receipt.result?.clientApplyReceipt?.afterRevision ?? 'unknown'}; authoring is dirty until saved and baked.`
+                  : `${receipt.tool || 'Tool'} completed without claiming a client mutation.`
+              });
+              activation = { ok: true, receipt };
             } else {
-              notify('warn', 'Activation returned non-ok receipt');
+              activityComplete(activity.attemptId, { status: 'failed', summary: `Activation did not apply: ${receipt?.error || receipt?.result?.clientApplyReceipt?.reason || 'client apply failed'}.` });
+              activation = { ok: false, receipt, error: receipt?.error || 'client_apply_failed' };
+            }
+          } else if (pendingResult.type === 'mapforge_terrain') {
+            const receipt = window.BsbV2MapAuthoring?.agent?.commitTerrainPatch?.({ preview: pendingResult.preview });
+            if (receipt?.contract === 'axiom.map-forge-terrain-patch-receipt.v1' && receipt.verification?.ok === true) {
+              activityReceipt(activity.attemptId, receipt, { label: 'Map Forge terrain receipt' });
+              addMsg('assistant', `Applied and verified ${receipt.changedTileCount} Map Forge terrain tiles · revision ${receipt.beforeRevision} → ${receipt.afterRevision}.`);
+              history.push({ role: 'assistant', content: `Map Forge terrain patch applied: ${JSON.stringify(receipt)}` });
+              activityComplete(activity.attemptId, {
+                status: 'completed',
+                summary: `${receipt.changedTileCount} terrain tiles applied and read back at canonical Map Forge revision ${receipt.afterRevision}. Authoring is unsaved until explicitly saved.`
+              });
+              activation = { ok: true, receipt };
+            } else {
+              activityComplete(activity.attemptId, { status: 'failed', summary: 'Map Forge terrain activation did not return a verified canonical receipt.' });
+              activation = { ok: false, receipt, error: 'mapforge_terrain_receipt_unverified' };
             }
           } else if (pendingResult.type === 'msol') {
             const r = window.MSOL?.applyMutation?.(pendingResult.mutation);
             if (r?.ok) {
               notify('ok', `MSOL capability applied: ${pendingResult.mutation.id}`);
               addMsg('assistant', `MSOL mutation applied: \`${pendingResult.mutation.id}\``);
+              activityReceipt(activity.attemptId, r, { label: 'MSOL mutation receipt' });
+              activityComplete(activity.attemptId, { status: 'completed', summary: `MSOL mutation ${pendingResult.mutation.id} applied.` });
+              activation = { ok: true, receipt: r };
             } else {
               notify('warn', 'MSOL apply failed');
+              activityComplete(activity.attemptId, { status: 'failed', summary: 'MSOL mutation failed.' });
+              activation = { ok: false, receipt: r, error: 'msol_apply_failed' };
             }
           } else if (pendingResult.type === 'governed') {
             notify('info', 'Governed result — refer to apply receipts');
+            activityComplete(activity.attemptId, {
+              status: pendingResult.result?.ok === false ? 'blocked' : 'completed',
+              summary: pendingResult.result?.ok === false ? 'Governed execution was blocked.' : 'Governed execution completed.'
+            });
+            activation = { ok: pendingResult.result?.ok !== false, receipt: pendingResult.result || null };
           }
         } catch (e) {
           notify('err', `Activation error: ${e.message}`);
+          activityComplete(activity.attemptId, { status: 'failed', summary: `Activation failed: ${String(e.message || e)}` });
+          activation = { ok: false, error: String(e.message || e) };
         }
 
-        card.querySelector('#pactivate').textContent = '✓ Implemented';
+        card.querySelector('#pactivate').textContent = activation.ok ? '✓ Applied' : '✕ Not applied';
         card.querySelector('#pactivate').disabled = true;
         card.querySelector('#pdismiss').textContent = 'Close';
+        return activation;
       }
 
       // ── internal helpers (scoped inside ChatRuntime) ─────────────────────────
@@ -7809,6 +8955,13 @@ Be concise, technical, and helpful.`;
           const p = params.position;
           if (!p || ['x', 'y', 'z'].some(k => !Number.isFinite(Number(p[k])))) errors.push('invalid_position_vec3');
         }
+        if (tool === 'axiom_tree_apply') {
+          const params = intent.parameters || {};
+          const allowed = new Set(['create', 'set_species', 'set_height', 'set_leaf_density', 'randomise', 'age', 'damage', 'regrow', 'make_ancient', 'make_forest_ancient', 'patch']);
+          if (!allowed.has(params.op)) errors.push(`unsupported_tree_operation:${params.op}`);
+          if (params.op === 'create' && (!Number.isInteger(params.x) || !Number.isInteger(params.y))) errors.push('tree_create_requires_integer_tiles');
+          if (!Number.isInteger(params.expectedRevision)) errors.push('tree_proposal_requires_expected_revision');
+        }
         return { ok: errors.length === 0, errors };
       }
 
@@ -7870,26 +9023,56 @@ ${repairNote ? `Previous output failed: ${repairNote}` : ''}`;
         return { handled: !!applied?.ok, ok: !!applied?.ok };
       }
 
-      async function executeAICommand(cmd) {
+      async function executeAICommand(cmd, activity = {}) {
         if (!cmd || typeof cmd !== 'object') return null;
         if (cmd.command === 'mcp_call') {
           const tool = cmd.tool || cmd.name;
           const parameters = cmd.parameters || cmd.params || {};
           if (!tool) throw new Error('mcp_call missing tool name');
           if (!window.EDITOR?.mcp?.call) throw new Error('MCP bridge not available');
+          const callId = `call_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+          const meta = {
+            attemptId: activity.attemptId || null,
+            proposalId: activity.proposalId || parameters.proposalId || null,
+            callId,
+            sourceSurface: activity.sourceSurface || 'chat'
+          };
+          activityStage(activity.attemptId, 'tool_call', {
+            label: `Calling ${tool}`,
+            status: 'running',
+            attemptStatus: 'running',
+            summary: 'Waiting for the server proposal and browser client-apply result.',
+            detail: { tool, parameters, meta }
+          });
           cliPrint('info', `AI requested MCP tool: ${tool}`);
-          const res = await window.EDITOR.mcp.call(tool, parameters);
+          let res;
+          try {
+            res = await window.EDITOR.mcp.call(tool, parameters, meta);
+          } catch (error) {
+            activityComplete(activity.attemptId, { status: 'failed', summary: `${tool} failed: ${String(error.message || error)}` });
+            throw error;
+          }
           const result = res?.result || res || {};
-          notify('ok', `MCP ${tool}: ${result.applied ? 'applied' : 'completed'}`);
-          cliPrint('ok', `AI MCP receipt ${tool}: ${JSON.stringify(result).slice(0, 600)}`);
-          return { ok: true, command: 'mcp_call', tool, parameters, applied: !!result.applied, result, receivedAt: new Date().toISOString() };
+          const clientReceipt = result.clientApplyReceipt || null;
+          const ok = res?.ok !== false && (!clientReceipt || clientReceipt.ok !== false);
+          const applied = clientReceipt ? clientReceipt.applied === true : result.applied === true;
+          const error = ok ? null : (res?.error || clientReceipt?.reason || 'client_apply_failed');
+          notify(ok ? 'ok' : 'err', `MCP ${tool}: ${ok ? (applied ? 'applied' : 'completed') : `failed — ${error}`}`);
+          cliPrint(ok ? 'ok' : 'err', `AI MCP receipt ${tool}: ${JSON.stringify(result).slice(0, 600)}`);
+          const receipt = { ok, command: 'mcp_call', tool, parameters, applied, error, result, meta: res?.meta || meta, receivedAt: new Date().toISOString() };
+          activityReceipt(activity.attemptId, receipt, {
+            label: result.clientApplyReceipt ? 'Browser apply receipt' : 'MCP completion receipt',
+            status: receipt.ok ? 'completed' : 'failed',
+            attemptStatus: receipt.ok ? 'running' : 'failed'
+          });
+          return receipt;
         }
         if (cmd.command === 'create_object') {
           const p = cmd.parameters?.position || {};
           return executeAICommand({
             command: 'mcp_call', tool: 'axiom_create_object',
             parameters: { type: cmd.parameters?.type || 'cube', name: cmd.parameters?.name, position: { x: p.x||0, y: p.y||0, z: p.z||0 }, select: true }
-          });
+          }, activity);
         }
         return null;
       }
@@ -10323,6 +11506,7 @@ ${listeners}
           next.map = mapPath;
         }
         if (params.source) next.source = String(params.source).slice(0, 48);
+        if (params.skipHatch === true) next.skipHatch = '1';
         state.runtimeQuery = next;
         if (state.visible && state.url) loadFrame(state.url);
         render();
@@ -14470,7 +15654,7 @@ ${listeners}
         const readTool = tools.includes('fs_cat') ? 'fs_cat' : (tools.includes('safe_read_project_file') ? 'safe_read_project_file' : (tools.includes('read_project_file') ? 'read_project_file' : null));
         if (readTool) {
           try {
-            const { text } = await tryReadWithTool(readTool, PROJECT_MANIFEST_PATH);
+            const { text } = await tryReadWithTool(readTool, PROJECT_MANIFEST_PATH, { full: true, lines: 5000 });
             manifest = JSON.parse(text);
             medium = 'filesystem';
           } catch (err) {
@@ -14577,10 +15761,11 @@ ${listeners}
         return JSON.stringify(result, null, 2);
       }
 
-      async function tryReadWithTool(readTool, path) {
+      async function tryReadWithTool(readTool, path, options = {}) {
         const payload = readTool === 'fs_cat'
-          ? await mcpCall(readTool, { path })
-          : await mcpCall(readTool, { target_path: path, path });
+          ? await mcpCall(readTool, { path, ...options })
+          : await mcpCall(readTool, { target_path: path, path, ...options });
+        if ((payload?.result || payload || {}).truncated) throw new Error(`project_file_read_truncated:${path}`);
         const text = payloadToText(payload);
         if (/^\s*\{\s*"error"\s*:/i.test(String(text || ''))) {
           try {
@@ -16457,13 +17642,13 @@ ${listeners}
         getContext() { return FileManagerRuntime.getWorkspaceContext(); },
         getActiveProject() { return FileManagerRuntime.getActiveProject(); }
       },
-      chat: { send(msg) { document.getElementById('chat-input').value = msg; return ChatRuntime.send(msg); } },
+      chat: { send(msg, options = {}) { document.getElementById('chat-input').value = msg; if (Object.keys(options).length) return ChatRuntime.send(msg, options); return ChatRuntime.send(msg); } },
       toolUse: AgenticToolUseLoop,
       agenticLoop: AgenticLoopToolAdapter,
       agenticExecution: AgenticExecutionRuntime,
       cli: { exec(cmd) { CLIRuntime.parse(cmd); }, print(type, text) { cliPrint(type, text); } },
       sse: { broadcast: (e, d) => SSEBridge.post(e, d), connect: () => SSEBridge.connect() },
-      mcp: { call: (tool, params) => SSEBridge.call(tool, params), tools: () => SSEBridge.tools },
+      mcp: { call: (tool, params, meta) => SSEBridge.call(tool, params, meta), tools: () => SSEBridge.tools },
       capabilityImpl: CapabilityImplementationRegistry,
       files: FileManagerRuntime,
       projectPreview: ProjectPreviewRuntime,
@@ -16486,13 +17671,17 @@ ${listeners}
       }
     };
 
-    // AXIOM Runtime Plugin Loader v0
-    // Browser-side loader. Add after window.EDITOR is created, before boot completes.
+    // AXIOM Runtime Plugin Loader v1
+    // Runtime activation is true only when declared APIs exist and declared tools
+    // are present in this callable registry. Plugin Builder registration remains a
+    // separate proposal/lifecycle truth domain.
     (function installAxiomRuntimePluginLoader() {
       if (window.AXIOM_PLUGIN_RUNTIME) return;
 
       const DEFAULT_BUILDER_URL = 'http://127.0.0.1:4242';
       const active = new Map();
+      const dynamicTools = new Map();
+      const dynamicCommands = new Map();
 
       function log(...args) { console.log('[AXIOM_PLUGIN_RUNTIME]', ...args); }
       function warn(...args) { console.warn('[AXIOM_PLUGIN_RUNTIME]', ...args); }
@@ -16502,28 +17691,99 @@ ${listeners}
         return window.EDITOR;
       }
 
-      function requiredRuntimeApis() {
-        return [
-          'scene.getCamera',
-          'scene.getOrbitTarget',
-          'scene.getRendererDomElement',
-          'scene.getSelected',
-          'scene.focusSelected'
-        ];
+      function runtimeAuthoringContract() {
+        return {
+          contract: 'axiom.runtime-plugin-authoring.v1',
+          lifecycle: 'generated -> validated -> packaged -> registered -> explicit activation -> callable verification',
+          constraints: [
+            'Exactly one bounded MCP tool per acquisition.',
+            'Use only injected runtime APIs; no global browser, network, storage, filesystem, eval, or dynamic import access.',
+            'A model response and a registered plugin remain proposals until runtime activation verifies the declared tool is callable.',
+            'A mutation may report applied:true only when the owning runtime API returns verified canonical evidence.'
+          ],
+          apis: [
+            { id: 'workspace.getContext', mode: 'read', description: 'Read the FileManager-owned active project workspace context.' },
+            { id: 'mapforge.status', mode: 'read', description: 'Read canonical Map Forge document, revision, selection, dirty, and runtime status.' },
+            { id: 'mapforge.describeTerrain', mode: 'read', description: 'Read the versioned active Map Forge terrain context and exact live regions/components.' },
+            { id: 'mapforge.previewTerrainPatch', mode: 'projection', description: 'Create a revision-bound terrain patch projection. This does not mutate.' },
+            { id: 'mapforge.commitTerrainPatch', mode: 'mutation', description: 'Commit one previously returned terrain projection and return its canonical verification receipt.' },
+            { id: 'mapforge.undoTerrainPatch', mode: 'mutation', description: 'Undo one committed terrain receipt through Map Forge authority.' },
+            { id: 'scene.getSelected', mode: 'read', description: 'Read the selected editor scene object.' },
+            { id: 'scene.focusSelected', mode: 'viewport', description: 'Frame the selected editor scene object.' },
+            { id: 'scene.getCamera', mode: 'read', description: 'Read the editor camera object.' },
+            { id: 'scene.getOrbitTarget', mode: 'read', description: 'Read the editor orbit target.' },
+            { id: 'scene.getRendererDomElement', mode: 'read', description: 'Read the renderer input element.' }
+          ]
+        };
       }
 
-      function checkRuntimeApis(editor) {
-        const missing = [];
-        if (typeof editor?.scene?.getCamera !== 'function') missing.push('scene.getCamera');
-        if (typeof editor?.scene?.getOrbitTarget !== 'function') missing.push('scene.getOrbitTarget');
-        if (typeof editor?.scene?.getRendererDomElement !== 'function') missing.push('scene.getRendererDomElement');
-        if (typeof editor?.scene?.getSelected !== 'function') missing.push('scene.getSelected');
-        if (typeof editor?.scene?.focusSelected !== 'function') missing.push('scene.focusSelected');
-        return missing;
+      function resolveRuntimeApi(context, apiId) {
+        const parts = String(apiId || '').split('.').filter(Boolean);
+        let cursor = context;
+        for (const part of parts) cursor = cursor?.[part];
+        return typeof cursor === 'function' ? cursor : null;
       }
 
-      function buildContext(pluginId) {
+      function compactMapForgeStatus() {
+        const state = window.BsbV2MapAuthoring?.status?.() || null;
+        const documentState = state?.document || null;
+        return {
+          ok: Boolean(state?.active && documentState),
+          contract: 'axiom.mapforge-runtime-status.v1',
+          health: state?.error ? 'degraded' : state?.active ? 'ready' : 'inactive',
+          active: Boolean(state?.active),
+          status: state?.status || null,
+          observedError: state?.error || null,
+          dirty: Boolean(state?.dirty),
+          runtimeStatus: state?.runtimeStatus || null,
+          view: state?.view || null,
+          inputOwner: state?.inputOwner || null,
+          mapId: documentState?.mapId || null,
+          activeCatalogueMapId: state?.activeCatalogueMapId || null,
+          title: documentState?.title || null,
+          scenarioId: documentState?.scenarioId || null,
+          revision: documentState?.revision ?? null,
+          width: documentState?.width ?? null,
+          height: documentState?.height ?? null
+        };
+      }
+
+      function declaredToolMap(manifest) {
+        return new Map((manifest?.mcp_tools || []).map(tool => [String(tool.name || ''), tool]).filter(([name]) => name));
+      }
+
+      function removeOwnedRegistrations(pluginId) {
+        for (const [name, entry] of dynamicTools) if (entry.pluginId === pluginId) dynamicTools.delete(name);
+        for (const [name, entry] of dynamicCommands) if (entry.pluginId === pluginId) dynamicCommands.delete(name);
+      }
+
+      function buildContext(pluginId, manifest) {
         const editor = getEditor();
+        const declaredTools = declaredToolMap(manifest);
+        const registerTool = (tool) => {
+          const name = String(tool?.name || '').trim();
+          if (!name) throw new Error('plugin_tool_name_missing');
+          if (!declaredTools.has(name)) throw new Error(`plugin_tool_not_declared:${name}`);
+          if (typeof tool?.handler !== 'function') throw new Error(`plugin_tool_handler_missing:${name}`);
+          if (dynamicTools.has(name) || (window.SSEBridge?.serverTools?.() || []).some(item => item.name === name)) {
+            throw new Error(`plugin_tool_name_conflict:${name}`);
+          }
+          const manifestTool = declaredTools.get(name);
+          dynamicTools.set(name, {
+            pluginId,
+            name,
+            description: String(tool.description || manifestTool.description || ''),
+            inputSchema: tool.inputSchema || tool.input_schema || manifestTool.input_schema,
+            handler: tool.handler
+          });
+          return { ok: true, plugin_id: pluginId, tool: name };
+        };
+        const unregisterTool = (name) => {
+          const entry = dynamicTools.get(String(name || ''));
+          if (entry?.pluginId !== pluginId) return { ok: false, reason: 'plugin_tool_not_owned' };
+          dynamicTools.delete(entry.name);
+          return { ok: true, plugin_id: pluginId, tool: entry.name };
+        };
         return {
           pluginId,
           THREE: window.THREE,
@@ -16533,6 +17793,36 @@ ${listeners}
             getRendererDomElement: () => editor.scene.getRendererDomElement(),
             getSelected: () => editor.scene.getSelected(),
             focusSelected: () => editor.scene.focusSelected()
+          },
+          workspace: {
+            getContext: () => editor.workspace.getContext()
+          },
+          mapforge: {
+            status: () => compactMapForgeStatus(),
+            describeTerrain: () => window.BsbV2MapAuthoring?.agent?.describeTerrain?.(),
+            previewTerrainPatch: (input) => window.BsbV2MapAuthoring?.agent?.previewTerrainPatch?.(input),
+            commitTerrainPatch: (input) => window.BsbV2MapAuthoring?.agent?.commitTerrainPatch?.(input),
+            undoTerrainPatch: (input) => window.BsbV2MapAuthoring?.agent?.undoTerrainPatch?.(input)
+          },
+          mcp: {
+            registerTool,
+            unregisterTool,
+            listTools: () => listTools()
+          },
+          commands: {
+            register(name, handler) {
+              const id = String(name || '').trim();
+              if (!id || typeof handler !== 'function') throw new Error('plugin_command_invalid');
+              if (dynamicCommands.has(id)) throw new Error(`plugin_command_conflict:${id}`);
+              dynamicCommands.set(id, { pluginId, handler });
+              return { ok: true, command: id };
+            },
+            unregister(name) {
+              const entry = dynamicCommands.get(String(name || ''));
+              if (entry?.pluginId !== pluginId) return { ok: false, reason: 'plugin_command_not_owned' };
+              dynamicCommands.delete(String(name));
+              return { ok: true, command: String(name) };
+            }
           },
           events: editor.events,
           notify: (msg) => editor.notify ? editor.notify('info', msg) : log(msg),
@@ -16575,12 +17865,6 @@ ${listeners}
         if (!pluginId) return { ok: false, status: 'blocked', reason: 'missing_plugin_id' };
         if (active.has(pluginId)) return { ok: true, status: 'already_active', plugin_id: pluginId };
 
-        const editor = getEditor();
-        const missing = checkRuntimeApis(editor);
-        if (missing.length) {
-          return { ok: false, status: 'blocked', reason: 'missing_runtime_api', required_apis: requiredRuntimeApis(), missing_apis: missing };
-        }
-
         let imported = null;
         try {
           const inspected = await inspectPlugin(pluginId, builderUrl);
@@ -16592,25 +17876,40 @@ ${listeners}
           }
           if (manifest.safety?.may_modify_core === true) throw new Error('Plugin requests core modification; activation blocked');
 
+          const editor = getEditor();
+          const ctx = buildContext(pluginId, manifest);
+          const requiredApis = Array.isArray(manifest.implementation?.required_runtime_apis)
+            ? manifest.implementation.required_runtime_apis
+            : Array.isArray(manifest.axiom_runtime?.apis) ? manifest.axiom_runtime.apis : [];
+          const missing = requiredApis.filter(api => !resolveRuntimeApi(ctx, api));
+          if (missing.length) {
+            return { ok: false, status: 'blocked', reason: 'missing_runtime_api', required_apis: requiredApis, missing_apis: missing };
+          }
+
           const source = inspected.files?.['src/index.js'];
           imported = await importPluginSource(pluginId, source);
-          const ctx = buildContext(pluginId);
 
           if (typeof imported.mod.onLoad === 'function') await imported.mod.onLoad(ctx);
           let activationResult = { ok: true };
           if (typeof imported.mod.onActivate === 'function') activationResult = await imported.mod.onActivate(ctx);
           if (activationResult && activationResult.ok === false) throw new Error(`Plugin onActivate returned ok:false: ${JSON.stringify(activationResult)}`);
 
-          active.set(pluginId, { pluginId, manifest, module: imported.mod, moduleUrl: imported.url, context: ctx, activatedAt: new Date().toISOString() });
+          const declaredTools = [...declaredToolMap(manifest).keys()];
+          const unregisteredTools = declaredTools.filter(name => dynamicTools.get(name)?.pluginId !== pluginId);
+          if (unregisteredTools.length) throw new Error(`declared_plugin_tools_not_registered:${unregisteredTools.join(',')}`);
+
+          active.set(pluginId, { pluginId, manifest, module: imported.mod, moduleUrl: imported.url, context: ctx, registeredTools: declaredTools, activatedAt: new Date().toISOString() });
           editor.notify?.('ok', `Plugin active: ${manifest.name || pluginId}`);
           window.RuntimePluginPanel?.refresh?.();
-          return { ok: true, status: 'active', plugin_id: pluginId, manifest_id: manifest.id, activated_at: active.get(pluginId).activatedAt, activation_result: activationResult };
+          try { window.SSEBridge?.refreshToolProjection?.(); } catch (_) { }
+          return { ok: true, status: 'active', plugin_id: pluginId, manifest_id: manifest.id, activated_at: active.get(pluginId).activatedAt, registered_tools: declaredTools, activation_result: activationResult };
         } catch (err) {
           try {
-            if (imported?.mod?.onDeactivate) await imported.mod.onDeactivate(buildContext(pluginId));
+            if (imported?.mod?.onDeactivate) await imported.mod.onDeactivate(buildContext(pluginId, imported?.manifest));
           } catch (rollbackErr) {
             warn('rollback/deactivate after failed activation also failed', rollbackErr);
           }
+          removeOwnedRegistrations(pluginId);
           if (imported?.url) URL.revokeObjectURL(imported.url);
           return { ok: false, status: 'activation_failed_rolled_back', plugin_id: pluginId, error: String(err) };
         }
@@ -16622,6 +17921,7 @@ ${listeners}
         try {
           if (typeof entry.module.onDeactivate === 'function') await entry.module.onDeactivate(entry.context);
           if (typeof entry.module.onUnload === 'function') await entry.module.onUnload(entry.context);
+          removeOwnedRegistrations(pluginId);
           URL.revokeObjectURL(entry.moduleUrl);
           active.delete(pluginId);
           getEditor().notify?.('ok', `Plugin deactivated: ${pluginId}`);
@@ -16633,7 +17933,69 @@ ${listeners}
       }
 
       function status() {
-        return { ok: true, active_plugins: [...active.values()].map(p => ({ plugin_id: p.pluginId, name: p.manifest?.name, activated_at: p.activatedAt })) };
+        return { ok: true, contract: 'axiom.runtime-plugin-host.v1', active_plugins: [...active.values()].map(p => ({ plugin_id: p.pluginId, name: p.manifest?.name, tools: p.registeredTools || [], activated_at: p.activatedAt })) };
+      }
+
+      function listTools() {
+        return [...dynamicTools.values()].map(tool => ({
+          name: tool.name,
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+          plugin_id: tool.pluginId,
+          source: 'axiom_runtime_plugin'
+        }));
+      }
+
+      function hasTool(name) {
+        return dynamicTools.has(String(name || ''));
+      }
+
+      function validateToolInput(schema, value) {
+        const errors = [];
+        const input = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        for (const key of schema?.required || []) if (input[key] === undefined) errors.push(`required:${key}`);
+        for (const [key, rule] of Object.entries(schema?.properties || {})) {
+          if (input[key] === undefined) continue;
+          const actual = input[key];
+          if (rule.type === 'string' && typeof actual !== 'string') errors.push(`type:${key}:string`);
+          if (rule.type === 'number' && (typeof actual !== 'number' || !Number.isFinite(actual))) errors.push(`type:${key}:number`);
+          if (rule.type === 'integer' && !Number.isInteger(actual)) errors.push(`type:${key}:integer`);
+          if (rule.type === 'boolean' && typeof actual !== 'boolean') errors.push(`type:${key}:boolean`);
+          if (rule.type === 'array' && !Array.isArray(actual)) errors.push(`type:${key}:array`);
+          if (rule.type === 'object' && (!actual || typeof actual !== 'object' || Array.isArray(actual))) errors.push(`type:${key}:object`);
+          if (Array.isArray(rule.enum) && !rule.enum.includes(actual)) errors.push(`enum:${key}`);
+        }
+        if (schema?.additionalProperties === false) {
+          for (const key of Object.keys(input)) if (!schema?.properties?.[key]) errors.push(`additional_property:${key}`);
+        }
+        return errors;
+      }
+
+      async function callTool(name, parameters = {}, meta = {}) {
+        const entry = dynamicTools.get(String(name || ''));
+        if (!entry) return { ok: false, error: 'runtime_plugin_tool_not_found', result: { applied: false } };
+        const errors = validateToolInput(entry.inputSchema || {}, parameters);
+        if (errors.length) return { ok: false, error: `runtime_plugin_tool_input_invalid:${errors.join(',')}`, result: { applied: false, validationErrors: errors } };
+        const startedAt = new Date().toISOString();
+        try {
+          const result = await entry.handler(parameters, { pluginId: entry.pluginId, meta });
+          const ok = result?.ok !== false;
+          const receipt = {
+            contract: 'axiom.runtime-plugin-tool-receipt.v1',
+            ok,
+            pluginId: entry.pluginId,
+            tool: entry.name,
+            applied: result?.applied === true,
+            startedAt,
+            completedAt: new Date().toISOString(),
+            result: result || null,
+            meta
+          };
+          try { window.SSEBridge?.post?.('mcp_event', { type: 'runtime_plugin_tool_receipt', receipt }); } catch (_) { }
+          return { ok, tool: entry.name, result: { ...(result || {}), applied: result?.applied === true, runtimePluginReceipt: receipt }, error: ok ? null : (result?.reason || 'runtime_plugin_tool_failed'), meta };
+        } catch (error) {
+          return { ok: false, tool: entry.name, error: String(error?.message || error), result: { applied: false, plugin_id: entry.pluginId }, meta };
+        }
       }
 
       async function applyClientAction(action) {
@@ -16644,7 +18006,7 @@ ${listeners}
         return { ok: false, reason: 'unknown_plugin_client_action', action_type: action.type };
       }
 
-      window.AXIOM_PLUGIN_RUNTIME = { activate, deactivate, status, applyClientAction };
+      window.AXIOM_PLUGIN_RUNTIME = { activate, deactivate, status, listTools, hasTool, callTool, runtimeAuthoringContract, applyClientAction };
       log('installed');
     })();
 
@@ -16653,7 +18015,6 @@ ${listeners}
       const STORAGE_KEY = 'axiom.shell.ux.v1';
       const DEFAULT_TABS = ['scene', 'props', 'plugins', 'stream', 'code', 'files', 'bsb-map', 'bsb-scenario', 'bsb-layers'];
       const BSB_WORKSPACE_TABS = new Map([
-        ['diary', 'Diary'],
         ['bsb-map', 'Forge'],
         ['files', 'Project'],
         ['code', 'Code'],
@@ -16921,10 +18282,17 @@ ${listeners}
 
     function sendChat() {
       const inp = document.getElementById('chat-input');
-      const text = inp.value.trim();
+      const rawText = inp.value.trim();
+      const diaryStatus = window.ProjectDiaryRuntime?.status?.() || null;
+      const fromJournal = diaryStatus?.activeView === 'journal';
+      const text = window.ProjectDiaryRuntime?.prepareChatPrompt?.(rawText) ?? rawText;
       if (!text) return;
       inp.value = '';
-      ChatRuntime.send(text);
+      if (fromJournal) window.ProjectDiaryRuntime?.switchView?.('chat', { focus: false, source: 'journal_ask_copilot' });
+      ChatRuntime.send(text, {
+        sourceSurface: fromJournal ? 'journal' : 'chat',
+        displayText: rawText || 'Review the current marked Journal context.'
+      });
     }
 
     document.getElementById('chat-input')?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
@@ -16964,12 +18332,21 @@ ${listeners}
       let lastSuccessfulActivity = null;
       let lastChangedAt = null;
 
+      function projectedTools() {
+        const runtimeTools = window.AXIOM_PLUGIN_RUNTIME?.listTools?.() || [];
+        const byName = new Map(tools.map(tool => [tool.name, tool]));
+        for (const tool of runtimeTools) if (!byName.has(tool.name)) byName.set(tool.name, tool);
+        return [...byName.values()];
+      }
+
       function status() {
         return {
           state: connectionState,
           connected,
           url: BRIDGE,
-          toolCount: tools.length,
+          toolCount: projectedTools().length,
+          serverToolCount: tools.length,
+          runtimePluginToolCount: window.AXIOM_PLUGIN_RUNTIME?.listTools?.().length || 0,
           lastError,
           lastSuccessfulActivity,
           lastChangedAt,
@@ -17049,7 +18426,7 @@ ${listeners}
             postScene();
           });
 
-          ['thought', 'status', 'kernel_delta_proposed', 'kernel_delta', 'validation', 'ace_event', 'mcp_event', 'mcp_result', 'scene_updated', 'heartbeat'].forEach(evt => {
+          ['thought', 'status', 'kernel_delta_proposed', 'kernel_delta', 'validation', 'ace_event', 'mcp_event', 'mcp_result', 'scene_updated', 'level_design_session', 'heartbeat'].forEach(evt => {
             es.addEventListener(evt, e => {
               lastSuccessfulActivity = new Date().toISOString();
               const d = JSON.parse(e.data);
@@ -17390,15 +18767,42 @@ ${listeners}
         return receipt;
       }
 
-      async function call(tool, params = {}) {
+      async function call(tool, params = {}, meta = {}) {
+        const requestMeta = {
+          attemptId: meta?.attemptId || null,
+          proposalId: meta?.proposalId || null,
+          callId: meta?.callId || `call_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+          sourceSurface: meta?.sourceSurface || 'bridge'
+        };
+        if (window.AXIOM_PLUGIN_RUNTIME?.hasTool?.(tool)) {
+          const payload = await window.AXIOM_PLUGIN_RUNTIME.callTool(tool, params, requestMeta);
+          lastSuccessfulActivity = new Date().toISOString();
+          appendFeed(payload.ok === false ? 'mcp_result_failed' : 'mcp_result', {
+            tool,
+            source: 'axiom_runtime_plugin',
+            ok: payload.ok !== false,
+            meta: requestMeta
+          });
+          payload.meta = requestMeta;
+          return payload;
+        }
         const r = await fetch(`${BRIDGE}/mcp/call`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tool, params }),
+          body: JSON.stringify({ tool, params, meta: requestMeta }),
         });
         const payload = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(payload.error || `MCP call failed: ${r.status}`);
-        const receipt = await applyClientAction(payload.clientAction);
+        const responseMeta = payload.meta || requestMeta;
+        if (!r.ok) {
+          if (payload && payload.ok === false) {
+            appendFeed('mcp_result_failed', { tool, ok: false, status: r.status, meta: responseMeta, error: payload.error || null });
+            payload.meta = responseMeta;
+            return payload;
+          }
+          throw new Error(payload.error || `MCP call failed: ${r.status}`);
+        }
+        const rawReceipt = await applyClientAction(payload.clientAction);
+        const receipt = rawReceipt ? { ...rawReceipt, ...responseMeta } : null;
         if (receipt) {
           payload.result = {
             ...(payload.result || {}),
@@ -17410,7 +18814,9 @@ ${listeners}
             payload.ok = false;
             payload.error = receipt.reason || 'client_apply_failed';
           }
+          post('mcp_event', { type: 'correlated_client_apply_receipt', meta: responseMeta, receipt });
         }
+        payload.meta = responseMeta;
         return payload;
       }
 
@@ -17433,10 +18839,17 @@ ${listeners}
         const list = document.getElementById('mcp-tool-list');
         const sel = document.getElementById('mcp-tool-select');
         if (!list) return;
-        list.innerHTML = tools.map(t => `<div style="padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--accent)">${t.name}</span><br><span style="color:var(--text2);font-size:9px">${t.description}</span></div>`).join('') || '<div style="color:var(--text2)">No tools loaded</div>';
+        const visibleTools = projectedTools();
+        list.innerHTML = visibleTools.map(t => `<div style="padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--accent)">${t.name}</span>${t.source === 'axiom_runtime_plugin' ? '<span style="margin-left:6px;color:var(--green);font-size:8px">PLUGIN</span>' : ''}<br><span style="color:var(--text2);font-size:9px">${t.description}</span></div>`).join('') || '<div style="color:var(--text2)">No tools loaded</div>';
         if (sel) {
-          sel.innerHTML = '<option value="">— select tool —</option>' + tools.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+          sel.innerHTML = '<option value="">— select tool —</option>' + visibleTools.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
         }
+      }
+
+      function refreshToolProjection() {
+        renderToolList();
+        try { EventBus.emit('sse:connectionChanged', status()); } catch (_) { }
+        return projectedTools();
       }
 
       async function quickCall() {
@@ -17464,7 +18877,20 @@ ${listeners}
       EventBus.on('scene:objectRemoved', () => { if (connected) postScene(); });
       EventBus.on('scene:selectionChanged', () => { if (connected) postScene(); });
 
-      return { connect, toggle, post, call, fetchTools, quickCall, status, get tools() { return tools; }, isConnected: () => connected, bridgeUrl: BRIDGE };
+      return {
+        connect,
+        toggle,
+        post,
+        call,
+        fetchTools,
+        quickCall,
+        status,
+        refreshToolProjection,
+        serverTools: () => [...tools],
+        get tools() { return projectedTools(); },
+        isConnected: () => connected,
+        bridgeUrl: BRIDGE
+      };
     })();
     window.SSEBridge = SSEBridge;
 
@@ -19179,8 +20605,12 @@ Before proposing structural editor changes, validate with window.MSOL.validateMu
 
     boot();
   </script>
+  <script type="module" src="./natural-language-agent.js"></script>
+  <script type="module" src="./capability-acquisition.js"></script>
+  <script type="module" src="./agent-activity.js"></script>
   <script type="module" src="./project-diary.js"></script>
   <script type="module" src="./bsb-v2-map-authoring.js"></script>
+  <script type="module" src="./level-design-session.js"></script>
   <script type="module" src="./entity-studio.js"></script>
 </body>
 

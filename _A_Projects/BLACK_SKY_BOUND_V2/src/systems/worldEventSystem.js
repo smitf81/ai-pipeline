@@ -4,7 +4,6 @@ import { getComponent } from '../ecs/world.js';
 import { query } from '../ecs/query.js';
 import {
   MAMA_WYVERN_WORLD_EVENT,
-  MamaWyvernEventKind,
   MamaWyvernEventPhase,
   mamaWorldEventAngle,
   mamaWorldEventIntervalSeconds,
@@ -17,7 +16,7 @@ import {
   updateMamaFlyoverPose
 } from '../data/mamaWyvernTrajectory.js';
 import { queueManualLightningFlash } from '../data/sceneLights.js';
-import { updateTreeFireStates } from '../data/treeFireStates.js';
+import { updateFoliageFireStates } from '../data/foliageFireStates.js';
 import { applyDamageToEntity } from './healthSystem.js';
 
 export function worldEventSystem({ state = null, game, map, dt }) {
@@ -27,9 +26,13 @@ export function worldEventSystem({ state = null, game, map, dt }) {
   worldEvents.elapsed += delta;
   updateFireWalls(game, map, delta);
   updateActiveMamaEvent(state, game, map, delta);
-  const treeFire = updateTreeFireStates(game.sceneObjects, worldEvents.fireWalls, delta);
-  worldEvents.diagnostics.treeIgnitionCount += treeFire.ignitedCount;
-  worldEvents.diagnostics.activeBurningTreeCount = treeFire.burningCount;
+  const foliageFire = updateFoliageFireStates(game.sceneObjects, worldEvents.fireWalls, delta);
+  worldEvents.diagnostics.foliageIgnitionCount += foliageFire.ignitedCount;
+  worldEvents.diagnostics.activeFoliageFireCount = foliageFire.activeCount;
+  worldEvents.diagnostics.burntOutFoliageCount = foliageFire.burntCount;
+  addFamilyCounts(worldEvents.diagnostics.foliageIgnitionsByFamily, foliageFire.ignitedByFamily);
+  worldEvents.diagnostics.activeFoliageByFamily = { ...foliageFire.activeByFamily };
+  worldEvents.diagnostics.burntFoliageByFamily = { ...foliageFire.burntByFamily };
   if (!worldEvents.activeEvent) startPendingMamaEvent(state, game, map);
   game.spatialHazards = buildSpatialHazardViews(worldEvents.fireWalls);
 }
@@ -52,6 +55,8 @@ function startPendingMamaEvent(appState, game, map) {
   const event = {
     id: `mama_wyvern_event:${state.eventIndex}:${request.kind}`,
     kind: request.kind,
+    requestedKind: request.requestedKind ?? 'inferno',
+    resolvedKind: request.resolvedKind ?? 'inferno',
     source: request.source,
     phase: MamaWyvernEventPhase.WARNING,
     phaseElapsed: 0,
@@ -102,6 +107,8 @@ function scheduledRequest(state) {
   if (!state.autoEnabled || state.elapsed < state.nextEventAt) return null;
   return {
     kind: mamaWorldEventKind(state.eventIndex),
+    requestedKind: 'inferno',
+    resolvedKind: 'inferno',
     lightningSync: false,
     angle: null,
     centerX: null,
@@ -133,8 +140,7 @@ function updateActiveMamaEvent(appState, game, map, delta) {
       MAMA_WYVERN_WORLD_EVENT
     );
     if (event.progress >= 0.42) queueSynchronizedLightning(game, event);
-    if (event.kind === MamaWyvernEventKind.INFERNO && !event.napalmAudioPlayed
-      && event.progress >= MAMA_WYVERN_WORLD_EVENT.breath.startProgress) {
+    if (!event.napalmAudioPlayed && event.progress >= MAMA_WYVERN_WORLD_EVENT.breath.startProgress) {
       publishMamaAudio(
         worldEvents,
         MAMA_WYVERN_WORLD_EVENT.audio.napalmEventType,
@@ -143,8 +149,7 @@ function updateActiveMamaEvent(appState, game, map, delta) {
       );
       event.napalmAudioPlayed = true;
     }
-    if (event.kind === MamaWyvernEventKind.INFERNO && !event.infernoDeployed
-      && event.progress >= MAMA_WYVERN_WORLD_EVENT.timing.infernoDeployProgress) {
+    if (!event.infernoDeployed && event.progress >= MAMA_WYVERN_WORLD_EVENT.timing.infernoDeployProgress) {
       worldEvents.fireWalls.push(createInfernoWall(event, map, worldEvents.fireWalls.length));
       worldEvents.diagnostics.fireWallCount += 1;
       event.infernoDeployed = true;
@@ -376,4 +381,8 @@ function clamp01(value) {
 
 function lerp(a, b, t) {
   return a + (b - a) * t;
+}
+
+function addFamilyCounts(target, incoming) {
+  for (const family of ['tree', 'fern', 'shrub', 'bramble']) target[family] = (target[family] ?? 0) + (incoming?.[family] ?? 0);
 }

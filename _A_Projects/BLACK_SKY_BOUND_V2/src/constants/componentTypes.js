@@ -6,6 +6,7 @@ export const ComponentType = Object.freeze({
   Motion: 'Motion',
   Stamina: 'Stamina',
   DodgeState: 'DodgeState',
+  PounceCounterState: 'ChargeCounterState',
   ChargeCounterState: 'ChargeCounterState',
   AbilityProgression: 'AbilityProgression',
   Health: 'Health',

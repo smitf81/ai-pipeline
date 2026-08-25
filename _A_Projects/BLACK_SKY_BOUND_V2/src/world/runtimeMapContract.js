@@ -1,4 +1,5 @@
 export const RUNTIME_MAP_CONTRACT = 'black-sky-bound.runtime-map.v0';
+export const REGION_ATMOSPHERE_CONTRACT = 'black-sky-bound.region-atmosphere.v1';
 
 // Passive interchange shape for maps baked outside BSB. Runtime loaders may
 // validate this contract later; this module deliberately owns no authoring,
@@ -23,6 +24,8 @@ export const RUNTIME_MAP_OPTIONAL_FIELDS = Object.freeze([
   'unitSpawners',
   'transitions',
   'sceneSequences',
+  'firstPlaythrough',
+  'atmosphere',
   'arena'
 ]);
 

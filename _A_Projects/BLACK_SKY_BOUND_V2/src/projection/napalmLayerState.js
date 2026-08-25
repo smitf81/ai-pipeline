@@ -134,9 +134,37 @@ export function updateNapalmDropletAttachments(renderLayers, resolveSocket) {
   }
 }
 
-export function buildNapalmPoolLightViews(renderLayers, renderTime = 0) {
+export function buildNapalmLightViews(renderLayers, renderTime = 0) {
+  const droplets = renderLayers?.napalm?.droplets ?? [];
   const pools = renderLayers?.napalm?.pools ?? [];
-  return pools
+  const dropletLights = droplets.flatMap((droplet) => {
+    const visual = resolveNapalmDropletVisualState(droplet);
+    if (!droplet.emissionLight || !visual.separated || visual.age >= visual.duration) return [];
+    const light = droplet.emissionLight;
+    const sizeScale = droplet.secondary ? 0.62 : 1;
+    return [{
+      id: `${droplet.id}:airborne_light`,
+      x: visual.x,
+      y: visual.y,
+      radius: light.radius * sizeScale,
+      intensity: light.intensity * sizeScale * (0.82 + visual.life01 * 0.18),
+      luminousPowerLumens: Math.max(0, Number(light.luminousPowerLumens) || 560) * sizeScale,
+      softness: light.softness,
+      colour: light.colour,
+      innerColour: light.innerColour,
+      flickerAmount: light.flickerAmount,
+      flickerSpeed: light.flickerSpeed,
+      flickerPhase: droplet.flickerPhase ?? 0,
+      renderTime,
+      enabled: visual.life01 > 0.02,
+      castsShadows: false,
+      shadow: { sourceHeight: visual.heightMeters },
+      sourceEntity: null,
+      sourceKind: 'baby_wyvern_droplet_light',
+      sourceAnchor: { type: 'world_effect_object', id: droplet.id, stage: visual.stage }
+    }];
+  });
+  const poolLights = pools
     .filter((pool) => pool.light && pool.age < pool.lifetime)
     .map((pool) => {
       const { life01, spread01, heat01 } = resolveNapalmPoolVisualState(pool);
@@ -146,6 +174,7 @@ export function buildNapalmPoolLightViews(renderLayers, renderTime = 0) {
         y: pool.y,
         radius: pool.light.radius * (0.42 + spread01 * 0.5) * (0.82 + heat01 * 0.18),
         intensity: pool.light.intensity * heat01 * (0.34 + spread01 * 0.66),
+        luminousPowerLumens: Math.max(0, Number(pool.light.luminousPowerLumens) || 900),
         softness: pool.light.softness,
         colour: pool.light.colour,
         innerColour: pool.light.innerColour,
@@ -154,11 +183,14 @@ export function buildNapalmPoolLightViews(renderLayers, renderTime = 0) {
         flickerPhase: pool.flickerPhase ?? 0,
         renderTime,
         enabled: life01 > 0.02 && heat01 > 0.015,
+        castsShadows: false,
+        shadow: { sourceHeight: 0.045 },
         sourceEntity: null,
         sourceKind: 'baby_wyvern_drool_pool_light',
         sourceAnchor: { type: 'world_effect_object', id: pool.id }
       };
     });
+  return [...dropletLights, ...poolLights];
 }
 
 function easeOutCubic(value) {

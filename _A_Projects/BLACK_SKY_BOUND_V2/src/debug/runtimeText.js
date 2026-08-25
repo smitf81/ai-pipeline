@@ -6,6 +6,7 @@ import { buildEnemyBehaviourText } from './enemyBehaviourText.js';
 import { buildOpeningSequenceProjection } from '../projection/openingSequenceProjection.js';
 import { buildSmokeAwakeningText } from './smokeAwakeningText.js';
 import { buildAuthoredTransitionText } from './authoredTransitionText.js'; import { buildArenaWaveText } from './arenaWaveText.js'; import { buildRaiderPhysicalMotionText } from './raiderPhysicalMotionText.js';
+import { buildPlayerActionDebug, buildPlayerDodgeDebug, buildPlayerFacingDebug } from './playerMotionText.js';
 
 export function renderGameToText(app) {
   const dragon = getDragon(app.state.game); const snapshot = createDebugSnapshot(app.state.game);
@@ -163,34 +164,17 @@ function buildPlayerText(dragon) {
     stamina: dragon.stamina ? {
       current: Number(dragon.stamina.current.toFixed(2)),
       max: dragon.stamina.max,
+      energy01: Number((dragon.stamina.max > 0 ? dragon.stamina.current / dragon.stamina.max : 0).toFixed(3)),
       state: dragon.stamina.state,
       sprinting: dragon.stamina.sprinting === true,
+      sprintResumeEnergy01: Number((dragon.stamina.sprintResumeEnergy01 ?? 0).toFixed(3)),
+      sprintResumeThreshold: Number((dragon.stamina.sprintResumeThreshold ?? 0).toFixed(2)),
       recoveryTimer: Number((dragon.stamina.recoveryTimer ?? 0).toFixed(3))
     } : null,
-    dodge: dragon.dodgeState ? {
-      active: dragon.dodgeState.active === true,
-      recovering: dragon.dodgeState.recovering === true,
-      phase: Number((dragon.dodgeState.phase ?? 0).toFixed(3)),
-      recoveryProgress: Number((dragon.dodgeState.recoveryProgress ?? 0).toFixed(3)),
-      cooldownRemaining: Number((dragon.dodgeState.cooldownRemaining ?? 0).toFixed(3)),
-      count: dragon.dodgeState.count ?? 0,
-      lastReason: dragon.dodgeState.lastReason ?? null,
-      lastDeniedReason: dragon.dodgeState.lastDeniedReason ?? null
-    } : null,
+    dodge: buildPlayerDodgeDebug(dragon.dodgeState),
     ...buildPlayerAbilityText(dragon),
-    action: dragon.wyvernProjection?.actionState ? {
-      active: dragon.wyvernProjection.actionState.active === true,
-      recovering: dragon.wyvernProjection.actionState.recovering === true,
-      actionId: dragon.wyvernProjection.actionState.actionId ?? null,
-      recoveryActionId: dragon.wyvernProjection.actionState.recoveryActionId ?? null,
-      phase: Number((dragon.wyvernProjection.actionState.phase ?? 0).toFixed(3)),
-      recoveryPhase: Number((dragon.wyvernProjection.actionState.recoveryPhase ?? 1).toFixed(3)),
-      recoveryProgress: Number((dragon.wyvernProjection.actionState.recoveryProgress ?? 0).toFixed(3)),
-      directionX: Number((dragon.wyvernProjection.actionState.directionX ?? 0).toFixed(3)),
-      directionY: Number((dragon.wyvernProjection.actionState.directionY ?? 0).toFixed(3)),
-      committedFacing: Number((dragon.wyvernProjection.actionState.committedFacing ?? 0).toFixed(3)),
-      movementBlocked: dragon.wyvernProjection.actionState.movementBlocked === true
-    } : null,
+    action: buildPlayerActionDebug(dragon.wyvernProjection?.actionState),
+    facing: buildPlayerFacingDebug(dragon),
     head: dragon.wyvernProjection?.rigPose?.head?.center ? {
       x: Number(dragon.wyvernProjection.rigPose.head.center.x.toFixed(3)),
       y: Number(dragon.wyvernProjection.rigPose.head.center.y.toFixed(3))
@@ -297,6 +281,8 @@ function buildWorldEventText(worldEvents) {
     activeEvent: event ? {
       id: event.id,
       kind: event.kind,
+      requestedKind: event.requestedKind ?? null,
+      resolvedKind: event.resolvedKind ?? null,
       phase: event.phase,
       progress: Number((event.progress ?? 0).toFixed(3)),
       headingRadians: Number((event.headingRadians ?? 0).toFixed(3)),

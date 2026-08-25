@@ -2,6 +2,151 @@
 
 Original prompt: Inside BLACK_SKY_BOUND_V2_ATMOSPHERIC_SCATTER_SMOOTHING_v1, shouldn't we still be getting a lot more headway from only needing to render what's in our light bubbles?
 
+## 2026-08-21 - Mama flyover + napalm activation performance v1 (complete)
+
+- Profiled the exact first-visible Mama and inferno/tree-ignition frames in real WebGL3D with synchronous CPU+GPU completion. The baseline spikes were 826.5 ms for Mama (two first-use shader programs) and 1681.3 ms for napalm/tree ignition (1228.4 ms world update, two material clones, one shader program, and a 440.1 ms shadow-heavy render submit).
+- Removed event-time tree material cloning and traversal. Bark and foliage keep their cached recipe materials and receive per-object char, heat and ember state through precreated shared shader uniforms immediately before draw. Leaf instance counts still reduce through the lifecycle and reach zero at burnt-out; renderer-neutral state and authored map truth are unchanged.
+- Prewarmed hidden Mama, instanced dragonfire, fire-wall, foliage flame/core and smoke paths through the actual screen renderer before play. Mama also retains an asynchronous compile/render-target warmup receipt, so first event visibility does not compile new programs.
+- Added an offline, reproducible flyover silhouette LOD1: 7,661 triangles / 5,445 vertices / 222,048 bytes, down from the preserved 62,848-triangle / 1,571,404-byte source GLB. The original source remains canonical and a sidecar records its hash, output hash and build policy.
+- Batches the authored seven dragonfire segments and fourteen embers into two instanced draw calls. Distributed inferno/tree lights keep renderer-neutral shadows and illumination but do not take expensive Three.js point-shadow cubemaps. Foliage flame/smoke instances are frustum-culled before buffer upload without changing simulation state.
+- Final isolated proof records 41.6 ms at first Mama visibility and 29.8 ms at inferno/tree ignition, reductions of about 95% and 98% respectively. Both boundary frames have zero material/program growth; the measured run stays at 41 programs, 534 materials and zero dynamic scenery materials. These are headless synchronous proof timings, not a universal 60 FPS claim.
+- Validation passes: focused renderer/state tests, complete `npm test`, LOC gate, curated build, real Mama browser smoke, activation performance regression and the broader Three.js resource audit. The browser smoke covers ablaze, both smoulder phases, persistent burnt-out state, post-event movement and reports zero console/page/request/warning failures.
+- Evidence: `artifacts/mama-wyvern-activation-performance/baseline/evidence.json`, `artifacts/mama-wyvern-activation-performance/optimized-final/evidence.json`, and `artifacts/mama-wyvern-flyover-smoke/`.
+
+## 2026-08-21 - Region-owned rain and sparks atmosphere v1 (complete)
+
+- Added one explicit `black-sky-bound.region-atmosphere.v1` contract to AXIOM authoring and BSB runtime maps. Missing legacy settings normalize to enabled, so new and existing regions consistently receive rain and sparks by default.
+- Added a Map Forge “Rain & sparks atmosphere” checkbox. Toggling it creates one canonical region revision; save/bake carries the value unchanged and bake inspection reports atmosphere drift.
+- BSB now applies the selected region's atmosphere policy whenever game state is created. This covers initial load, direct Bake & Preview entry and escape/cutscene map transitions through the same path; disabling the region suppresses both rain and sparks without changing other smoke, particle, storm or wetness systems.
+- Explicitly marked all four current authoring documents and all four runtime bakes enabled. No user terrain/object authoring was rebaked or overwritten.
+- Focused AXIOM and BSB contract tests pass. Real AXIOM browser proof shows one checked control on all four regions and a live local-disable state. Real WebGL3D proof shows 300 rain streaks plus active sparks on every region and after the First Flightless Night → Ash Road transition; an intercepted disabled bake renders zero rain and zero sparks. Both browser lanes report zero unexpected console, page or request failures.
+- Complete BSB `npm test`, LOC gate and curated playtest build pass. The broad AXIOM map-authoring test still reaches its known unrelated failure because First Flightless Night source revision/content is newer than its runtime bake; this work deliberately did not overwrite that user-authored drift.
+
+## 2026-08-21 - First-playthrough Breath Instinct progression v1 (complete)
+
+- Made the player profile the canonical owner of persistent instinct discovery and ability-unlock receipts. The existing profile key/schema remains additive and migrates a previously earned Smoke grant into stable `smoke_veil` discovery.
+- Changed the First Flightless Night Smoke awakening from run-only to profile persistence. The third authored breath now saves the `instinct_smoke_awakened` receipt, `smoke_burst` gameplay grant and `smoke_veil` identity; reload retains all three.
+- Added a region-owned `black-sky-bound.first-playthrough-region.v1` block to AXIOM authoring and runtime map bakes. First Flightless Night starts empty; Ash Threshold and recovered “The winding path” expose Smoke Veil. NG+ is deliberately excluded. Transition entry defers an arrival scene's own unlock so the Smoke awakening still plays, while direct Ash entry receives the standard baseline immediately.
+- Added an AXIOM First-playthrough instincts editor with all five GDD Breath Instincts in canonical order, plus validation, revisioning, bake inspection and focused unit/browser proof.
+- Added a real Three.js pause-menu Instincts middle panel with five generated transparent marked-stone assets: Smoke Veil, Smoke Stream, Smouldering Spit, Cinder Breath / Ignition and Napalm Spit. Undiscovered stones stay shadowed and do not reveal their names or descriptions.
+- Verified there is one current GDD at `docs/Design/GDD.md`; no duplicate GDD was deleted because no second copy exists in the checkout.
+- Validation: complete `npm test`, LOC gate and curated playtest build pass. The final real WebGL3D browser lane proves five locked stones, the three-breath Smoke unlock, one revealed Smoke Veil stone, and persistence after full reload with zero unexpected console/page/request failures. AXIOM browser proof confirms five controls, none enabled in First Flightless Night and only Smoke Veil enabled in Ash Threshold.
+
+## 2026-08-17 - AXIOM Map Intent profile-recovery correction (complete)
+
+- Reproduced the user-visible `level_design_playable_space_profile_missing` failure with the Co-Pilot attempt incorrectly left `RUNNING`.
+- Kept the project manifest as the only planning-profile owner. Map Intent now refreshes the complete filesystem manifest through File Manager whenever the workspace projection is missing or degraded; it does not introduce a fallback profile.
+- A failed refresh now closes Activity as visibly `BLOCKED`, records the error detail and states that no map changes were made.
+- A real Chromium retry of the user's exact prompt resolved the current Ash Road map, a ten-minute planning estimate and Goal Review through fresh `qwen3.5:9b` invocation. The Ash Road source hash remained unchanged and the proof session was removed after capture.
+- Proof: `AXIOM/apps/launcher/output/playwright/map-intent-profile-recovery/map-intent-profile-recovery-proof.json`.
+
+## 2026-08-11 - Reflective water and rain-driven terrain wetness v1 (complete)
+
+Current request:
+
+- Establish believable reflective/low-roughness water first, then use the proven response to add rain-driven wetness across the floor materials.
+
+Implementation and validation:
+
+- Replaced flat teal water with one continuous world-space `MeshPhysicalMaterial` shader: dark dielectric body, 0.07-0.13 roughness, IOR 1.333, clearcoat, restrained Fresnel sky response, moving dual-wave normals, direct-light reflection and sparse rain rings. All 343 proof-map water tiles remain one instanced batch.
+- Routed the existing renderer-neutral atmospheric rain projection into a new visual-only wetness contract. Rain density drives one irregular world-space/height-aware mask; it does not create gameplay weather, map state or persistence.
+- Added material-specific responses: strongest pooling on trampled mud, bounded wet sheen on rock/scorch, restrained grass response, conservative legacy forest response, and intrinsic wetness plus rain disturbance for water.
+- Extracted the layered terrain shader into its own 164-line module, leaving the terrain system at 409 non-empty lines and every production file below the 500-line cap.
+- Added a fourth F6 wetness diagnostic plus water/wetness runtime state. Focused tests cover canonical rain resolution, shader wiring, uniform propagation, response ordering and draw-batch preservation.
+- Rejected an initial oversized repeated rain-ring tune from screenshots; a subsequent GLSL reserved-word failure was caught by the browser gate. The accepted sparse/jittered small-ring revision passes the full real-browser lane.
+- Final terrain Playwright proof passes with dry/rain A/B ground, calm/raining water, wetness-mask debug, 343 water tiles in one draw batch and zero console/page/request failures.
+- Full `npm test`, LOC, curated build and packaged browser smoke pass. The package has 57 files, no raw source or source maps, successful movement, active wetness, raw-source 404 and zero browser/HTTP errors. Its campaign map has no water IDs, so water visibility is proved on the dedicated terrain map.
+- The terrain CPU render-path p95 is 4.7/4.9 ms with sparse grass detail off/on. Current dirty whole-world GPU/frame samples remain over the historical 60 FPS target, so no universal performance improvement is claimed.
+- Full ownership, response values, limitations and evidence are in `docs/WATER_AND_RAIN_WETNESS_MATERIAL_V1.md`.
+
+## 2026-08-11 - Trampled mud/path terrain PBR v1 (complete)
+
+Current request:
+
+- Finish the terrain material sequence with a styled mud/trampled ground-path floor.
+
+Implementation and validation:
+
+- Generated one seamless compacted-loam albedo using the project-generated grass and rock only as style/finish references; retained the exact prompt and original generated source.
+- Added a deterministic authoring script that produces exact-edge 1024x1024 albedo, OpenGL normal, AO, roughness, height, zero-metallic and packed ORM outputs.
+- Replaced only the dirt contribution inside the existing shared grass/dirt/scorch shader. The organic path boundary, continuous world sampling, procedural scorch, one-batch floor, tile IDs, movement, collision and saved-map truth remain unchanged.
+- Added a four-map loader, one-set diagnostics, disposal and explicit magenta failure rendering. Targeted terrain contracts pass.
+- The real production browser lane passes with 17 captures, four mud maps ready, one shared texture set, zero authored-centre mismatches, and zero console/page/request failures. Close, boundary, gameplay and normal-only proof lives under `artifacts/terrain-material-v1/mud-pbr-v1/`.
+- The curated production build passes with 57 files, no raw source or source maps. Packaged movement/render smoke passes with zero browser or HTTP failures.
+- The terrain material CPU lane passes at 3.1/4.8 ms render-path p95 with ground detail off/on and preserves one floor draw batch. The current dirty whole-world run recorded 35.7/38.1 ms frame p95 and 19.882/23.977 ms GPU p95, so no universal 60 FPS or mud-isolated speed-up is claimed.
+- Full derivation, exact ImageGen prompt, provenance, runtime ownership and deliberate boundaries are in `docs/MUD_TERRAIN_PBR_MATERIAL_V1.md`.
+
+## 2026-08-11 - Shared tree foliage PBR v1 (complete)
+
+Current request:
+
+- Apply the same one-set, recipe-varied PBR process to the leaves on the production trees.
+
+Implementation and validation:
+
+- Generated one neutral, seamless dense-foliage albedo using only the project-generated bark and grass as style/finish references; retained the exact prompt and generated source.
+- Added a deterministic authoring script that produces exact-edge 1024x1024 albedo, OpenGL normal, AO, roughness, height, zero-metallic and packed ORM outputs.
+- Replaced the flat-colour foliage material on the existing instanced faceted canopy clusters with one shared, fail-visible PBR loader and a bounded dominant-axis tree-space shader. Each fragment samples one albedo, one normal and one ORM texel.
+- Added recipe-owned pine, birch and oak tint, saturation, brightness, texture scale, normal strength and roughness bias. Tests prove all three variants share the exact same texture-uniform object and texture-set ID; no species PNGs were duplicated.
+- Preserved canopy geometry, placement, instance counts, tree DNA, collision, root traversal, fire lifecycle, shadows, caches, draw counts and map truth.
+- Focused tree tests pass. The production reference-grove Playwright lane passed after visual scale tuning with 18 captures, both shared tree PBR sets ready and zero console/page/request failures.
+- Visually inspected the three close foliage variants and multi-light grove proof under `artifacts/webgl3d-foliage-pbr-v1/`; the grove remains 9 calls / 17,698 triangles.
+- The curated Vite build and built-package browser smoke pass; the package reports both four-map tree PBR sets ready, successful movement, raw-source 404 and zero console/page/request/HTTP failures.
+- Full `npm test` remains blocked by the unrelated authored-storm visibility assertion; the LOC gate remains blocked by the unrelated 560-line `ThreeEffectsLayer.js`. The new foliage shader and generator stay below the production-file cap, and `git diff --check` passes.
+- Full derivation, exact ImageGen prompt, provenance, recipe values, runtime ownership and deliberate boundaries are in `docs/FOLIAGE_PBR_MATERIAL_V1.md`.
+
+## 2026-08-11 - Shared tree bark PBR v1 (complete)
+
+Current request:
+
+- Create only one styled bark PBR texture, fit it to the production tree meshes, and reuse it across tree variant recipes with colour/saturation/brightness or similar tuning.
+
+Implementation and validation:
+
+- Generated one neutral, recolourable, seamless bark albedo using the existing project-generated rock and grass only as style/finish references; retained the exact prompt and generated source.
+- Added a deterministic authoring script that derives seamless 1024x1024 albedo, OpenGL normal, AO, roughness, height, zero-metallic and packed ORM outputs. Opposing albedo/height edges match exactly.
+- Added one shared browser texture loader and weighted object-space triplanar PBR shader for the watertight marching-cubes wood mesh. Missing/incomplete maps render explicit magenta and record an error.
+- Added recipe-owned pine, birch and oak tint, saturation, brightness, texture-scale, normal-strength and roughness-bias values. Automated tests prove all three variants share the exact same four texture uniforms and texture-set ID; no variant PNGs were duplicated.
+- Preserved tree DNA, topology, collision, root traversal, foliage, shadows, caches, one bark draw per tree and map truth.
+- Focused tree tests pass. The production reference-grove Playwright lane passed with 15 captures, four loaded bark maps, one texture set, three material variants and zero console/page/request failures.
+- Visually inspected close pine, birch and oak plus moon, moving-torch and gameplay-canopy evidence under `artifacts/webgl3d-bark-pbr-v1/`. The grove remains 9 calls / 17,698 triangles.
+- The curated Vite build and built-package browser smoke pass; the packaged browser explicitly reports four loaded bark maps, one texture set, successful movement, raw-source 404 and zero console/page/request/HTTP failures.
+- Full `npm test` is currently blocked by the unrelated storm-strike visibility assertion in `illuminationPerformancePolicy.test.mjs`; the LOC gate is separately blocked by the unrelated 560-line `ThreeEffectsLayer.js`.
+- Full implementation, source prompt, provenance, recipe values and boundaries are in `docs/BARK_PBR_MATERIAL_V1.md`.
+
+## 2026-08-11 - Styled grass terrain PBR v1 (complete)
+
+Current request:
+
+- Generate a styled grass PBR set and replace the grass floor-tile presentation in the same spirit as the completed rock material.
+
+Implementation and validation:
+
+- Used the project-generated rock albedo only as a style/finish reference for a new dark matted-turf ImageGen albedo; retained the generated source and exact prompt provenance.
+- Added a deterministic authoring script and accepted seamless 1024x1024 albedo, OpenGL normal, AO, roughness, height, zero-metallic and packed ORM outputs. A first 48-pixel seam-correction pass was visibly rejected; the shipped 12-pixel pass has exact opposing edges without a broad border band.
+- Replaced only the grass contribution inside the existing shared grass/dirt/scorch shader. The organic blend mask, procedural dirt/scorch, one-batch floor instancing, sparse 3D clumps, tile IDs, collision, movement and saved-map truth remain unchanged.
+- Added four-map loading, diagnostics, disposal and explicit magenta fail-visible rendering. F6 material-ID and normal-only modes include the authored grass surface.
+- Focused contract tests and the production-browser terrain lane pass. The browser loaded all four grass maps with zero texture, console, page or request errors; inspected close, gameplay, dirt-boundary, large-area and normal-only evidence lives under `artifacts/terrain-material-v1/grass-pbr-v1/`.
+- Focused performance retained 303 of 1,397 grass clumps, with detail adding one draw and 9,090 triangles. The stable focused sample measured 16.0 ms frame-interval p95, 3.0 ms render-path p95 and 14.663 ms GPU p95 with detail off.
+- Full `npm test` and the curated package build are presently blocked before this slice by the unrelated missing `src/data/treeFireStates.js` module imported by the in-progress tree-fire work; no grass-scoped failure is hidden behind that blocker.
+- Full derivation, runtime ownership, provenance and deliberate boundaries are in `docs/GRASS_TERRAIN_PBR_MATERIAL_V1.md`.
+
+## 2026-08-11 - Reference-derived rock terrain PBR v1 (complete)
+
+Current request:
+
+- Use the supplied stylized-rock PNG to replace the boring grey authored rock ground tiles with a proper PBR material/shader.
+
+Implementation and validation:
+
+- Used the composite sheet as a visual reference rather than shipping its presentation layout or low-resolution swatches; generated one neutral, square rock albedo and retained the generated source.
+- Added a deterministic authoring script that produces seamless 1024x1024 albedo, OpenGL normal, AO, roughness, height, metallic and packed ORM outputs from one shared surface interpretation.
+- Replaced only the active rock material path with a two-metre world-space triplanar PBR shader. Authored terrain IDs, blocked collision, stepped geometry, height, shadows and one-batch instancing remain unchanged.
+- Added explicit loading/error diagnostics and magenta fail-visible rendering; F6 material-ID and normal-only views now include rock.
+- Focused contract tests, full `npm test`, the real terrain Playwright lane, curated Vite build and built-package browser smoke all pass. The browser loaded all four runtime textures with zero texture, console, page or request errors.
+- Visually inspected close warm-light, gameplay moonlight, material-ID and normal-only captures under `artifacts/terrain-material-v1/rock-pbr-v1/`. Full provenance and boundaries are in `docs/ROCK_TERRAIN_PBR_MATERIAL_V1.md`.
+- Whole-game performance remains a named proof gap: two locked-DPR stress runs missed the 17.2 ms frame-interval gate at 45.7 ms and 41.8 ms. Their render-path p95 stayed 4.7-4.9 ms and immediate GPU queries were 10.486-11.443 ms, so the failure is not isolated to this material, but stable 60 FPS is not claimed.
+
 ## 2026-07-31 - Tree trunk/root structural reconstruction (complete)
 
 Current request:
@@ -6043,3 +6188,288 @@ Next audio ownership:
 
 - Egg Shell Interaction Palette v1: recorded mineral/membrane rock, crack and crown-break assets, preserving the opening sequence as timing owner and the egg as the sound source.
 - Opening Mix and Transition v1 follows for final balance across exterior threats, shell movement, first cry, later Mama presence, heartbeat and ambience.
+
+## 2026-08-10 - Public Three.js demo revival
+
+Current request and boundary:
+
+- Restore the current Three.js Crown of Cinders five-wave demo at the existing public Sites URL without changing the arena bake, wave composition, enemy tuning or reward order.
+- Further Instinct, power and upgrade design is explicitly deferred until the refreshed public demo is live and verified.
+
+Release-path repair:
+
+- Confirmed production Sites version 2 still serves the older `webgl` renderer, while the current curated local package boots `webgl3d`.
+- Removed the split asset-enumeration path: the sound manifest now canonically collects direct files plus environment returns, and both runtime preload readiness and the curated exporter consume that contract.
+- Required environment returns now participate in audio readiness instead of being fetched outside the required-file set.
+- The curated build fails loudly if its copied production-audio set differs from the manifest-owned set.
+- Full BSB unit tests, the curated build and the built-package Playwright gate pass with 30 production audio assets, backend `webgl3d`, Mama mesh ready, raw source HTTP 404 and zero browser, page, request or HTTP failures.
+- Inspected the fresh paused-arena screenshot in `artifacts/webgl3d-built-package-v1/01-built-arena-paused.png`; controls, sound controls and underlying player silhouette remain legible at 1440x900.
+
+Sites ownership and release:
+
+- Added a source-controlled Vinext `site/` owner for the restrained existing landing, persisted the existing Sites project ID, retained the public URL/access and social assets, and changed the visible label to `Build 0.4 · 3D`.
+- The site regenerates `/play/` from the canonical exporter in the main workspace and validates the exact committed curated package in a standalone Sites source checkout. The public surface remains one Crown runtime map, the current Three.js bundle, 30 production audio files, the Mama flyover asset, robots policy and no raw source, source maps, campaign maps or `node_modules`.
+- Corrected compact landing overflow by clipping only the decorative weather layer. Added the real `X-Robots-Tag: noindex, nofollow, noarchive` worker response header because Sites does not apply the static `_headers` file to Vinext responses.
+- Published and verified Sites version 4 at `https://black-sky-bound-playtest.kerrypain.chatgpt.site`. Retained version 2 remains the tested rollback target. Version 3 was briefly rolled back when an immediate production probe saw one CDN asset before propagation; after propagation both HEAD and full GET returned the exact WAV, and the final gate retries required assets while forbidden paths remain immediate failures.
+
+Release evidence:
+
+- `npm test`, `npm run test:launcher`, `npm run build:playtest`, the site render/package tests, built-package Playwright and the staged plus cache-busted production release gates pass.
+- The final production proof reports `webgl3d`, Mama asset ready, 30/30 audio assets HTTP 200, real movement, pause/audio interaction, stable desktop and compact HUD, canonical death/respawn, five wave transitions, reward order `dodge -> body_lunge -> smoke_burst -> charge_counter`, victory, campaign/source HTTP 404s and zero console, page, request or HTTP failures.
+- Desktop/compact landing, pause/audio, death, Wave I, Wave III, Wave V, Dodge/Dodge Charge unlock and victory screenshots were inspected from `artifacts/public-3d-demo-revival-staged-v1/` and `artifacts/public-3d-demo-revival-production-v1/`.
+- Arena truth remained unchanged: AXIOM authoring SHA-256 `EFE3DCE4146E9401CA0EA4AB04C0580E849D7EF43FCDC8DCCB9393B03391B3DB`; BSB runtime-map SHA-256 `3166BABFC7DCBFA525BFC1471FF2E3E49AB850DA065A7C3E9EEB646F56632FDB`.
+
+Next design boundary:
+
+- Instinct unlocks, powers and upgrade planning remains explicitly deferred to a separate follow-up now that the refreshed public demo is live and verified.
+
+## 2026-08-10 - Baby Wyvern Procedural Body v2 candidate
+
+Current request and boundary:
+
+- Rebuilt the live baby wyvern's neutral physical embodiment as an approval-gated 3D candidate before any gait-weight, expression, attack-exaggeration, dodge/leap-attack, blood-spatter or blood-pooling pass.
+- Normal play and the curated package remain on procedural v1. The candidate is reachable only with `wyvernEmbodiment=surface-v2`; unknown values fail loudly. Production promotion and v1 removal were intentionally not performed.
+- Gameplay transform, collider, body contacts, sockets, damage ownership and action timing remain canonical and unchanged. Mama's rigid flyover GLB path and the rejected baby GLB/adapter remain untouched.
+
+Canonical anatomy and renderer contract:
+
+- Added profile-owned stance elevations and body cross-section depths, surfaced through the existing optional tuning overlay under compact `Stance` and `Body volume` groups.
+- Renderer-neutral rig points now retain compatible `x`, `y` and `width` fields while publishing `height` and `verticalRadius`; the rig documents both in render metres and adds separate elevation bounds without changing planar visual-bound semantics.
+- Added `black-sky-bound.procedural-wyvern-mesh-recipe.v2`: one continuous skull/neck/chest/waist/hip/tail sweep, separate jaw, connected wing-arm/digit and hind-leg sweeps, twelve ordered membrane panels, grounded toes/talons, eyes, hornlets, brow ridges and a diminishing dorsal line.
+- The candidate uses preallocated indexed position, normal, colour and index buffers, allocation-free normal updates, stable local chain frames and a small embodiment-owned tail bind curve. Runtime pose updates reuse one topology and do not own motion state.
+- Live candidate diagnostics report 935 vertices, 958 triangles, four draw calls, four material families, twelve membrane panels, one topology build, pose updates, malformed frames and non-finite vertices.
+
+Structural and browser evidence:
+
+- Structural coverage proves the continuous closed manifold sweeps, closed caps, outward winding, finite normals, membrane ordering, grounded bounds, rig-unit contract, topology/buffer reuse, malformed-frame rejection, resource disposal and unchanged gameplay/contact ownership.
+- Matching deterministic v1/v2 browser lanes captured normal and close idle at four headings, both crawl plants, attack wind-up/contact poses, dodge displacement/recovery and F3 contact alignment with zero console, page or request failures.
+- The inspected contact sheet shows v2 replacing the bead/mass read with the intended lean hatchling silhouette, clearer head direction, continuous axial body, readable wrist-origin wing digits/panels and a curved counterbalancing tail. Evidence is in `artifacts/webgl3d-wyvern-visual-acceptance/surface-v2-final-v1-20260810--vs--surface-v2-final-candidate-20260810/`.
+- Candidate opening emergence and the torch, smoke, rain, moon and lightning pose matrix pass with zero browser failures. Reports are in `artifacts/webgl3d-opening-wyvern-surface-v2/` and `artifacts/webgl3d-wyvern-poses-surface-v2/`.
+- The candidate-specific native-1.5-DPR gate passes at frame-interval p95 16.8 ms, GPU p95 14.608 ms and render-path p95 8.5 ms, with one topology build and no resource growth. Evidence is in `artifacts/webgl3d-wyvern-surface-v2-performance/`.
+- Full `npm test`, the LOC gate, curated build and standalone built-package Playwright gate pass. The built package remains v1-default and reports zero console, page, request, asset or HTTP failures.
+
+Residual and promotion boundary:
+
+- The existing inferno-wide native-1.5-DPR stress gate remains red for both embodiments on this machine: v1 frame p95 25.1 ms / GPU p95 21.236 ms; v2 frame p95 29.2 ms / GPU p95 22.978 ms. V2 nevertheless reduces that scene from 250 to 196 calls and from 125,984 to 124,744 triangles. This inherited whole-scene performance gap is registered rather than hidden and is not caused by candidate topology growth.
+- The test fixture now disables live unit spawners before its stable-resource assertion; they previously produced deterministic mesh-count churn while the gate asserted a fixed warmed tail.
+- Await Felix's visual approval before making v2 production-default, deleting v1, updating the curated-build promotion contract or beginning the later animation/combat/blood slices.
+
+## 2026-08-10 - Baby Wyvern v2 directional dodge and Pounce Counter
+
+Production promotion:
+
+- Promoted `black-sky-bound.procedural-wyvern-mesh-recipe.v2` as the unconditional `surface-v2-production` player embodiment. Removed the v1 renderer, v1 structural test, temporary embodiment selector and v1 comparison lane.
+- Curated builds now require v2 and reject the v1 contract, v1 runtime symbol and rejected baby-GLB path. Mama's rigid flyover GLB remains independently owned and unchanged.
+- Production diagnostics retain 935 vertices, 958 triangles, four draw calls, four material families, twelve membrane panels, one topology build and zero malformed/non-finite frames.
+
+Directional movement and branching:
+
+- Added pointer-valid mouse facing with 540-degree-per-second shortest-arc body turns, 65-degree head lead, 32-degree neck lead and committed-action recenter/locks. Player movement no longer overwrites facing; enemies retain movement-facing ownership.
+- Renderer-neutral motion now publishes signed local forward/lateral travel and turn velocity. Directional gait reverses reach while backpedalling and adds strafe/turn wrist, haunch and tail counter-motion.
+- Space dodges in held WASD direction, otherwise retreats from the cursor, otherwise falls back behind the last facing. One additional Space reserves a press-time direction and 24 stamina, holds a 60ms landing beat and launches through a scoped cooldown bypass; a third dodge is denied explicitly.
+- LMB inside the 450ms dodge window reserves 36 stamina and captures an exact cursor-directed Pounce Counter. First accepted follow-up wins; conflicting input produces a denial receipt. Outside the context LMB and J remain ordinary melee.
+
+Pounce physicality:
+
+- Authored the counter as 1.75 metres / 3.5 gameplay units over 0.82 seconds, with movement at phase 0.20-0.68, contact at 0.32-0.74 and 0.42-second miss recovery. Damage remains 12.
+- Added 0.12m dodge and 0.28m pounce visual apexes plus 0.06m/0.11m landing compression without changing planar collision ownership. The pounce coils the haunches, tucks wrists, flares digits, extends the neck, counters with the tail and lands wide.
+- Target resistance uses mass, impact resistance and stagger resistance. Light contacts compound remaining-travel braking; a 1.5+ ratio closes contact and forces impact landing. Heavy actors and terrain return bounded opposite recoil. Receipts publish target, effective mass, ratio, retained travel, interruption, recoil and stop state.
+
+Validation and evidence:
+
+- Full `npm test`, strict LOC/architecture checks, curated build and standalone built-package browser gate pass. The package reports v2 production, Mama ready, raw source HTTP 404 and zero console, page, request or HTTP failures.
+- Real-browser visual smoke, directional movement/pounce proof, pose matrix and opening emergence pass. The heavy proof stopped against a werewolf at ratio 1.719 after 1.840 gameplay units, closed contact, applied recoil 0.751 and entered -0.11m landing compression.
+- Labelled evidence and report: `artifacts/webgl3d-wyvern-visual-acceptance/surface-v2-production/directional-pounce-contact-sheet.png` and `report.json`.
+- Locked 1x isolated performance passes at frame p95 12.6ms, render-path 6.6ms and GPU 8.092ms. Native 1.5-DPR remains explicitly red: isolated frame p95 29.2ms / GPU 22.11ms / render-path 10.0ms; inferno frame p95 25.8ms / GPU 21.876ms / render-path 10.9ms. Topology/resources remain stable, so this is retained as the known native-DPR GPU/fill-rate gap rather than hidden as green.
+
+Deferred boundary:
+
+- Blood spatter/pooling, broader gait-weight tuning, dynamic facial expression, ordinary attack exaggeration, Q-lunge changes, audio redesign and the earned precision bite/riposte remain later slices.
+
+## 2026-08-10 - Baby Wyvern feral turning and planting
+
+Turning ownership and body follow:
+
+- Replaced the player's constant-rate cursor turn with a shortest-arc angular solver capped at 420 degrees/second, using 1,800 degrees/second-squared acceleration, 2,400 degrees/second-squared braking, reversal-first braking and exact low-error settling. Invalid aim and committed action-facing ownership remain unchanged.
+- Head and neck retain their 65/32-degree limits but now settle independently at 22/s and 14/s. Motion state publishes persistent angular error, velocity, effort, pivot phase/side and in-place state.
+- Root transport now applies translation only. A renderer-neutral axial chain preserves 0.92-1.09 segment stretch while neck, chest, hips and three tail regions follow through at role-specific rates. Adjacent tangent frames drive shoulders, hips, membranes and the six rendered tail bones, with finite-frame fallback and malformed-frame diagnostics.
+- Action commitment aligns the head and gameplay mouth socket immediately, suppresses pivot contacts and lets the rear body complete a bounded catch-up. Action-facing lag is anatomically capped so a rapid reversal cannot fold the hips through the torso before the active window.
+
+Feral planting and diagnostics:
+
+- Low-speed turns alternate a planted inner-wrist/opposite-hind diagonal against a visually lifted replanting pair. The lift remains animation-only and is bounded to 0.035 metres; shoulders shift inward, haunches outward, the tail counters the turn and the outer wing digits flare modestly.
+- Pivot weight blends down into the existing forward, backpedal and strafe gait as travel rises. Gameplay position, collider, planar damage and contact ownership do not inherit visual planting or elevation.
+- Added the optional compact `Turning` tuning group and F3 body/aim/error/velocity/effort, pivot, axial-facing/lag and malformed-frame output. Normal-play HUD remains unchanged and existing tuning saves require no migration.
+
+Validation and evidence:
+
+- Full `npm test`, deterministic facing/planting tests, v2 visual smoke, pose matrix, opening emergence, curated build and standalone built-package browser gate pass. The browser lanes report zero console, page, request, asset or HTTP failures; v2 remains one topology build, 935 vertices, 958 triangles, four draw calls and zero malformed/non-finite frames.
+- The 38-capture temporal proof covers 45/90/180-degree turns, rapid reversal, moving strafe blend, action-facing handoff, dodge/pounce compatibility and post-turn settling. Each turn moment owns a close anatomy frame and a paired normal-zoom F3 frame from the same paused state. Labelled evidence is in `artifacts/webgl3d-wyvern-visual-acceptance/surface-v2-feral-turning/feral-turning-contact-sheet.png` and `feral-turning-f3-contact-sheet.png`; the adjacent `report.json` owns the measured state and exact diagnostic image for every capture.
+- The previously green isolated locked-1x evidence remains frame p95 12.6ms / GPU 8.092ms. Three fresh samples were externally GPU-contended by an active Unreal Editor process and measured 24.5/24.9/17.5ms frame p95 with corresponding 22.727/22.99/14.05ms GPU p95; their simulation p95 reached 12.1/11.5/6.9ms and showed no topology or resource growth. These samples are retained as red evidence rather than presented as a code regression or a green gate.
+- The existing native-1.5-DPR limitation remains explicit at frame p95 29.2ms / GPU 22.11ms / render-path 10.0ms. A clean locked-1x/native rerun is still required when the external Unreal GPU workload is idle; the turning implementation does not restore v1 or alter renderer topology.
+
+Deferred boundary:
+
+- Precision bite/riposte, ordinary attack exaggeration, facial expression, wider gait-weight tuning and blood spatter/pooling remain separate later slices.
+
+## 2026-08-10 - Baby Wyvern reactive dodge and stamina gradient
+
+Reactive ownership and continuous stamina:
+
+- Added a player-only dodge request arbiter in the existing pre-movement stamina slot. Space now interrupts claw, bite, smoke and Q-lunge actions, closes future contact/emission/movement authority, preserves already-resolved hits, emissions, cooldowns and combo progression, and retains a frozen provenance receipt plus an 80ms visual-only pose blend.
+- Pounce Counter, stagger, death and lifecycle states remain committed locks with explicit denial receipts. Normal enemy dodges retain strict full-cost behaviour.
+- Dodge effectiveness now resolves from press-time `current / max` stamina. A smoothstep curve reaches full effect at 40% and retains a 50% floor at empty, continuously mapping 0.28-0.56m distance, 0.06-0.12m apex, 0.75-0.55s cooldown and 0.09-0.06m landing compression.
+- Dodge cost remains 24, pounce remains 36, sprint drain remains 30/s and regeneration remains 11/s. Sprint recovery now derives from 30% of maximum stamina rather than an absolute 18 points, so maximum and regeneration upgrades scale without changing the canonical costs.
+- Funded dodges spend 24 and retain one follow-up branch; underfunded emergency scrambles consume the exact remainder, work at zero stamina and close pounce/further-dodge eligibility. A funded first dodge may reserve one final underfunded scramble with press-time direction, energy, effectiveness and cost.
+
+Buffering, pose and communication:
+
+- Neutral Space inside the final 120ms of cooldown now reserves press-time stamina and direction, suppresses sprint/attacks, shows a restrained pre-coil and launches at cooldown zero. Duplicate Space cannot replace it; death, stagger, pounce or lifecycle locks cancel it, restore the exact reservation snapshot and record the reason.
+- Accepted dodge events now fire when displacement launches. Buffered and chained events include mode, energy, effectiveness and follow-up eligibility instead of claiming acceptance at reservation time.
+- Renderer-neutral motion and pose publish the captured gradient, scale limb reach/spring/landing weight, and keep apex/compression visual-only. F3 exposes buffer, direction, energy, effectiveness, requested/applied travel, reservation and interruption receipts.
+- `DODGE · POUNCE` accepts every dodge mode. After an emergency scramble it reads `LOW STAMINA · RECOVER TO COUNTER` and dims LMB; the canonical counter instruction returns only after a later funded dodge.
+
+Validation and evidence:
+
+- Full `npm test`, strict LOC/architecture checks, v2 visual smoke, deterministic pose matrix, opening emergence, curated build and standalone packaged-browser gate pass. Browser lanes report zero console, page, request, asset or HTTP failures; v2 remains 935 vertices, 958 triangles, four draw calls, one topology build and zero malformed/non-finite frames.
+- Unit coverage proves equal outcomes at equal stamina percentages across 12/60 and 20/100, monotonic curve outputs, the empty floor, regeneration traversal, percentage sprint recovery, emergency levels 23/12/0, exact reservation/refund, action provenance, 120ms boundary, stagger/pounce locks and final-chain launch ownership.
+- The 48-capture browser report includes attack interruption, 40%/20%/upgraded-20%/empty dodges, buffer pre-coil and launch, stagger denial, full and emergency double dodges, pounce lock/impact and F3 contacts. The inspected labelled sheet is `artifacts/webgl3d-wyvern-visual-acceptance/surface-v2-production/reactive-dodge-stamina-gradient-contact-sheet.png`; measured state is in the adjacent `report.json`.
+- The global inferno locked-1x lane is not claimed green while Unreal Editor, Blender and Chrome are active. Three runs measured 33.5/37.5/50.0ms frame p95, 12.8/13.6/13.6ms render-path p95 and 31.141/36.574/13.357ms GPU p95. Isolated 1x retained one topology build and 16.8ms frame / 7.6ms render-path p95, but GPU p95 was 18.002ms. Red evidence is retained in `artifacts/webgl3d-performance-surface-v2-production/reactive-dodge-locked-1x-three-run-report.json`; a clean rerun remains required when the external workload is idle.
+
+Deferred boundary:
+
+- Precision bite/riposte remains the next combat slice. Blood spatter/pooling, ordinary attack exaggeration, broader gait weight, facial expression, audio and Mama's flyover remain untouched.
+
+## 2026-08-11 Raider ink-stick production slice (implementation checkpoint)
+
+- Promoted the canonical `RaiderPhysicalMotion` component from the compatibility pose to `production_raider_ink_stick_v1`, retaining persistent foot contacts, inertia, target attention, frozen spear impact, real body-contact damage, recoil and gameplay light authority.
+- Added a continuous renderer-neutral 3D locomotion blend (`forward`, `lateral`, `speed`, and normalized idle/walk/run weights) and kept the same physical pose graph active through spear/torch attacks, guard, dodge and hit reaction.
+- Locked equipment ownership to right-hand spear and left-hand torch. The weapon and light origins now coincide with their owning hands on every physical pose; the spear tip still reaches the committed frozen-impact point during its damage window.
+- Added the production `ink_stick_humanoid_v1` embodiment and routed it exclusively through a pooled Three.js ink renderer: smooth near-black wide body lines, 24-segment hollow camera-facing heads, simple coloured spear/torch props and two-colour flames in at most five shared draw families. The former faceted layer remains only as a non-ink fallback and no longer also draws raiders.
+- Added tile-space light influence metadata so the ink stroke receives restrained local-light colour without becoming a luminous white silhouette. Renderer diagnostics expose embodiment, equipment policy, line/prop counts, light reaction, pool topology and malformed-point checks.
+- Focused pose, attack, 100-raider renderer, greybox and wyvern-v2 regression tests pass. Browser acceptance and full-suite validation remain to be run.
+
+Final validation and bold-stroke follow-up:
+
+- Increased the accepted production weights to 7px for body/head ink and 4px for prop shafts. Visual inspection confirms the thicker figures remain cohesive at gameplay zoom, the heads remain hollow, and the smaller flame reads separately from the head.
+- The fresh 15-capture Playwright lane covers family lineup, idle, walk, run, spear wind-up/active, torch wind-up/active, guard, hit reaction, smoke/lightning, live combat, death, 100-raider stress and F3 diagnostics. It reports zero console/page/request failures.
+- The 100-raider proof holds at five pooled draw families, zero missing/non-finite points, 3.2ms projection p95, 5.3ms render-path p95, 4.099ms GPU p95 and 8.4ms frame-interval p95. Evidence is retained at `artifacts/webgl3d-raider-ink-v1/contact-sheet.png` with measured state in `report.json`.
+- Full `npm test`, strict LOC checks, curated production build and `git diff --check` pass. The build retains the pre-existing large-chunk advisory only.
+
+## 2026-08-11 - Pure-black shared stick units and husk production routing
+
+- Replaced the restrained light-reactive grey/blue ink with exact unlit RGB `0/0/0` for every humanoid body and hollow-head line. The actor renderer no longer receives scene-light projections, so moonlight, torches and lightning cannot tint or wash out the authored black stroke. Raider equipment retains its separate shaft, spearhead and flame colours.
+- Moved embodiment ownership onto the canonical humanoid profiles and assigned `ink_stick_humanoid_v1` to both raiders and husks. Recipe-free husks now bypass the legacy grey skeleton/joint renderer and share the same pooled 7px body/head batch as raiders.
+- Adapted the bold renderer to the existing generic shambler pose graph without changing gameplay: husks retain their asymmetric shamble, idle, claw-maul wind-up/active/recovery, impact response, collision, damage and death ownership. Optional neck/toe detail is consumed when present; unarmed husks do not invent or report missing torch/spear sockets.
+- Renderer diagnostics now report humanoid profile IDs and actor kinds, `absolute_black_unlit_v1`, profile-owned props and malformed-point state. The eight-husk browser lane proves idle, shamble, claw wind-up and claw-active states with 88 body lines, 200 hollow-head lines, zero props, one draw family, zero legacy segments and zero browser errors.
+- Visual inspection confirms the black silhouettes remain bold against lightning-lit ground and disappear completely with scene lighting disabled, matching the intended darkness aesthetic. Evidence is in `artifacts/webgl3d-husk-stick-v1/`; the raider 15-capture regression lane also passes with 100 pure-black raiders, five bounded draw families and zero browser errors.
+- Full `npm test`, strict LOC checks, curated production build and `git diff --check` pass. The build retains only the pre-existing large-chunk advisory.
+
+## 2026-08-11 - 3D foliage and inferno recovery pass
+
+Procedural foliage and fire ownership:
+
+- Upgraded the single renderer-neutral procedural-undergrowth generator to `black-sky-bound.procedural-undergrowth-skeleton.v2`. Its deterministic metre-space contract now publishes 3D stems, leaves, ground clusters and ember sockets; the inactive 2D path only flattens this output.
+- Added one globally batched Three.js undergrowth layer: merged vertex-coloured stems plus instanced leaves, ground clusters and authored ember sockets. Object-ID ranges support targeted char and foliage depletion without rebuilding static geometry. The active fixed fern/shrub primitive paths were removed.
+- Replaced tree-only fire state with `black-sky-bound.foliage-fire-state.v1`. Trees and undergrowth now share `ablaze -> smoulder_high -> smoulder_low -> burnt_out`, retain their requested 3/8/16/26 and 2/6/12/18-second envelopes, obey per-wall caps of six trees and twelve undergrowth objects, cannot reignite after burnout, and preserve authored map immutability.
+- Semantic stem/leaf roles now drive char, foliage depletion and persistent burnt silhouettes. Trees use two active canopy fire nodes and one residual ember; undergrowth uses one low fire/smoke node which extinguishes at burnout.
+- Every automatic or manual Mama crossing resolves to the full inferno while preserving the cadence, path, wall, damage, slow and audio. `app.worldEvents.flyover()` remains the compatibility alias and reports `requestedKind: "flyover"` plus `resolvedKind: "inferno"`.
+- Replaced the single Three.js breath cylinder with a pooled seven-segment head-rooted tapered stream and fourteen-ember spray, driven only by the existing breath projection over flight progress 0.16-0.84 and aligned with the deployed wall.
+
+Opening-route authoring and bake receipt:
+
+- Used the AXIOM procedural-undergrowth brush with the approved eight centres, radius 2, falloff 0.65, density 0.48, seed 260811 and 42/48/10 fern/shrub/bramble mix, then used the visible Save Source and Bake & Preview actions.
+- Source revision advanced from 2527 to 2528. The committed batch contains exactly 21 nonblocking records: 10 `wood_fern`, 9 `forest_shrub` and 2 `ember_bramble`. The runtime map now contains 314 scene objects, including nine normal shrubs.
+- Saved source SHA-256: `c837be72a706c550260fff1c7634a8f30e722e5f42ffaa95cc8e360133854bbd`. Baked runtime SHA-256: `e064417e084948029c3fc0bdad41b2a7127386c9bf5a0ece9037ad7538cfe134`.
+- The idempotent browser authoring proof and receipts are retained under `AXIOM/apps/launcher/output/playwright/foliage-recovery/`; reruns verify the existing exact batch instead of duplicating it.
+
+Validation and inspected evidence:
+
+- Focused undergrowth, shared-fire, Mama, projection, Three.js reuse and runtime-map tests pass. AXIOM's launcher/map-authoring suite, the curated playtest build, the staged public 3D smoke and the final exact-root Mama smoke pass.
+- The final Mama browser report loads revision 2528/314 through WebGL3D, verifies the flyover compatibility receipt, seven breath segments, fourteen breath embers, one inferno wall, tree and undergrowth phase progression, burnt persistence, continued player movement and zero console, page, request or HTTP errors. The inspected captures show opening-route fern/shrub/ground-cover detail, visible head-rooted breath, shared ablaze/smoulder phases and persistent burnt silhouettes; evidence is in `artifacts/mama-wyvern-flyover-smoke/`.
+- The live-world CPU/GPU gate passes with 108 calls, 319,431 triangles, 4.1ms CPU p95 and 15.378ms GPU p95. The undergrowth batch reports 144 existing route plants in no more than four draw calls.
+- The broader locked-1x stress lane remains partial because frame-interval p95 is 21ms against its 17.2ms threshold, while its render-path CPU p95 (4.3ms) and GPU p95 (14.168ms) pass. This is retained in `artifacts/webgl3d-performance-surface-v2-production/locked-1x-sample.json` without widening the slice into unrelated actor or lighting work.
+- Full `npm test` is not claimed green: the independently reproducible failure is the pre-existing/concurrent authored-storm visibility assertion in `illuminationPerformancePolicy.test.mjs`. It also fails standalone and is outside the foliage/Mama ownership changed here. Targeted diff checks pass, and the existing `ThreeLiveWorld.actors.update(dynamicWorld.actors, view)` edit remains preserved.
+
+## 2026-08-11 - Player underglow removal and napalm trail lighting (complete)
+
+- Identified the disembodied player glow as the camera-visibility focus subsystem's dedicated 650-lumen actor-following point light, not an ECS player emitter.
+- Removed the synthetic light and its creature-tuning field while preserving the occlusion-aware sightline corridor that fades real camera blockers.
+- Added restrained non-shadowing world lights to detached airborne baby-napalm droplets and explicit bounded physical power to landed pools. Attached mouth dribble remains visual-only so it cannot become another player-following highlight.
+- Focused camera-focus, napalm, lighting, Three physical-light and 3D drool tests pass. Full `npm test`, strict LOC checks and `git diff --check` pass.
+- The camera-focus browser lane preserves the traced canopy fade with `syntheticLightCount: 0`. The nine-capture drool lane proves attached dribble is visual-only, detached droplets and landed pools own warm non-shadowing world lights, sustained use remains bounded, and browser console/page/request failures are zero.
+- Inspected the latest dark baseline, airborne, deposit and moving-trail captures under `artifacts/baby-wyvern-drool-visual-approval/player-lighting-removal/`. The neutral player-centred circle is gone; illumination is dark without emitters and warm only where visible napalm exists.
+
+## 2026-08-11 - 3D health/stamina pressure curve v1
+
+Current request:
+
+- Restore and tighten the felt survival pressure that weakened during the 2D-to-3D migration: stamina drain must read physically before exhaustion, while approaching death must build into an unmistakable retreat warning rather than arriving suddenly.
+
+Root cause and ownership:
+
+- Gameplay health and stamina were already canonical and the renderer-neutral body-state packet still reached Three.js. The weakened seam was presentation: missing health was mapped linearly, the active 3D layer used one fixed-radius low-alpha ellipse, stamina capped near a 15% edge tint, and the whole-screen filter could not distinguish peripheral exhaustion from injury.
+- `src/data/bodyStateFeedback.js` remains the single tuning owner. `bodyStateProjection.js` owns thresholded renderer-neutral danger signals; `ThreeBodyStateScreenLayer.js` owns the active 3D consumption. The retired unregistered WebGL post-process path remains historical and was not revived or duplicated.
+
+Implementation:
+
+- Health now begins only below 62%, uses a 1.4-power remapped curve, becomes clearly critical below 35%, and enters a terminal band below 15%. Its red/black field contracts from an 82% to roughly 48% clear radius, gains an irregular blood-colour perimeter and a bounded low-health pulse, while recent-hit flash remains separate.
+- Stamina now begins below 42% with a 1.25-power curve. At 30% it is a restrained cue; below 16% it becomes a conspicuous cool charcoal peripheral compression with up to 32% edge desaturation, 16% contrast loss and 12% brightness loss. The centre is never globally greyed.
+- When both resources are critical, the two existing layers compound naturally: stamina constrains/dulls the periphery underneath health's inward red injury field. The lifecycle death mask remains separately owned and activates only after the terminal warning state.
+- Exposed onset, curve exponent, maximum opacity/desaturation/contrast/brightness, resting clear radius and maximum contraction in the body-state profile. Added renderer diagnostics for pressure bands, alpha and clear radii.
+
+Validation and inspected evidence:
+
+- Focused body-state and Three screen-presentation tests, strict LOC checks and full `npm test` pass.
+- The new project-local Playwright lane stages healthy, 50/30/10% health, 30/12% stamina, compounded critical and lethal transition states, then separately drives a real 60-to-3 stamina sprint across 19 deterministic samples. Pressure rises through both thresholds and the clear radius contracts materially.
+- All nine browser captures were visually inspected. The accepted frames preserve the central combat area, keep 30% stamina restrained, make 12%/3-stamina exhaustion obvious, and show terminal pressure before the separate death fade. Browser console, page and request failures are all zero.
+- Evidence: `artifacts/body-pressure-curve-v1/` with `report.json`, exact-state frames, live sprint exhaustion and terminal-to-death proof.
+- `npm run build:playtest` passes with 284 transformed modules and no raw source/source maps. The standalone built-package browser gate passes movement at 55 calls / 38,090 triangles, raw source 404 and zero console/page/request/HTTP failures. No dependency or browser installation was needed.
+
+Deliberate boundaries:
+
+- No health, stamina, damage, regeneration, enemy lethality, lifecycle timing, HUD numbers, audio tuning or combat logic changed. Blood spatter/pooling and any broader HUD redesign remain separate slices.
+
+## 2026-08-11 - Shrubbery emitter primitive cleanup (complete)
+
+- Traced the screenshot's large translucent grey polyhedron to `ThreeEffectsLayer` routing both `burning_foliage_smoke` and authored `smoulder_patch_wisp` sources through the generic `smoke-mass` icosahedron. The same layer also still presented foliage fire as an emissive `effect-orb` icosahedron.
+- Added a dedicated globally batched foliage presentation owner. Burning plants now use grounded tapered three-tongue flame geometry with an inset core; burning and smouldering shrub smoke now uses narrow crossed rising ribbons. The real batched shrub/fern/bramble geometry, combustion state, emitters, lights, embers, char and lifecycle remain unchanged.
+- Foliage and smoulder packets bypass both old primitive pools. Renderer diagnostics publish flame-tuft/wisp counts and `primitiveFallbacks: 0`.
+- Focused reuse, foliage-state, scene-emitter, Mama-flyover and LOC tests pass; full `npm test` passes. `git diff --check` reports no whitespace errors in the scoped files.
+- The live WebGL3D inferno lane passes with nine flame tufts and 22 smoke wisps while ablaze, 24 wisps while smouldering and zero primitive fallbacks. Exact authored-bramble, ablaze, close smoulder and burnt frames were inspected; the enclosing grey isosphere is gone while shrub geometry and ember points remain. Browser console, page and request failures are all zero. Evidence is under `artifacts/mama-wyvern-flyover-smoke/`, including `01c-smouldering-bramble-detail.png`.
+
+## 2026-08-12 - Pre-3D atmospheric spark parity (complete)
+
+- Compared the active Three.js overlay with the retained pre-3D `WebGLAtmosphericOverlayLayer`, the July 8 progress receipt and accepted browser captures. The original contract treated `sparkRate` as spawns per second over a 30-slot pool, yielding roughly 1-4 short-lived 1-2 px hot motes at the original 1.35 rate; the later accepted 3.4 rate still remained sparse, with soft halos and lazy upward/wobbling drift.
+- Found the 3D regression: it interpreted the same rate as a steady pool-occupancy ratio, making 23 large 0.18 m cone meshes permanently visible. This caused the abundant orange triangles in the current storm frame.
+- Replaced the Three cone instance batch with one dynamic soft-point field. It restores the pre-3D lifetime/cycle cadence, small round core plus soft halo, bottom-edge spawning, short lazy upward drift and slight wobble. Rain tuning and density are unchanged.
+- Restored the accepted pre-3D spark-only defaults of `sparkRate: 3.4` and drift `{-34,-118}` while preserving the separately requested stronger Three rain (`density 1`, speed 1380, angle 18, overlay opacity 0.98).
+- Diagnostics expose cadence, primitive, active count, maximum point size and `triangleFallbacks: 0`. Focused Three reuse, legacy overlay and LOC tests pass; full `npm test` passes and scoped diff checks report no whitespace errors.
+- The dedicated WebGL3D storm lane passes at 300 rain streaks and four active spark motes. The inspected storm frame shows isolated pin-sized warm specks instead of the previous abundant lower-frame triangles and is materially closer to `artifacts/emitter-reactive-atmospheric-overlay-v0/near-emitter.png`. Point size is capped at 5.513 px, the cone batch is absent, and browser console/page/request failures are zero. The lane also validates lightning, frozen world anchor and delayed-thunder camera shake; pausing immediately after strike acquisition removes a pre-existing timing race from that proof.
+
+## 2026-08-21 - AXIOM region recovery integration in progress
+
+- Recovered `axiom_ash_road_threshold_2` remains intact as `The winding path` at authoring/runtime revision 6310. Its apparent disappearance was a stale manifest title, not lost map content.
+- The runtime map remains an explicit bake. AXIOM now passes `skipHatch=1` only when previewing a non-default selected region; the first/default region retains the authored opening.
+- The project workspace declares the app-owned `smoke_instinct_awakening` arrival scene as an authoring option with source provenance. Runtime sequence ownership and gameplay behavior are unchanged.
+- Focused WebGL3D proof of the recovered map is the remaining validation gate for the complete editor lifecycle.
+
+## 2026-08-21 - AXIOM region recovery integration complete
+
+- Recovery is canonical again: `ash_road_threshold_2.authoring.json` and `axiom-ash-road-threshold-2.runtime-map.json` both represent `The winding path` at revision 6310. The source was deterministically reconstructed from the intact explicit runtime bake, retains the AXIOM design metadata, and rebuilds the runtime payload exactly.
+- The catalogue now exposes the recovered title at stable id `ash_road_threshold_2`. Completed historical AI sessions can no longer replay an old revision-1 prepared draft into the current authoring surface, closing the overwrite route that made later explicit saves destructive.
+- Non-default selected regions preview their exact baked path with `skipHatch=1`; the default first region still owns the opening egg. Escape authoring can target any ordered catalogue region and select the app-owned `smoke_instinct_awakening` arrival scene without moving scene ownership into AXIOM.
+- Real browser evidence confirms the selected runtime map, WebGL3D backend, recovered 483-object map, persisted spawn/escape transition data and inactive opening for non-default regions. The reusable two-region WebGL3D gate and focused region-lifecycle gate both pass with no relevant browser issues.
+
+## 2026-08-25 - Mama liquid-napalm / firewall VFX v2 (curved-mass follow-up complete)
+
+- The first layered revision was rejected after runtime inspection: although it removed the stretched box, its crossed tapered geometry still read as repeated sharp triangles. That failed useful completion. The rejected sustain frame is preserved at `artifacts/mama-napalm-vfx-upgrade/triangle-foundation/04c-firewall-sustain-detail-rejected.png`.
+- Replaced the flame silhouette foundation with eight overlapping animated SDF/metaball macro masses: three dominant balling anchors, three secondary bodies and two low bridge banks. Rounded lobe unions, rolling deformation, FBM edge breakup and noisy ground contact now define the visible alpha rather than fitted polygon tips.
+- Folded the separate hot-core draw into the flame shader and added seeded intra-/inter-mass colour variation across deep crimson, vermilion, orange, amber, yellow and yellow-white, with soot folds interrupting the heat gradient.
+- Replaced the seven triangular smoke ribbons with seven broad SDF smoke plumes. The first ignition stays bright; smoke matures over the next 0.7-3.4 seconds, grows taller/wider, develops curl/crown lobes, and overlays the flame batch with warm-brown fringe plus dense charcoal/black pockets during sustain and decay.
+- The firewall is now five prewarmed global instanced families, 276 maximum instances and five peak draw calls, down from six families/348 instances. All per-instance attributes exist before warmup. `ThreeMamaNapalmSmokeMaterial.js` keeps the production files under the 500-line architecture limit.
+- Canonical world-event state, segment, cadence, 18-second lifetime, damage, slow, avoidance, foliage ignition and authored map truth remain unchanged. The legacy WebGL SDF path remains a valid backend projection, not a new truth owner.
+- Final inspected source-browser evidence is under `artifacts/mama-napalm-vfx-upgrade/final/`: brighter uneven ignition, curved rolling sustain with black smoke threading through it, smoke-led decay and burnt aftermath. The browser lane has zero console/page/request/warning issues and proves continued movement after the event.
+- Activation/resource validation passes: flyover entry p95 28.7ms, breath p95 41.2ms, inferno deployment p95 57.9ms, steady firewall p95 39.1ms; programs 45->45, materials 536->536, geometries 145->145 and dynamic scenery materials 0->0. The inferno transition is the explicit cost trade-off; steady state remains within the existing gate.
+- Full `npm test`, strict LOC, live Mama browser smoke, activation regression, curated build and built-package browser smoke pass. The built package retains raw-source HTTP 404 and zero browser/HTTP failures.
+- Canonical ownership, design, budgets, tuning controls, evidence and deliberate boundaries are recorded in `docs/MAMA_NAPALM_FIREWALL_VFX_V2.md`.

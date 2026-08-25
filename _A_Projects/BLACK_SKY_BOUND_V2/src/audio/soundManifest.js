@@ -149,7 +149,7 @@ export const SOUND_CUES = Object.freeze({
   'player.lunge.body': cue({
     id: 'player.lunge.body',
     bus: 'combat',
-    volume: 0.78,
+    volume: 1.2,
     pitchRandom: [0.92, 1.03],
     cooldownMs: 180,
     maxVoices: 2,
@@ -424,6 +424,13 @@ export function getSoundCue(id) {
   return SOUND_CUES[id] ?? null;
 }
 
+export function collectSoundAssetFiles(cues = SOUND_CUES) {
+  return [...new Set(Object.values(cues)
+    .filter((cueDef) => cueDef?.source === 'file')
+    .flatMap((cueDef) => [...(cueDef.files ?? []), ...(cueDef.environmentFiles ?? [])]))]
+    .sort();
+}
+
 export function validateSoundManifest(cues = SOUND_CUES) {
   const ids = Object.keys(cues);
   const errors = [];
@@ -434,8 +441,10 @@ export function validateSoundManifest(cues = SOUND_CUES) {
     if (cueDef.id !== id) errors.push(`cue_key_id_mismatch:${id}`);
     if (!AUDIO_BUS_IDS.includes(cueDef.bus)) errors.push(`unknown_bus:${id}:${cueDef.bus}`);
     if (!Array.isArray(cueDef.files)) errors.push(`missing_files_array:${id}`);
+    if (!Array.isArray(cueDef.environmentFiles)) errors.push(`missing_environment_files_array:${id}`);
     if (!['file', 'procedural_sfx'].includes(cueDef.source)) errors.push(`unknown_source:${id}:${cueDef.source}`);
     if (cueDef.source === 'file' && cueDef.files.length === 0) errors.push(`file_source_missing_files:${id}`);
+    if (cueDef.environmentFiles?.length && cueDef.source !== 'file') errors.push(`environment_files_require_file_source:${id}`);
     if (cueDef.source === 'procedural_sfx' && !cueDef.procedural?.type) errors.push(`missing_procedural_profile:${id}`);
     if (cueDef.required && cueDef.source !== 'file') errors.push(`required_cue_must_be_file:${id}`);
     if (cueDef.loop && cueDef.maxVoices !== 1 && cueDef.spatialization !== 'point_mono') errors.push(`loop_must_be_single_voice:${id}`);

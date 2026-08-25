@@ -28,10 +28,46 @@
   "workspace": {
     "contract": "axiom.project-workspace.v0",
     "surfaceId": "bsb-v2-map-authoring",
+    "playableSpaceProfile": {
+      "contract": "axiom.playable-space-profile.v1",
+      "classification": "project_planning_profile",
+      "player": {
+        "movementSpeedTilesPerSecond": 4.65,
+        "sourcePath": "src/data/actors.js",
+        "sourceSymbol": "ACTORS.young_dragon.speed"
+      },
+      "pacing": {
+        "traversalShare": 0.32
+      },
+      "route": {
+        "widthTiles": 3,
+        "rowSpacingTiles": 7,
+        "areaShare": 0.18
+      },
+      "mapLimits": {
+        "minDimension": 32,
+        "maxDimension": 256,
+        "defaultWidth": 64,
+        "defaultHeight": 48
+      },
+      "assumptions": [
+        "Playable duration is a planning estimate until measured in the runtime playtest.",
+        "Thirty-two percent of the requested duration is budgeted for uninterrupted traversal; encounters, orientation and recovery consume the remainder.",
+        "The route-length estimate uses the player movement speed declared by Black Sky Bound and does not assume sprinting."
+      ]
+    },
     "scene": {
       "kind": "map",
       "manifestPath": "data/maps/manifest.json"
     },
+    "transitionScenes": [
+      {
+        "id": "smoke_instinct_awakening",
+        "label": "Smoke instinct awakening",
+        "phase": "arrival",
+        "sourcePath": "src/data/smokeAwakening.js"
+      }
+    ],
     "authoring": {
       "owner": "AXIOM",
       "projectId": "axiom",

@@ -18,6 +18,41 @@ function err(rule, field, message, severity = 'error', context = {}) {
   return { rule, field, message, severity, context };
 }
 
+function stripJavaScriptStringsAndComments(source = '') {
+  const text = String(source);
+  let output = '';
+  let mode = 'code';
+  let escaped = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (mode === 'code') {
+      if (char === '/' && next === '/') { output += '  '; index += 1; mode = 'line_comment'; continue; }
+      if (char === '/' && next === '*') { output += '  '; index += 1; mode = 'block_comment'; continue; }
+      if (char === "'") { output += ' '; mode = 'single'; escaped = false; continue; }
+      if (char === '"') { output += ' '; mode = 'double'; escaped = false; continue; }
+      if (char === '`') { output += ' '; mode = 'template'; escaped = false; continue; }
+      output += char;
+      continue;
+    }
+    if (mode === 'line_comment') {
+      output += char === '\n' ? '\n' : ' ';
+      if (char === '\n') mode = 'code';
+      continue;
+    }
+    if (mode === 'block_comment') {
+      if (char === '*' && next === '/') { output += '  '; index += 1; mode = 'code'; }
+      else output += char === '\n' ? '\n' : ' ';
+      continue;
+    }
+    output += char === '\n' ? '\n' : ' ';
+    if (escaped) { escaped = false; continue; }
+    if (char === '\\') { escaped = true; continue; }
+    if ((mode === 'single' && char === "'") || (mode === 'double' && char === '"') || (mode === 'template' && char === '`')) mode = 'code';
+  }
+  return output;
+}
+
 export class PluginValidator {
   constructor({ strict = true } = {}) { this.strict = strict; }
 
@@ -40,6 +75,7 @@ export class PluginValidator {
     if (!VALID_AUTHOR_SOURCE.has(manifest.author?.source)) add(err('MANIFEST_AUTHOR_SOURCE', 'author.source', `Invalid author.source: ${manifest.author?.source}`));
 
     const implementationKind = manifest.implementation?.implementation_kind;
+    const boundedRuntimeTool = implementationKind === 'bounded_runtime_mcp_tool';
     const safeWriteCorePatchProposal = Boolean(
       implementationKind === 'safe_write_project_file' &&
       manifest.implementation?.proposal_only === true &&
@@ -102,6 +138,90 @@ export class PluginValidator {
             }
             if (!Array.isArray(manifest.implementation.required_runtime_apis) || manifest.implementation.required_runtime_apis.length === 0) {
               add(err('IMPLEMENTATION_REQUIRED_APIS_DECLARED', 'implementation.required_runtime_apis', 'Implementation-bearing plugin must declare required runtime APIs'));
+            }
+            if (boundedRuntimeTool) {
+              const declaredTools = Array.isArray(manifest.mcp_tools) ? manifest.mcp_tools : [];
+              if (declaredTools.length !== 1) {
+                add(err('BOUNDED_TOOL_EXACTLY_ONE', 'mcp_tools', `Bounded runtime acquisition must declare exactly one MCP tool; received ${declaredTools.length}`));
+              }
+              if (!manifest.capabilities?.includes('mcp-tool-expose')) {
+                add(err('BOUNDED_TOOL_CAPABILITY', 'capabilities', 'Bounded runtime acquisition must declare mcp-tool-expose'));
+              }
+              if (!/export\s+const\s+tools\s*=\s*\[\s*\{/.test(src)) {
+                add(err('BOUNDED_TOOL_EXPORT', 'entrypoint', 'Bounded runtime acquisition must export const tools as an array containing one tool object'));
+              }
+              if (!/for\s*\(\s*const\s+tool\s+of\s+tools\s*\)[\s\S]{0,120}ctx\.mcp\.registerTool\s*\(\s*tool\s*\)/.test(src)) {
+                add(err('BOUNDED_TOOL_REGISTER', 'entrypoint', 'onActivate must register each declared tool object using for (const tool of tools) ctx.mcp.registerTool(tool)'));
+              }
+              if (!/for\s*\(\s*const\s+tool\s+of\s+tools\s*\)[\s\S]{0,120}ctx\.mcp\.unregisterTool\s*\(\s*tool\.name\s*\)/.test(src)) {
+                add(err('BOUNDED_TOOL_UNREGISTER', 'entrypoint', 'onDeactivate must unregister each declared tool using ctx.mcp.unregisterTool(tool.name)'));
+              }
+              for (const tool of declaredTools) {
+                if (tool?.name && !src.includes(String(tool.name))) {
+                  add(err('BOUNDED_TOOL_NAME_PRESENT', 'entrypoint', `Declared tool name is absent from source: ${tool.name}`));
+                }
+              }
+              const requiredApis = Array.isArray(manifest.implementation.required_runtime_apis)
+                ? manifest.implementation.required_runtime_apis
+                : [];
+              const availableApis = new Set(Array.isArray(manifest.implementation.available_runtime_apis)
+                ? manifest.implementation.available_runtime_apis
+                : []);
+              const unavailableApis = requiredApis.filter(api => !availableApis.has(api));
+              if (unavailableApis.length) {
+                add(err('BOUNDED_RUNTIME_API_OFFERED', 'implementation.required_runtime_apis', `Plugin requested runtime APIs the host did not offer: ${unavailableApis.join(', ')}`));
+              }
+              if (manifest.implementation.runtime_contract !== 'axiom.runtime-plugin-authoring.v1') {
+                add(err('BOUNDED_RUNTIME_CONTRACT', 'implementation.runtime_contract', 'Bounded runtime acquisition must bind axiom.runtime-plugin-authoring.v1'));
+              }
+              const normalisedContextAccess = src.replaceAll('?.', '.');
+              const sourceMissingApis = requiredApis.filter(api => !normalisedContextAccess.includes(`ctx.${api}`));
+              if (sourceMissingApis.length) {
+                add(err('BOUNDED_RUNTIME_API_PATH', 'entrypoint', `Plugin must use injected runtime API paths exactly as declared: ${sourceMissingApis.join(', ')}`));
+              }
+              if (/\bctx\.runtime\b/.test(src)) {
+                add(err('BOUNDED_RUNTIME_API_ROOT', 'entrypoint', 'Injected runtime APIs are rooted directly at ctx; ctx.runtime is not part of the host contract'));
+              }
+              const expectedHooks = {
+                on_load: 'onLoad',
+                on_activate: 'onActivate',
+                on_deactivate: 'onDeactivate',
+                on_unload: 'onUnload'
+              };
+              for (const [hook, exported] of Object.entries(expectedHooks)) {
+                if (manifest.lifecycle_hooks?.[hook] !== exported) {
+                  add(err('BOUNDED_LIFECYCLE_HOOK', `lifecycle_hooks.${hook}`, `Expected ${hook}: ${exported}`));
+                }
+              }
+              if (!/return\s+\{\s*ok\s*:\s*true/.test(src)) {
+                add(err('BOUNDED_STRUCTURED_RESULT', 'entrypoint', 'Bounded plugin lifecycle/tool paths must return structured { ok: true, ... } objects'));
+              }
+              const testPath = join(pluginDir, 'tests', 'plugin.test.js');
+              if (existsSync(testPath)) {
+                const testSource = readFileSync(testPath, 'utf8');
+                const externalTestGlobals = ['vitest', 'jest.', 'mocha', 'describe(', 'it(', 'expect('].filter(token => testSource.includes(token));
+                if (externalTestGlobals.length) {
+                  add(err('BOUNDED_TEST_SELF_CONTAINED', 'tests/plugin.test.js', `Bounded plugin tests must be self-contained Node tests; unsupported test dependencies/globals: ${externalTestGlobals.join(', ')}`));
+                }
+              }
+              const boundedCode = stripJavaScriptStringsAndComments(src);
+              const forbiddenBoundedSource = [
+                ['window', /\bwindow\b/],
+                ['document', /\bdocument\b/],
+                ['globalThis', /\bglobalThis\b/],
+                ['fetch', /\bfetch\s*\(/],
+                ['XMLHttpRequest', /\bXMLHttpRequest\b/],
+                ['WebSocket', /\bWebSocket\b/],
+                ['localStorage', /\blocalStorage\b/],
+                ['indexedDB', /\bindexedDB\b/],
+                ['navigator', /\bnavigator\b/],
+                ['dynamic_import', /\bimport\s*\(/],
+                ['constructor_escape', /\.constructor\b/]
+              ].filter(([, pattern]) => pattern.test(boundedCode)).map(([name]) => name);
+              if (src.includes('`')) forbiddenBoundedSource.push('template_literal');
+              if (forbiddenBoundedSource.length) {
+                add(err('BOUNDED_SOURCE_CONFINEMENT', 'entrypoint', `Bounded runtime plugin may use only injected context APIs; forbidden source: ${forbiddenBoundedSource.join(', ')}`));
+              }
             }
           }
           if (manifest.implementation.proposal_only !== true) {

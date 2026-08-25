@@ -12,7 +12,7 @@ const CROSS_SECTION_PATTERN = Object.freeze([
 ]);
 
 export class ThreeCameraVisibilityFocus {
-  constructor(root, tileSize) {
+  constructor(_root, tileSize) {
     this.tileSize = tileSize;
     this.materials = new Set();
     this.occluders = [];
@@ -34,11 +34,6 @@ export class ThreeCameraVisibilityFocus {
       right: new THREE.Vector3(),
       up: new THREE.Vector3()
     };
-    this.light = new THREE.PointLight(0xd8e5d6, 0, 0, 2);
-    this.light.name = 'camera-visibility-focus:readability-light';
-    this.light.castShadow = false;
-    this.light.visible = false;
-    root.add(this.light);
     this.state = inactiveState('not_projected');
   }
 
@@ -103,8 +98,6 @@ export class ThreeCameraVisibilityFocus {
       && Number.isFinite(packet.worldY);
     if (!active) {
       this.disableMaterials();
-      this.light.visible = false;
-      this.light.power = 0;
       this.framesSinceTrace = TRACE_INTERVAL_FRAMES;
       this.state = inactiveState(packet?.reason ?? 'projection_inactive', packet, this);
       return;
@@ -114,17 +107,12 @@ export class ThreeCameraVisibilityFocus {
     const radius = positive(packet.radiusMeters, 1.15);
     const feather = positive(packet.featherMeters, 0.3);
     const minimumOpacity = clamp(packet.minimumOccluderOpacity, 0.02, 0.55, 0.04);
-    const lightPower = Math.max(0, Number(packet.readabilityLightPower) || 0);
-    this.light.position.set(center.x, Math.max(0.35, center.y + 0.25), center.z);
-    this.light.distance = positive(packet.readabilityLightDistanceMeters, radius + feather + 1.5);
-    this.light.power = lightPower;
-    this.light.visible = lightPower > 0;
 
     const frame = resolveViewFrame(view, center, this);
     if (!frame) {
       this.disableMaterials();
       this.state = {
-        ...activeState(packet, center, radius, feather, minimumOpacity, lightPower, this.light.distance, this),
+        ...activeState(packet, center, radius, feather, minimumOpacity, this),
         occlusionActive: false,
         reason: 'camera_visibility_focus_view_missing',
         opacityMode: 'occlusion_trace_unavailable'
@@ -156,7 +144,7 @@ export class ThreeCameraVisibilityFocus {
       uniforms.minimumOpacity.value = minimumOpacity;
     }
     this.state = {
-      ...activeState(packet, center, radius, feather, minimumOpacity, lightPower, this.light.distance, this),
+      ...activeState(packet, center, radius, feather, minimumOpacity, this),
       occlusionActive: this.lastBlockers.length > 0,
       reason: this.lastBlockers.length > 0 ? null : 'camera_target_sightline_clear',
       sightlineStart: vectorState(frame.start),
@@ -215,7 +203,6 @@ export class ThreeCameraVisibilityFocus {
   dispose() {
     this.disableMaterials();
     this.occluders.length = 0;
-    this.light.removeFromParent();
     this.materials.clear();
     this.state = inactiveState('disposed');
   }
@@ -302,7 +289,7 @@ float cameraVisibilityFocusOpacity = mix(
 if (cameraVisibilityFocusNoise(gl_FragCoord.xy) > cameraVisibilityFocusOpacity) discard;`);
 }
 
-function activeState(packet, center, radius, feather, minimumOpacity, lightPower, lightDistance, owner) {
+function activeState(packet, center, radius, feather, minimumOpacity, owner) {
   return {
     contract: THREE_CAMERA_VISIBILITY_FOCUS_CONTRACT,
     active: true,
@@ -315,8 +302,8 @@ function activeState(packet, center, radius, feather, minimumOpacity, lightPower
     radiusMeters: radius,
     featherMeters: feather,
     minimumOccluderOpacity: minimumOpacity,
-    readabilityLightPower: lightPower,
-    readabilityLightDistanceMeters: lightDistance,
+    illuminationPolicy: 'occluder_fade_only_no_actor_tracking_light_v2',
+    syntheticLightCount: 0,
     patchedMaterialCount: owner.materials.size,
     registeredOccluderCount: owner.occluders.length
   };

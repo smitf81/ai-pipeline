@@ -6,7 +6,7 @@ export function buildWorldEventProjection(worldEvents, tileSize, scenery = []) {
     ? [projectFlyover(active, tileSize)]
     : [];
   const fireWalls = (worldEvents?.fireWalls ?? []).map((wall) => projectFireWall(wall, tileSize));
-  const treeFires = scenery.filter((object) => object.material?.state?.firePhase).map(projectTreeFire);
+  const foliageFires = scenery.filter((object) => object.material?.state?.firePhase).map(projectFoliageFire);
   return {
     classification: 'renderer_neutral_world_spatial_event_projection',
     contract: worldEvents?.contract ?? MAMA_WYVERN_WORLD_EVENT.contract,
@@ -15,16 +15,19 @@ export function buildWorldEventProjection(worldEvents, tileSize, scenery = []) {
     warningActive: active?.phase === MamaWyvernEventPhase.WARNING,
     flyovers,
     fireWalls,
-    treeFires,
+    foliageFires,
     completedCount: worldEvents?.completedCount ?? 0
   };
 }
 
-function projectTreeFire(object) {
+function projectFoliageFire(object) {
   const state = object.material.state;
   return {
     id: object.id,
-    classification: 'runtime_tree_fire_emissive_overlay_projection',
+    classification: 'runtime_foliage_fire_emissive_overlay_projection',
+    family: state.fireFamily,
+    type: object.type,
+    physicalHeightMeters: Number(object.physical?.heightMeters ?? (state.fireFamily === 'tree' ? 5 : 0.7)),
     phase: state.firePhase,
     phaseProgress: state.firePhaseProgress,
     heatAmount: state.heatAmount,
@@ -47,6 +50,8 @@ function projectFlyover(event, tileSize) {
   return {
     id: event.id,
     kind: event.kind,
+    requestedKind: event.requestedKind,
+    resolvedKind: event.resolvedKind,
     source: event.source,
     phase: event.phase,
     progress,

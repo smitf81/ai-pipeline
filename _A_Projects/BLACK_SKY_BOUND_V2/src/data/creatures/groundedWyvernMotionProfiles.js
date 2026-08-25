@@ -1,7 +1,7 @@
 import { AbilityId } from '../../constants/abilityIds.js';
 import { ABILITIES } from '../abilities.js';
 
-const CHARGE_COUNTER_ABILITY = ABILITIES[AbilityId.CHARGE_COUNTER];
+const POUNCE_COUNTER_ABILITY = ABILITIES[AbilityId.POUNCE_COUNTER];
 
 export const WyvernMotionId = Object.freeze({
   IDLE: 'idle',
@@ -16,6 +16,7 @@ export const WyvernActionId = Object.freeze({
   SMOKE_BURST: 'smoke_burst',
   SMOKE_SPIT: 'smoke_spit',
   LUNGE_ATTACK: 'lunge_attack',
+  POUNCE_COUNTER: 'charge_counter',
   CHARGE_COUNTER: 'charge_counter',
   CLAW_SWIPE_ATTACK: 'claw_swipe_attack'
 });
@@ -46,7 +47,14 @@ export const WYVERN_MOTION_PROFILES = Object.freeze({
     bodyWeightShift: Object.freeze({ sway: 0.09, forward: 0.04 }),
     contactAnchors: Object.freeze({ wrists: 'quick_brace', hindFeet: 'spring_and_land' }),
     affectedJoints: Object.freeze(['chest', 'hips', 'left_wrist', 'right_wrist', 'left_hind_foot', 'right_hind_foot', 'tail']),
-    poseOffsets: Object.freeze({ wristStride: 0.12, hindStride: 0.2, shoulderRock: 0.085, hipCounter: 0.11 })
+    poseOffsets: Object.freeze({
+      wristStride: 0.12,
+      hindStride: 0.2,
+      shoulderRock: 0.085,
+      hipCounter: 0.11,
+      apexHeightMeters: 0.12,
+      landingCompressionMeters: 0.06
+    })
   })
 });
 
@@ -76,6 +84,7 @@ function clawSwipeProfile(id, fixedSide = null, abilitySlot = 'bite') {
     actionFamily: 'claw_swipe',
     abilitySlot,
     interruptible: false,
+    dodgeInterruptible: true,
     fixedSide,
     duration: 0.52,
     visualRecovery: Object.freeze({ duration: 0.14, startPhase: 0.82 }),
@@ -99,6 +108,7 @@ export const WYVERN_ACTION_PROFILES = Object.freeze({
     abilitySlot: 'bite',
     actionFamily: 'bite',
     interruptible: false,
+    dodgeInterruptible: true,
     duration: 0.34,
     visualRecovery: Object.freeze({ duration: 0.11, startPhase: 0.82 }),
     phaseLabels: Object.freeze([
@@ -130,6 +140,7 @@ export const WYVERN_ACTION_PROFILES = Object.freeze({
     abilitySlot: 'smokeBurst',
     actionFamily: 'smoke_burst',
     interruptible: false,
+    dodgeInterruptible: true,
     duration: 0.78,
     visualRecovery: Object.freeze({ duration: 0.2, startPhase: 0.82 }),
     phaseLabels: Object.freeze([
@@ -168,6 +179,7 @@ export const WYVERN_ACTION_PROFILES = Object.freeze({
     abilitySlot: 'smoke',
     actionFamily: 'smoke_spit',
     interruptible: false,
+    dodgeInterruptible: true,
     duration: 0.62,
     visualRecovery: Object.freeze({ duration: 0.16, startPhase: 0.82 }),
     phaseLabels: Object.freeze([
@@ -209,6 +221,7 @@ export const WYVERN_ACTION_PROFILES = Object.freeze({
     abilitySlot: 'lunge',
     actionFamily: 'lunge_attack',
     interruptible: false,
+    dodgeInterruptible: true,
     duration: 0.46,
     visualRecovery: Object.freeze({ duration: 0.15, startPhase: 0.78 }),
     phaseLabels: Object.freeze([
@@ -239,45 +252,53 @@ export const WYVERN_ACTION_PROFILES = Object.freeze({
       staggerStrength: 0.44
     })
   }),
-  [WyvernActionId.CHARGE_COUNTER]: Object.freeze({
-    id: WyvernActionId.CHARGE_COUNTER,
-    displayName: 'CHARGE',
-    abilitySlot: 'charge',
-    actionFamily: 'charge_counter',
+  [WyvernActionId.POUNCE_COUNTER]: Object.freeze({
+    id: WyvernActionId.POUNCE_COUNTER,
+    displayName: 'POUNCE COUNTER',
+    abilitySlot: 'pounce',
+    actionFamily: 'pounce_counter',
     interruptible: false,
-    duration: CHARGE_COUNTER_ABILITY.action.duration,
+    dodgeInterruptible: false,
+    duration: POUNCE_COUNTER_ABILITY.action.duration,
     visualRecovery: Object.freeze({
-      duration: CHARGE_COUNTER_ABILITY.recoveryMs / 1000,
-      startPhase: CHARGE_COUNTER_ABILITY.action.activeEndPhase
+      duration: POUNCE_COUNTER_ABILITY.recoveryMs / 1000,
+      startPhase: POUNCE_COUNTER_ABILITY.action.activeEndPhase
     }),
     phaseLabels: Object.freeze([
-      Object.freeze({ until: 0.18, label: 'plant' }),
-      Object.freeze({ until: 0.58, label: 'drive' }),
-      Object.freeze({ until: 0.76, label: 'brake' }),
+      Object.freeze({ until: 0.2, label: 'coil' }),
+      Object.freeze({ until: 0.68, label: 'flight' }),
+      Object.freeze({ until: 0.84, label: 'impact_land' }),
       Object.freeze({ until: 1, label: 'recover' })
     ]),
-    hitTiming: 0.44,
-    bodyWeightShift: Object.freeze({ compression: 0.16, forwardDrive: 0.28, braceBack: 0.13 }),
-    contactAnchors: Object.freeze({ wrists: 'wide_plant_then_brace', hindFeet: 'compress_then_launch' }),
-    affectedJoints: Object.freeze(['head', 'neck', 'chest', 'hips', 'left_wrist', 'right_wrist', 'hind_foot', 'tail']),
+    impactPhaseStart: 0.68,
+    hitTiming: 0.52,
+    bodyWeightShift: Object.freeze({ compression: 0.22, forwardDrive: 0.34, braceBack: 0.18 }),
+    contactAnchors: Object.freeze({ wrists: 'tuck_then_wide_land', hindFeet: 'deep_coil_then_launch' }),
+    affectedJoints: Object.freeze(['head', 'neck', 'chest', 'hips', 'left_wrist', 'right_wrist', 'wing_digits', 'hind_foot', 'tail']),
     poseOffsets: Object.freeze({
-      plantCompression: 0.16,
-      headForward: 0.36,
-      neckForward: 0.22,
-      chestForward: 0.31,
-      wristBraceBack: 0.15,
-      wristPlantOut: 0.1,
-      hindCompression: 0.18,
-      hindPush: 0.22
+      plantCompression: 0.22,
+      headForward: 0.52,
+      neckForward: 0.34,
+      chestForward: 0.36,
+      wristBraceBack: 0.24,
+      wristPlantOut: 0.2,
+      hindCompression: 0.28,
+      hindPush: 0.34,
+      digitFlare: 0.34,
+      tailCounter: 0.28,
+      apexHeightMeters: 0.28,
+      landingCompressionMeters: 0.11
     }),
     movementImpulse: Object.freeze({
-      activePhaseStart: CHARGE_COUNTER_ABILITY.action.movementStartPhase,
-      activePhaseEnd: CHARGE_COUNTER_ABILITY.action.movementEndPhase,
-      distance: CHARGE_COUNTER_ABILITY.action.movementDistance,
-      accelerationExponent: CHARGE_COUNTER_ABILITY.action.accelerationExponent,
-      stopOnBlocked: CHARGE_COUNTER_ABILITY.action.stopOnBlocked
+      activePhaseStart: POUNCE_COUNTER_ABILITY.action.movementStartPhase,
+      activePhaseEnd: POUNCE_COUNTER_ABILITY.action.movementEndPhase,
+      distanceMeters: POUNCE_COUNTER_ABILITY.action.movementDistanceMeters,
+      distance: POUNCE_COUNTER_ABILITY.action.movementDistance,
+      accelerationExponent: POUNCE_COUNTER_ABILITY.action.accelerationExponent,
+      stopOnBlocked: POUNCE_COUNTER_ABILITY.action.stopOnBlocked,
+      impactTravel: POUNCE_COUNTER_ABILITY.impactTravel
     }),
-    contact: CHARGE_COUNTER_ABILITY.contact
+    contact: POUNCE_COUNTER_ABILITY.contact
   })
 });
 

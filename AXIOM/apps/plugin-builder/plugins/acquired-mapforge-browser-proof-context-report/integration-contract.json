@@ -1,0 +1,8 @@
+{
+  "contract": "axiom.runtime-plugin-integration.v1",
+  "required_runtime_apis": [
+    "mapforge.status"
+  ],
+  "activation": "explicit_runtime_activation_and_callable_tool_verification",
+  "source": "compiled_from_model_tool_spec"
+}

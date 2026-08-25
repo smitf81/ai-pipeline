@@ -111,6 +111,8 @@ export class ThreeReferenceGrove {
   cameraPreset() {
     if (this.selectedTree === 'all' || this.framing === 'gameplay') return { x: 0, y: 3.5, z: 1.4, frustumHeight: 17.5 };
     const height = this.trees[0].userData.recipe.skeleton.trunk.points.at(-1).y;
+    if (this.framing === 'bark') return { x: 0, y: Math.min(2.2, height * 0.28), z: 0, frustumHeight: 4.6 };
+    if (this.framing === 'foliage') return { x: 0, y: height * 0.74, z: 0, frustumHeight: Math.max(4.8, height * 0.58) };
     if (this.framing === 'roots') return { x: 0, y: 0.72, z: 0, frustumHeight: Math.max(4.2, height * 0.5) };
     return { x: 0, y: height * 0.46, z: 0, frustumHeight: height * 1.16 };
   }
@@ -248,6 +250,6 @@ function normalizeAngle(value) {
 
 function normalizeFraming(value, selectedTree) {
   const framing = String(value ?? (selectedTree === 'all' ? 'gameplay' : 'full')).toLowerCase();
-  if (!['gameplay', 'full', 'roots'].includes(framing)) throw new Error(`tree_reference_framing_invalid:${framing}`);
+  if (!['gameplay', 'full', 'roots', 'bark', 'foliage'].includes(framing)) throw new Error(`tree_reference_framing_invalid:${framing}`);
   return framing;
 }

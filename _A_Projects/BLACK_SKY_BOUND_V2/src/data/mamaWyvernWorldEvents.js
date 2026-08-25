@@ -21,7 +21,7 @@ export const MAMA_WYVERN_WORLD_EVENT = Object.freeze({
   schedule: Object.freeze({
     firstEventAtSeconds: 36,
     intervalSeconds: Object.freeze({ min: 52, max: 78 }),
-    kindPolicy: 'inferno_first_then_alternating_flyover_and_inferno'
+    kindPolicy: 'every_crossing_resolves_to_inferno'
   }),
   timing: Object.freeze({
     warningSeconds: 1.65,
@@ -116,8 +116,12 @@ export function createMamaWyvernWorldEventState() {
       damagedEntityCount: 0,
       avoidancePressureCount: 0,
       lightningSyncCount: 0,
-      treeIgnitionCount: 0,
-      activeBurningTreeCount: 0
+      foliageIgnitionCount: 0,
+      activeFoliageFireCount: 0,
+      burntOutFoliageCount: 0,
+      foliageIgnitionsByFamily: { tree: 0, fern: 0, shrub: 0, bramble: 0 },
+      activeFoliageByFamily: { tree: 0, fern: 0, shrub: 0, bramble: 0 },
+      burntFoliageByFamily: { tree: 0, fern: 0, shrub: 0, bramble: 0 }
     }
   };
 }
@@ -127,7 +131,9 @@ export function queueMamaWyvernWorldEvent(worldEvents, kind = MamaWyvernEventKin
   if (!Object.values(MamaWyvernEventKind).includes(kind)) throw new Error(`unknown_mama_world_event_kind:${kind}`);
   const request = {
     id: `manual_mama_event:${worldEvents.manualQueue.length}:${worldEvents.eventIndex}`,
-    kind,
+    kind: MamaWyvernEventKind.INFERNO,
+    requestedKind: kind === MamaWyvernEventKind.FLYOVER ? 'flyover' : 'inferno',
+    resolvedKind: 'inferno',
     lightningSync: options.lightningSync === true,
     angle: finiteOrNull(options.angle),
     centerX: finiteOrNull(options.centerX),
@@ -158,14 +164,14 @@ export function buildMamaWorldEventLightViews(worldEvents, renderTime = 0) {
         id: `${wall.id}:light:${index}`,
         x: node.x,
         y: node.y,
-        radius: 3.15,
-        intensity: strength * 0.88,
-        revealRadius: 4.9,
-        revealStrength: strength * 0.96,
-        glowRadius: 2.55,
-        glowStrength: strength * 0.86,
-        coreRadius: 0.46,
-        coreStrength: strength,
+        radius: 2.2,
+        intensity: strength * 0.34,
+        revealRadius: 2.85,
+        revealStrength: strength * 0.5,
+        glowRadius: 1.8,
+        glowStrength: strength * 0.44,
+        coreRadius: 0.32,
+        coreStrength: strength * 0.58,
         softness: 0.84,
         colour: 'rgba(255, 92, 24, 1)',
         innerColour: 'rgba(255, 226, 112, 1)',
@@ -176,10 +182,11 @@ export function buildMamaWorldEventLightViews(worldEvents, renderTime = 0) {
         enabled: true,
         sourceEntity: wall.id,
         sourceKind: 'mama_wyvern_inferno_wall',
+        physicalShadowLod: 'non_shadowing_distributed_fire_light',
         ambientParticleKind: 'mama_inferno_ember',
         shadowPriority: 200,
         sceneLight: false,
-        sourcePolicy: 'world_event_residual_fire_light_nodes',
+        sourcePolicy: 'world_event_residual_fire_light_nodes_distributed_chain',
         sourceAnchor: { type: 'world_event', id: wall.id },
         shadow: { sourceHeight: 'liquid_napalm_fire_wall', lengthScale: 1.08, opacityScale: 0.88, heightScale: 0.54 }
       };
@@ -252,7 +259,7 @@ export function mamaWorldEventAngle(eventIndex, previousHeadingRadians = null) {
 }
 
 export function mamaWorldEventKind(eventIndex) {
-  return eventIndex % 2 === 0 ? MamaWyvernEventKind.INFERNO : MamaWyvernEventKind.FLYOVER;
+  return MamaWyvernEventKind.INFERNO;
 }
 
 function hash01(...values) {

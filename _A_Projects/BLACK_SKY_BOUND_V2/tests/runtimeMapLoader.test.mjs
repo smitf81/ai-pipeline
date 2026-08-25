@@ -47,11 +47,25 @@ equal(normalized.unitSpawners[0].fixtureRadiusTiles, 0.7, 'loader should preserv
 equal(normalized.transitions.escapeZone.nextMapPath, '/data/maps/axiom-second-approach.runtime-map.json', 'loader should preserve bounded escape-zone next-map paths');
 equal(normalized.transitions.escapeZone.nextMapId, 'axiom_second_approach', 'loader should preserve transition target identity for diagnostics');
 equal(normalized.transitions.escapeZone.arrivalSequenceId, 'smoke_instinct_awakening', 'loader should preserve the authored arrival sequence trigger');
+equal(normalized.atmosphere.rainAndSparksEnabled, true, 'legacy runtime maps should default rain and sparks on');
 equal(normalized.sceneObjects.length, payload.sceneObjects.length, 'loader should normalize baked scene objects');
 equal(Object.isFrozen(normalized), true, 'loaded runtime maps should be immutable');
 equal(Object.isFrozen(normalized.tiles), true, 'loaded runtime map tiles should be immutable');
 const northFacingGame = createInitialGameState(normalized);
 equal(getComponent(northFacingGame.world, northFacingGame.dragonId, ComponentType.Transform).rotation, -Math.PI / 2, 'runtime game creation should apply the authored arrival facing');
+equal(northFacingGame.renderLayers.atmosphericOverlay.enabled, true, 'initial game state should apply the region atmosphere policy');
+
+const clearAtmosphereMap = normalizeRuntimeMap({
+  ...payload,
+  atmosphere: { contract: 'black-sky-bound.region-atmosphere.v1', rainAndSparksEnabled: false }
+});
+equal(clearAtmosphereMap.atmosphere.rainAndSparksEnabled, false, 'runtime loader should preserve an authored local atmosphere override');
+equal(createInitialGameState(clearAtmosphereMap).renderLayers.atmosphericOverlay.enabled, false, 'runtime game state should suppress both atmosphere effects for a disabled region');
+assertThrows(
+  () => normalizeRuntimeMap({ ...payload, atmosphere: { rainAndSparksEnabled: 'yes' } }),
+  /runtime_map_region_atmosphere_enabled_invalid/,
+  'runtime loader should reject ambiguous atmosphere settings'
+);
 
 const factionDefaultsPayload = JSON.parse(JSON.stringify(payload));
 factionDefaultsPayload.unitPlacements = [

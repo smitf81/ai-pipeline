@@ -32,9 +32,8 @@ const raider = spawnActor(locomotionHarness.game.world, EntityKind.RAIDER, 8, 8,
 const husk = spawnActor(locomotionHarness.game.world, EntityKind.HUSK, 12, 12, Faction.HUSKS);
 const intent = component(locomotionHarness, raider, ComponentType.RaiderPhysicalMotion);
 equal(intent.contract, RAIDER_PHYSICAL_MOTION_INTENT_CONTRACT, 'recipe raider should own the physical-motion intent contract');
-equal(intent.poseEnabled, false, 'finished recipe body should remain on the compatibility pose until greybox acceptance');
-intent.poseEnabled = true;
-intent.poseActivation = 'unit_proof';
+equal(intent.poseEnabled, true, 'recipe raider should use the production physical pose path');
+equal(intent.poseActivation, 'production_raider_ink_stick_v1', 'production pose activation should be explicit');
 equal(component(locomotionHarness, husk, ComponentType.RaiderPhysicalMotion), null, 'non-recipe humanoids should remain on their compatibility pose path');
 
 raiderPhysicalMotionSystem({ game: locomotionHarness.game, dt: 1 / 60 });
@@ -62,9 +61,15 @@ for (let frame = 0; frame < 12; frame += 1) {
 }
 assert(intent.continuity.plantSwitchCount > 0, 'locomotion should transfer support between persistent foot contacts');
 const humanoid = component(locomotionHarness, raider, ComponentType.HumanoidProjection);
-for (const key of ['leftFoot', 'rightFoot', 'leftKnee', 'rightKnee', 'leftElbow', 'rightElbow']) {
+for (const key of ['neck', 'leftFoot', 'rightFoot', 'leftToe', 'rightToe', 'leftKnee', 'rightKnee', 'leftElbow', 'rightElbow']) {
   assert(Number.isFinite(humanoid.points[key].x) && Number.isFinite(humanoid.points[key].y) && Number.isFinite(humanoid.points[key].height), `${key} should be solved by finite two-bone/contact geometry`);
 }
+const blend = humanoid.animationState.blendSpace;
+assert(Math.abs(blend.idleWeight + blend.walkWeight + blend.runWeight - 1) < 0.001, 'idle/walk/run blend weights should form one continuous locomotion blend');
+assert(Number.isFinite(blend.forward) && Number.isFinite(blend.lateral), 'the 3D locomotion blend should expose finite forward and lateral axes');
+assert(Math.hypot(humanoid.points.leftHand.x - humanoid.points.torchGrip.x, humanoid.points.leftHand.y - humanoid.points.torchGrip.y) < 0.000001, 'left hand should own the torch grip');
+assert(Math.hypot(humanoid.points.rightHand.x - humanoid.points.spearRearGrip.x, humanoid.points.rightHand.y - humanoid.points.spearRearGrip.y) < 0.000001, 'right hand should own the spear rear grip');
+equal(humanoid.animationState.equipment.policy, 'right_hand_spear_left_hand_torch_v1', 'pose diagnostics should expose the production equipment policy');
 const velocityBeforeStop = intent.pelvis.velocityX;
 raiderPhysicalMotionSystem({ game: locomotionHarness.game, dt: 1 / 60 });
 humanoidProjectionSystem({ game: locomotionHarness.game, dt: 1 / 60 });
@@ -127,9 +132,6 @@ function createAttackHarness() {
     creature: { recipeId: CreatureRecipeId.RAIDER_SCAVENGER, seed: 1 }, sourceId: 'physical-motion:attack-raider'
   });
   const sourceAI = component(harness, source, ComponentType.EnemyPressureAI);
-  const sourceIntent = component(harness, source, ComponentType.RaiderPhysicalMotion);
-  sourceIntent.poseEnabled = true;
-  sourceIntent.poseActivation = 'unit_proof';
   sourceAI.attackProfileIds = [EnemyAttackProfileId.RAIDER_SPEAR_JAB];
   sourceAI.targetId = harness.game.dragonId;
   const target = component(harness, harness.game.dragonId, ComponentType.Transform);

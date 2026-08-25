@@ -8,11 +8,16 @@ export const HumanoidProjectionId = Object.freeze({
   HUSK_TOP_DOWN_SHAMBLER: 'husk_top_down_shambler_v0'
 });
 
+export const HumanoidEmbodimentId = Object.freeze({
+  INK_STICK: 'ink_stick_humanoid_v1'
+});
+
 export { HUMANOID_TUNING_FIELDS, getHumanoidTuningFields };
 
 export const RAIDER_HUMANOID_PROFILE = Object.freeze({
   id: HumanoidProjectionId.RAIDER_TOP_DOWN_STICK,
   classification: 'humanoid_projection_profile',
+  embodimentId: HumanoidEmbodimentId.INK_STICK,
   label: 'Raider articulated procedural humanoid',
   scaleProfileId: WORLD_SCALE.id,
   physical: {
@@ -74,7 +79,7 @@ export const RAIDER_HUMANOID_PROFILE = Object.freeze({
     footRearBias: 0
   },
   torch: {
-    hand: 'right',
+    hand: 'left',
     length: 0.42,
     width: 0.055,
     handOffsetForward: 0.08,
@@ -83,7 +88,7 @@ export const RAIDER_HUMANOID_PROFILE = Object.freeze({
   },
   spear: {
     enabled: true,
-    hand: 'left',
+    hand: 'right',
     length: 0.92,
     buttLength: 0.2,
     width: 0.038,
@@ -114,6 +119,7 @@ export const RAIDER_HUMANOID_PROFILE = Object.freeze({
 export const HUSK_HUMANOID_PROFILE = Object.freeze({
   id: HumanoidProjectionId.HUSK_TOP_DOWN_SHAMBLER,
   classification: 'humanoid_projection_profile',
+  embodimentId: HumanoidEmbodimentId.INK_STICK,
   label: 'Husk top-down shambler',
   scaleProfileId: WORLD_SCALE.id,
   physical: {

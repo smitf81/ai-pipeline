@@ -17,7 +17,8 @@
       "scenarioId": "first_escape",
       "runtimeMapId": "axiom_second_approach",
       "runtimePath": "/data/maps/axiom-second-approach.runtime-map.json",
-      "authoringPath": "data/bsb-v2/maps/second_approach.authoring.json"
+      "authoringPath": "data/bsb-v2/maps/second_approach.authoring.json",
+      "nextMapId": null
     },
     {
       "id": "crown_of_cinders_demo",
@@ -25,7 +26,17 @@
       "scenarioId": "demo_arena",
       "runtimeMapId": "axiom_crown_of_cinders",
       "runtimePath": "/data/maps/axiom-crown-of-cinders.runtime-map.json",
-      "authoringPath": "data/bsb-v2/maps/crown_of_cinders.authoring.json"
+      "authoringPath": "data/bsb-v2/maps/crown_of_cinders.authoring.json",
+      "nextMapId": null
+    },
+    {
+      "id": "ash_road_threshold_2",
+      "title": "The winding path",
+      "scenarioId": "first_escape",
+      "runtimeMapId": "axiom_ash_road_threshold_2",
+      "runtimePath": "/data/maps/axiom-ash-road-threshold-2.runtime-map.json",
+      "authoringPath": "data/bsb-v2/maps/ash_road_threshold_2.authoring.json",
+      "nextMapId": null
     }
   ]
 }

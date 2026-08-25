@@ -9,6 +9,7 @@ import { getImpactReactionProfile } from '../../data/impactReactionProfiles.js';
 import { buildImpactPoseState } from '../../systems/impactResponseState.js';
 import { applyWyvernOpeningPose } from './wyvernOpeningPose.js';
 import { applyWyvernSmokeAwakeningPose } from './wyvernSmokeAwakeningPose.js';
+import { applyWyvernDirectionalGaitPose } from './wyvernDirectionalGaitPose.js';
 
 const TAU = Math.PI * 2;
 const POSE_BUCKETS = 16;
@@ -36,10 +37,14 @@ export function buildWyvernProceduralPose({ recipe, projection, transform, radiu
     actionPhaseBucket: actionProfile ? phaseBucket(actionPhase) : 0,
     movement01: move
   });
-  pose.actionStateKind = actionState?.active ? 'active' : (actionState?.recovering ? 'visual_recovery' : 'none');
+  pose.actionStateKind = actionState?.active
+    ? 'active'
+    : (actionState?.recovering
+        ? (actionState.recoveryKind === 'dodge_interruption' ? 'interrupted_recovery' : 'visual_recovery')
+        : 'none');
   pose.actionRecovery01 = actionState?.recovering ? clamp01(actionState.recoveryProgress) : 0;
 
-  applyMotionPose(pose, motionProfile, recipe.proportionProfile, motionPhase, move);
+  applyWyvernDirectionalGaitPose(pose, motionProfile, recipe.proportionProfile, motionPhase, move, motionState, !!actionProfile);
   if (actionProfile) applyActionPose(pose, actionProfile, visualActionState);
   const impactState = buildImpactPoseState(impactResponse, transform.rotation ?? 0);
   if (impactState) applyImpactPose(pose, impactState);
@@ -146,47 +151,10 @@ function createBasePose(seed) {
     sockets: {},
     attackContact: null,
     impactState: null,
+    elevationMeters: 0,
+    look: { headYaw: 0, neckYaw: 0 },
     jawOpen: 0
   };
-}
-
-function applyMotionPose(pose, profile, proportionProfile, phase, move) {
-  const idle = profile.id === WyvernMotionId.IDLE;
-  const sway = Math.sin(phase);
-  const counter = Math.cos(phase);
-  const breath = Math.sin(phase * 0.5);
-  const hips = proportionProfile?.hips ?? {};
-  const tail = proportionProfile?.tail ?? {};
-  const rearSettle = (hips.supportOffset ?? 0.18) * (idle ? 0.035 * Math.max(0, breath) : 0.16 * move);
-  const tailReach = tail.counterReach ?? 0.18;
-  pose.bodyOffsets.head.forward += profile.poseOffsets.headForward ?? 0;
-  pose.bodyOffsets.chest.right += (idle ? profile.bodyWeightShift.sway * breath : profile.poseOffsets.shoulderRock * sway * move);
-  pose.bodyOffsets.chest.forward += (idle ? profile.bodyWeightShift.forward * breath : 0.018 * counter * move);
-  pose.bodyOffsets.hips.right -= (idle ? profile.poseOffsets.tailCounterSway * breath : profile.poseOffsets.hipCounter * sway * move);
-  pose.bodyOffsets.hips.forward -= rearSettle;
-  pose.bodyOffsets.tailBase.right -= pose.bodyOffsets.hips.right * 0.45;
-  pose.bodyOffsets.tailMid.right -= pose.bodyOffsets.hips.right * 0.72;
-  pose.bodyOffsets.tailTip.right -= pose.bodyOffsets.hips.right;
-  pose.bodyOffsets.tailBase.forward -= tailReach * (idle ? 0.025 * Math.max(0, breath) : 0.08 * move);
-  pose.bodyOffsets.tailMid.forward -= tailReach * (idle ? 0.045 * Math.max(0, breath) : 0.14 * move);
-  pose.bodyOffsets.tailTip.forward -= tailReach * (idle ? 0.065 * Math.max(0, breath) : 0.2 * move);
-
-  for (const side of [-1, 1]) {
-    const name = sideName(side);
-    const forePhase = phase + (side > 0 ? Math.PI : 0);
-    const hindPhase = forePhase + Math.PI;
-    const foreReach = Math.sin(forePhase) * move;
-    const hindReach = Math.sin(hindPhase) * move;
-    pose.wingForelimbs[name].shoulder.right += side * 0.018 * Math.cos(forePhase) * move;
-    pose.wingForelimbs[name].elbow.forward += foreReach * 0.08;
-    pose.wingForelimbs[name].wrist.forward += foreReach * (profile.poseOffsets.wristStride ?? 0);
-    pose.wingForelimbs[name].wrist.right += side * Math.cos(forePhase) * 0.028 * move;
-    pose.hindLegs[name].knee.forward += hindReach * 0.05;
-    pose.hindLegs[name].ankle.forward += hindReach * (profile.poseOffsets.hindStride ?? 0);
-    pose.hindLegs[name].ankle.right += side * Math.cos(hindPhase) * 0.025 * move;
-    pose.contactAnchors[`${name}Wrist`] = contactAnchor('wrist_claw_contact', `${name}_wing_forelimb`, foreReach);
-    pose.contactAnchors[`${name}HindFoot`] = contactAnchor('hind_foot_contact', `${name}_hind_leg`, hindReach);
-  }
 }
 
 function applyRearCounterbalance(pose, profile, move) {
@@ -306,31 +274,47 @@ function applyActionPose(pose, profile, actionState) {
     return;
   }
 
-  if (profile.actionFamily === 'charge_counter') {
-    const plant = smoothstep(0, 0.14, actionState.phase) * (1 - smoothstep(0.18, 0.3, actionState.phase));
-    const drive = smoothstep(0.16, 0.54, actionState.phase) * (1 - smoothstep(0.66, 0.78, actionState.phase));
+  if (profile.actionFamily === 'pounce_counter') {
+    const plant = smoothstep(0, 0.14, actionState.phase) * (1 - smoothstep(0.2, 0.3, actionState.phase));
+    const flight = smoothstep(0.16, 0.32, actionState.phase) * (1 - smoothstep(0.66, 0.78, actionState.phase));
+    const landing = smoothstep(0.66, 0.72, actionState.phase) * (1 - smoothstep(0.84, 1, actionState.phase));
+    const flightPhase = clamp01((actionState.phase - 0.2) / 0.48);
+    const elevation = profile.poseOffsets.apexHeightMeters * Math.sin(Math.PI * flightPhase) - profile.poseOffsets.landingCompressionMeters * landing;
+    pose.elevationMeters = elevation;
+    for (const role of ['head', 'neck', 'chest', 'hips', 'tailBase', 'tailMid', 'tailTip']) pose.bodyOffsets[role].height += elevation;
     pose.bodyOffsets.head.forward -= profile.poseOffsets.plantCompression * 0.38 * plant;
     pose.bodyOffsets.neck.forward -= profile.poseOffsets.plantCompression * 0.62 * plant;
     pose.bodyOffsets.chest.forward -= profile.poseOffsets.plantCompression * plant;
     pose.bodyOffsets.hips.forward += profile.poseOffsets.plantCompression * 0.46 * plant;
-    pose.bodyOffsets.head.forward += profile.poseOffsets.headForward * drive;
-    pose.bodyOffsets.neck.forward += profile.poseOffsets.neckForward * drive;
-    pose.bodyOffsets.chest.forward += profile.poseOffsets.chestForward * drive;
+    pose.bodyOffsets.head.forward += profile.poseOffsets.headForward * flight;
+    pose.bodyOffsets.neck.forward += profile.poseOffsets.neckForward * flight;
+    pose.bodyOffsets.chest.forward += profile.poseOffsets.chestForward * flight;
+    pose.bodyOffsets.tailBase.forward -= profile.poseOffsets.tailCounter * flight * 0.35;
+    pose.bodyOffsets.tailMid.forward -= profile.poseOffsets.tailCounter * flight * 0.68;
+    pose.bodyOffsets.tailTip.forward -= profile.poseOffsets.tailCounter * flight;
     for (const name of ['left', 'right']) {
       const side = name === 'left' ? -1 : 1;
-      pose.wingForelimbs[name].wrist.right += side * profile.poseOffsets.wristPlantOut * (plant + drive * 0.42);
-      pose.wingForelimbs[name].wrist.forward -= profile.poseOffsets.wristBraceBack * (plant + drive);
+      pose.wingForelimbs[name].shoulder.height += elevation;
+      pose.wingForelimbs[name].elbow.height += elevation * 0.9;
+      pose.wingForelimbs[name].wrist.height += Math.max(0, elevation) * 0.68;
+      pose.hindLegs[name].knee.height += elevation;
+      pose.hindLegs[name].ankle.height += Math.max(0, elevation) * 0.42;
+      pose.wingForelimbs[name].wrist.right += side * profile.poseOffsets.wristPlantOut * (plant + landing);
+      pose.wingForelimbs[name].wrist.forward -= profile.poseOffsets.wristBraceBack * (plant + flight * 0.72);
+      pose.wingForelimbs[name].digitSpread += profile.poseOffsets.digitFlare * flight;
       pose.hindLegs[name].ankle.forward += profile.poseOffsets.hindCompression * plant;
-      pose.hindLegs[name].ankle.forward -= profile.poseOffsets.hindPush * drive;
-      pose.contactAnchors[`${name}Wrist`].phase = plant > drive ? 'plant' : 'body_drive';
-      pose.contactAnchors[`${name}Wrist`].weight = 1;
+      pose.hindLegs[name].ankle.forward -= profile.poseOffsets.hindPush * flight;
+      pose.contactAnchors[`${name}Wrist`].phase = landing > flight ? 'wide_land' : (plant > flight ? 'plant' : 'tucked');
+      pose.contactAnchors[`${name}Wrist`].weight = landing > 0.2 ? 1 : (flight > 0.2 ? 0.12 : 1);
+      pose.contactAnchors[`${name}HindFoot`].phase = landing > flight ? 'wide_land' : (plant > flight ? 'coil' : 'launch');
+      pose.contactAnchors[`${name}HindFoot`].weight = landing > 0.2 ? 1 : (flight > 0.2 ? 0.08 : 1);
     }
   }
 }
 
 function buildPoseSockets(pose, recipe, projection, transform, radius) {
   const points = indexByRole(projection.bodyPoints ?? []);
-  const facing = buildFacingVectors(transform.rotation ?? 0);
+  const facing = buildFacingVectors((transform.rotation ?? 0) + (pose.look?.headYaw ?? 0));
   const head = points.head ?? { x: transform.x, y: transform.y };
   const headOffset = pose.bodyOffsets.head ?? zeroOffset();
   const profile = recipe.proportionProfile;
@@ -430,6 +414,7 @@ function roundedDistance(a, b) {
 function clampOffset(value, maxForward, maxRight) {
   value.forward = clamp(value.forward, -maxForward, maxForward);
   value.right = clamp(value.right, -maxRight, maxRight);
+  value.height = clamp(value.height, -0.16, 0.38);
 }
 
 function buildAttackContact(pose, profile, actionState, projection, transform, radius) {
@@ -450,7 +435,9 @@ function buildAttackContact(pose, profile, actionState, projection, transform, r
   const direction = contact.impactDirection === 'side_diagonal'
     ? normaliseVector(facing.forward.x * 0.42 - facing.right.x * side * 0.82, facing.forward.y * 0.42 - facing.right.y * side * 0.82)
     : facing.forward;
-  const active = actionState.phase >= contact.activePhaseStart && actionState.phase <= contact.activePhaseEnd;
+  const active = actionState.contactClosed !== true
+    && actionState.phase >= contact.activePhaseStart
+    && actionState.phase <= contact.activePhaseEnd;
   return {
     classification: 'procedural_attack_contact_volume',
     debugOnly: true,
@@ -495,7 +482,7 @@ function limbOffsets() {
 }
 
 function zeroOffset() {
-  return { forward: 0, right: 0 };
+  return { forward: 0, right: 0, height: 0 };
 }
 
 function sideName(side) {

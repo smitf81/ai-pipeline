@@ -19,6 +19,43 @@ export const GROUNDED_WYVERN_HATCHLING_PROPORTIONS = Object.freeze({
     scale: 1.42,
     boundsPadding: 0.18
   }),
+  stance: Object.freeze({
+    headHeight: 0.63,
+    muzzleHeight: 0.57,
+    neckHeight: 0.47,
+    chestHeight: 0.34,
+    torsoHeight: 0.3,
+    hipHeight: 0.27,
+    tailRootHeight: 0.23,
+    tailTipHeight: 0.055,
+    shoulderHeight: 0.36,
+    elbowHeight: 0.18,
+    wristHeight: 0.05,
+    membraneRootHeight: 0.22,
+    digitTipHeight: 0.085,
+    hindHipHeight: 0.27,
+    kneeHeight: 0.15,
+    ankleHeight: 0.065,
+    footHeight: 0.035
+  }),
+  surface: Object.freeze({
+    headDepth: 0.15,
+    muzzleDepth: 0.085,
+    jawDepth: 0.052,
+    neckDepth: 0.09,
+    chestDepth: 0.18,
+    torsoDepth: 0.135,
+    hipDepth: 0.16,
+    tailRootDepth: 0.105,
+    tailTipDepth: 0.018,
+    shoulderDepth: 0.075,
+    elbowDepth: 0.052,
+    wristDepth: 0.035,
+    digitDepth: 0.014,
+    thighDepth: 0.082,
+    shinDepth: 0.052,
+    footDepth: 0.03
+  }),
   visibilityFocus: DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE,
   skeleton: Object.freeze({
     classification: 'wyvern_skeletal_profile',
@@ -115,6 +152,26 @@ export const GROUNDED_WYVERN_HATCHLING_PROPORTIONS = Object.freeze({
     tailWave: 0.2,
     tailPlantDamping: 0.62
   }),
+  turning: Object.freeze({
+    maxRateDegreesPerSecond: 420,
+    accelerationDegreesPerSecond2: 1800,
+    brakingDegreesPerSecond2: 2400,
+    settleAngleDegrees: 1,
+    settleRateDegreesPerSecond: 8,
+    headSharpness: 22,
+    neckSharpness: 14,
+    neckFollowSharpness: 20,
+    chestFollowSharpness: 14,
+    hipFollowSharpness: 9,
+    tailBaseFollowSharpness: 6.5,
+    tailMidFollowSharpness: 4.5,
+    tailTipFollowSharpness: 3,
+    actionBodyCatchupMultiplier: 3,
+    actionTailCatchupMultiplier: 1.8,
+    pivotLiftMeters: 0.035,
+    pivotReach: 0.1,
+    maxSegmentBendDegrees: 70
+  }),
   constraints: Object.freeze({
     maxHeadForward: 0.5,
     maxHeadLateral: 0.14,
@@ -137,6 +194,7 @@ export const GROUNDED_WYVERN_HATCHLING_PROPORTIONS = Object.freeze({
     maxHindKneeLateral: 0.2,
     maxHindAnkleForward: 0.3,
     maxHindAnkleLateral: 0.22,
+    minBodyChainStretch: 0.92,
     maxBodyChainStretch: 1.09
   })
 });

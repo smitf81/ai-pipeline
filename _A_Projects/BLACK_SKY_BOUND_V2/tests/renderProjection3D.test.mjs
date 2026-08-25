@@ -23,8 +23,8 @@ assert(!Object.hasOwn(second.dynamicWorld, 'lightSpaceCulling'), '3D dynamic pro
 equal(second.diagnostics.legacy2DProjectionActive, false, '3D diagnostics should explicitly report legacy projection retirement');
 
 const dynamicObject = game.sceneObjects.find((object) => object.materialProfileId);
-dynamicObject.materialState = { ...(dynamicObject.materialState ?? {}), burnAmount: 0.5, treeFire: { phase: 'engulfed', heatAmount: 1, emberAmount: 0.8, charAmount: 0.3 } };
-game.worldEvents.diagnostics.activeBurningTreeCount = 1;
+dynamicObject.materialState = { ...(dynamicObject.materialState ?? {}), burnAmount: 0.5, foliageFire: { family: 'tree', phase: 'ablaze', heatAmount: 1, emberAmount: 0.8, charAmount: 0.3 } };
+game.worldEvents.diagnostics.activeFoliageFireCount = 1;
 const materialFrame = compiler.compile(state);
 assert(materialFrame.dynamicWorld.sceneryMaterialUpdates.some((packet) => packet.id === dynamicObject.id), 'mutable scenery material state should emit a narrow dynamic update');
 

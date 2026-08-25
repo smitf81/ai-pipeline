@@ -55,8 +55,7 @@ try {
     for (const [field, value] of [
       ['visibilityFocus.radiusMeters', 1.15],
       ['visibilityFocus.featherMeters', 0.3],
-      ['visibilityFocus.minimumOccluderOpacity', 0.025],
-      ['visibilityFocus.readabilityLightPower', 725]
+      ['visibilityFocus.minimumOccluderOpacity', 0.025]
     ]) {
       const result = tuning.setCreatureTuningValue(creatureTuning, profileId, field, value);
       if (!result.ok) throw new Error(result.reason);
@@ -79,7 +78,8 @@ try {
   assert.equal(enabled.focus.targetEntityId, setup.playerId, 'the live focus effect must use the exact player entity id');
   assert.equal(enabled.focus.radiusMeters, 1.15, 'the live sightline cut must consume the tuned cross-section radius');
   assert.equal(enabled.focus.minimumOccluderOpacity, 0.025, 'the live focus effect must consume the tuned blocker opacity');
-  assert.equal(enabled.focus.readabilityLightPower, 725, 'the low-light readability light must consume the tuned power');
+  assert.equal(enabled.focus.syntheticLightCount, 0, 'the live focus effect must not add a player-following readability light');
+  assert.equal(enabled.focus.illuminationPolicy, 'occluder_fade_only_no_actor_tracking_light_v2', 'the live focus effect must remain occluder-only');
   assert.equal(enabled.focus.opacityMode, 'traced_orthographic_sightline_corridor_stable_dither', 'the live proof must use traced corridor semantics');
   assert.equal(enabled.focus.crossSectionSampleCount, 9, 'the live proof must trace the player-sized camera cross-section');
   assert.equal(enabled.focus.occlusionActive, true, 'the authored canopy must be confirmed as a real camera-target blocker');

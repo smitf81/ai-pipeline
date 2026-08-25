@@ -114,11 +114,12 @@ try {
   captures.push(await capture(page, 'f3-motion-diagnostics', 'Optional physical-motion diagnostics remain behind F3', true));
   const runtimeText = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
   const textRaider = runtimeText.actors.find((actor) => actor.raiderPhysicalMotion);
-  assert.equal(textRaider.raiderPhysicalMotion.contract, 'black-sky-bound.raider-physical-motion-intent.v0');
+  assert.equal(textRaider.raiderPhysicalMotion.contract, 'black-sky-bound.raider-physical-motion-intent.v1');
   const renderer = await page.evaluate(() => structuredClone(window.BSB_V2_DEMO.state.game.renderLayers.renderer.webgl3dDiagnostics));
   assert.equal(renderer.liveWorld.actors.raiderMotionGreybox.contract, 'black-sky-bound.three-raider-physical-motion-greybox.v0');
   assert.equal(renderer.liveWorld.actors.raiderMotionGreybox.actorCount, 1);
-  assert.equal(renderer.liveWorld.actors.proceduralHumanoids.actorCount, 0, 'finished body must remain detached in the greybox gate');
+  assert.equal(renderer.liveWorld.actors.inkHumanoids.actorCount, 0, 'production ink body must remain detached in the greybox gate');
+  assert.equal(renderer.liveWorld.actors.proceduralHumanoids.actorCount, 0, 'faceted fallback body must remain detached in the greybox gate');
   assert.deepEqual(issues, { consoleErrors: [], pageErrors: [], requestFailures: [] });
 
   const contactSheet = await createContactSheet(browser, captures);

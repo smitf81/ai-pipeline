@@ -3,26 +3,39 @@ import { readFile } from 'node:fs/promises';
 import {
   BSB_V2_AUTHORING_CONTRACT,
   BSB_V2_DEMO_ARENA_CONTRACT,
+  BSB_V2_FIRST_PLAYTHROUGH_CONTRACT,
   BSB_V2_MAP_MANIFEST_CONTRACT,
   BSB_V2_MAP_MANIFEST_PATH,
   BSB_V2_PROJECT_WORKSPACE_CONTRACT,
+  BSB_V2_REGION_ATMOSPHERE_CONTRACT,
   BSB_V2_RUNTIME_MAP_CONTRACT,
   AXIOM_WORKSPACE_CONTEXT_CONTRACT,
   applyBsbV2AuthoringTool,
   applyBsbV2TreeOperation,
   applyBsbV2UndergrowthOperation,
   buildBsbV2RuntimeMap,
+  configureBsbV2EscapeTransition,
+  createBsbV2RegionDraft,
   createDefaultBsbV2AuthoringDocument,
   createCrownOfCindersBsbV2AuthoringDocument,
   createSecondApproachBsbV2AuthoringDocument,
   describeBsbV2AuthoringRecord,
+  eraseBsbV2AuthoringRecords,
   filterBsbV2AuthoringRecords,
   inspectBsbV2RuntimeBake,
+  patchBsbV2MapMarker,
   patchBsbV2AuthoringRecord,
+  registerBsbV2Region,
+  renameBsbV2AuthoringDocument,
+  renameBsbV2Region,
+  reorderBsbV2Regions,
+  removeBsbV2AuthoringRecord,
   classifyBsbV2RuntimeFreshness,
   resolveBsbV2MapLibrary,
   resolveBsbV2MapPublication,
   resolveBsbV2WorkspaceBinding,
+  setBsbV2FirstPlaythroughInstinct,
+  setBsbV2RainAndSparksAtmosphere,
   validateBsbV2AuthoringDocument
 } from '../public/bsb-v2-map-authoring.js';
 import {
@@ -62,6 +75,10 @@ assert.equal(base.unitPlacements.find((entry) => entry.type === 'husk')?.team, '
 assert.equal(base.unitPlacements.find((entry) => entry.type === 'werewolf')?.team, 'wolves');
 assert.equal(base.transitions.escapeZone.nextMapPath, '/data/maps/axiom-second-approach.runtime-map.json', 'opening authoring map should own its escape transition target');
 assert.equal(base.transitions.escapeZone.arrivalSequenceId, 'smoke_instinct_awakening', 'opening authoring map should explicitly own its arrival sequence');
+assert.equal(base.firstPlaythrough.contract, BSB_V2_FIRST_PLAYTHROUGH_CONTRACT);
+assert.deepEqual(base.firstPlaythrough.availableInstinctIds, [], 'First Flightless Night must begin before Smoke Veil is discovered');
+assert.equal(base.atmosphere.contract, BSB_V2_REGION_ATMOSPHERE_CONTRACT);
+assert.equal(base.atmosphere.rainAndSparksEnabled, true, 'every new region should default to rain and sparks');
 assert.equal(describeBsbV2AuthoringRecord('sceneObject', { type: 'tree' }).shape, 'tree', 'trees should have a representative procedural marker instead of a triangle asset');
 assert.equal(describeBsbV2AuthoringRecord('unit', { type: 'werewolf' }).glyph, 'W', 'unit markers should identify their actor type');
 assert.equal(describeBsbV2AuthoringRecord('spawner', { type: 'husk' }).glyph, 'H+', 'spawners should retain actor identity');
@@ -85,6 +102,7 @@ const workspaceContext = {
       contract: BSB_V2_PROJECT_WORKSPACE_CONTRACT,
       surfaceId: 'bsb-v2-map-authoring',
       scene: { kind: 'map', manifestPath: BSB_V2_MAP_MANIFEST_PATH },
+      transitionScenes: [{ id: 'smoke_instinct_awakening', label: 'Smoke instinct awakening', phase: 'arrival', sourcePath: 'src/data/smokeAwakening.js' }],
       authoring: { owner: 'AXIOM', projectId: 'axiom', root: '.', pathSource: 'map_manifest.authoringPath' },
       runtimeBake: { owner: 'Black Sky Bound V2', projectId: 'black-sky-bound-v2-demo', root: '_A_Projects/BLACK_SKY_BOUND_V2', pathSource: 'map_manifest.runtimePath', explicit: true }
     }
@@ -95,6 +113,7 @@ assert.equal(workspaceBinding.project.id, 'black-sky-bound-v2-demo');
 assert.equal(workspaceBinding.authoring.projectId, 'axiom');
 assert.equal(workspaceBinding.runtimeBake.projectId, 'black-sky-bound-v2-demo');
 assert.equal(workspaceBinding.scene.manifestPath, BSB_V2_MAP_MANIFEST_PATH);
+assert.equal(workspaceBinding.transitionScenes[0].id, 'smoke_instinct_awakening');
 assert.equal(classifyBsbV2RuntimeFreshness({ dirty: true, bakeReceipt: { afterHash: 'old' } }), 'stale', 'dirty authoring must invalidate an older bake receipt');
 assert.equal(classifyBsbV2RuntimeFreshness({ dirty: false, saveReceipt: { afterHash: 'new' } }), 'stale', 'a newly saved source without a bake receipt is runtime-stale');
 assert.equal(classifyBsbV2RuntimeFreshness({ dirty: false, bakeReceipt: { afterHash: 'current' } }), 'current');
@@ -108,6 +127,18 @@ const secondBase = createSecondApproachBsbV2AuthoringDocument();
 assert.equal(secondBase.mapId, 'axiom_second_approach');
 assert.deepEqual(secondBase.spawn, { x: 24, y: 31, rotation: -Math.PI / 2 }, 'second region should begin at the south edge facing north');
 assert.equal(secondBase.transitions.escapeZone, null, 'second placeholder region should currently terminate rather than chaining forever');
+assert.deepEqual(secondBase.firstPlaythrough.availableInstinctIds, ['smoke_veil'], 'Ash Road direct entry should author Smoke Veil as its standard first-playthrough baseline');
+const smokeStreamRegion = setBsbV2FirstPlaythroughInstinct(secondBase, 'smoke_stream', true);
+assert.deepEqual(smokeStreamRegion.firstPlaythrough.availableInstinctIds, ['smoke_veil', 'smoke_stream'], 'Map Forge should preserve canonical GDD instinct order');
+assert.equal(smokeStreamRegion.revision, secondBase.revision + 1, 'instinct availability is a canonical authoring revision');
+assert.deepEqual(buildBsbV2RuntimeMap(smokeStreamRegion).firstPlaythrough, smokeStreamRegion.firstPlaythrough, 'runtime bake must carry first-playthrough instinct truth unchanged');
+assert.throws(() => setBsbV2FirstPlaythroughInstinct(secondBase, 'invented_power', true), /bsb_first_playthrough_instinct_unknown/);
+const clearAtmosphereRegion = setBsbV2RainAndSparksAtmosphere(secondBase, false);
+assert.equal(clearAtmosphereRegion.atmosphere.rainAndSparksEnabled, false, 'Map Forge should support a local clear-atmosphere override');
+assert.equal(clearAtmosphereRegion.revision, secondBase.revision + 1, 'region atmosphere is a canonical authoring revision');
+assert.deepEqual(buildBsbV2RuntimeMap(clearAtmosphereRegion).atmosphere, clearAtmosphereRegion.atmosphere, 'runtime bake must carry region atmosphere truth unchanged');
+assert.equal(validateBsbV2AuthoringDocument({ ...secondBase, atmosphere: undefined }).atmosphere.rainAndSparksEnabled, true, 'legacy authoring maps should normalize to atmosphere enabled');
+assert.throws(() => validateBsbV2AuthoringDocument({ ...secondBase, atmosphere: { rainAndSparksEnabled: 'yes' } }), /bsb_region_atmosphere_enabled_invalid/);
 const arenaBase = validateBsbV2AuthoringDocument(createCrownOfCindersBsbV2AuthoringDocument());
 assert.equal(arenaBase.arena.contract, BSB_V2_DEMO_ARENA_CONTRACT, 'demo arena should be canonical Axiom-authored intent');
 assert.equal(arenaBase.arena.waves.length, 5, 'demo arena should own a finite five-wave progression');
@@ -130,17 +161,44 @@ assert.equal(spawnerPlaced.unitPlacements.at(-1).team, 'husks', 'placed husks sh
 assert.equal(spawnerPlaced.unitSpawners.at(-1).type, 'raider');
 assert.equal(spawnerPlaced.unitSpawners.at(-1).team, 'raiders', 'placed raider spawners should author onto the raider faction by default');
 
+const selectedTreeId = spawnerPlaced.sceneObjects.at(-1).id;
+const deletedTree = removeBsbV2AuthoringRecord(spawnerPlaced, 'sceneObject', selectedTreeId);
+assert.equal(deletedTree.operation, 'delete_selected');
+assert.equal(deletedTree.document.revision, spawnerPlaced.revision + 1, 'delete-selected should be one canonical revision');
+assert.equal(deletedTree.document.sceneObjects.some((entry) => entry.id === selectedTreeId), false);
+assert.throws(() => removeBsbV2AuthoringRecord(spawnerPlaced, 'sceneObject', 'missing'), /bsb_authoring_record_missing/);
+
+const withFootprintBoulder = applyBsbV2AuthoringTool(spawnerPlaced, 'object:boulder', 20, 20);
+const terrainBeforeErase = withFootprintBoulder.tiles[21][21];
+const erasedFootprint = eraseBsbV2AuthoringRecords(withFootprintBoulder, [{ x: 21, y: 21 }], 0);
+assert.equal(erasedFootprint.removedCount, 1, 'erase should hit a boulder through its complete 2x2 footprint');
+assert.equal(erasedFootprint.removed[0].type, 'boulder');
+assert.equal(erasedFootprint.document.tiles[21][21], terrainBeforeErase, 'scene erase must never repaint terrain');
+assert.equal(erasedFootprint.document.revision, withFootprintBoulder.revision + 1);
+const emptyErase = eraseBsbV2AuthoringRecords(erasedFootprint.document, [{ x: 21, y: 21 }], 0);
+assert.equal(emptyErase.applied, false);
+assert.equal(emptyErase.document.revision, erasedFootprint.document.revision, 'an empty erase stroke should not create a phantom revision');
+const erasedThroughTool = applyBsbV2AuthoringTool(withFootprintBoulder, 'erase', 21, 21, { brushRadius: 0 });
+assert.equal(erasedThroughTool.sceneObjects.some((entry) => entry.type === 'boulder' && entry.x === 20 && entry.y === 20), false);
+assert.equal(erasedThroughTool.tiles[21][21], terrainBeforeErase);
+
 const shrubPlaced = applyBsbV2AuthoringTool(spawnerPlaced, 'object:forest_shrub', 15, 11);
 assert.equal(shrubPlaced.sceneObjects.at(-1).undergrowth.contract, BSB_V2_UNDERGROWTH_DNA_CONTRACT, 'placed undergrowth should author compact DNA rather than geometry');
 assert.equal(shrubPlaced.sceneObjects.at(-1).undergrowth.species, 'forest_shrub', 'legacy scene-object type should resolve through an undergrowth species recipe');
 
 const createdOak = applyBsbV2TreeOperation(spawnerPlaced, {
-  op: 'create', id: 'tree:oak-proof', x: 18, y: 12, species: 'ancient_oak', seed: 18273, ageYears: 210
+  op: 'create', id: 'tree:oak-proof', x: 18, y: 12, species: 'ancient_oak', seed: 18273, ageYears: 210,
+  expectedRevision: spawnerPlaced.revision
 });
 assert.equal(createdOak.contract, BSB_V2_TREE_OPERATION_CONTRACT);
 assert.equal(createdOak.applied, true);
 assert.deepEqual(createdOak.affectedIds, ['tree:oak-proof']);
 assert.equal(createdOak.document.sceneObjects.find((entry) => entry.id === 'tree:oak-proof')?.tree.species, 'ancient_oak');
+assert.throws(
+  () => applyBsbV2TreeOperation(spawnerPlaced, { op: 'create', x: 19, y: 12, expectedRevision: spawnerPlaced.revision + 1 }),
+  /bsb_tree_revision_mismatch/,
+  'a stale agent proposal must not mutate canonical Map Forge state'
+);
 const agedOak = applyBsbV2TreeOperation(createdOak.document, { op: 'age', treeId: 'tree:oak-proof', years: 40 });
 assert.equal(agedOak.document.sceneObjects.find((entry) => entry.id === 'tree:oak-proof')?.tree.ageYears, 250, 'Tree.age should change intent rather than geometry');
 const damagedOak = applyBsbV2TreeOperation(agedOak.document, { op: 'damage', treeId: 'tree:oak-proof', amount: 0.25 });
@@ -303,11 +361,45 @@ const manifestSource = JSON.parse(await readFile(
   'utf8'
 ));
 const library = resolveBsbV2MapLibrary(manifestSource);
-assert.equal(library.maps.length, 3, 'AXIOM map forge should read campaign regions plus the bounded demo arena');
+assert.equal(library.maps.length, 4, 'AXIOM map forge should expose the recovered authored region as well as the campaign and demo maps');
 assert.equal(library.maps[0].authoringPath, 'data/bsb-v2/maps/first_escape.authoring.json');
 assert.equal(library.maps[0].nextMapId, 'ash_road_threshold');
 assert.equal(library.maps[1].authoringPath, 'data/bsb-v2/maps/second_approach.authoring.json');
 assert.equal(library.maps[2].authoringPath, 'data/bsb-v2/maps/crown_of_cinders.authoring.json');
+assert.equal(library.maps[3].title, 'The winding path', 'the recovered saved source title should be visible in the canonical region catalogue');
+assert.equal(library.maps[3].authoringPath, 'data/bsb-v2/maps/ash_road_threshold_2.authoring.json');
+
+const registeredLibrary = registerBsbV2Region(library, {
+  id: 'region_test_identity', title: 'Untitled Region 5', scenarioId: 'first_escape',
+  runtimeMapId: 'axiom_region_test_identity', runtimePath: '/data/maps/axiom-region-test-identity.runtime-map.json',
+  authoringPath: 'data/bsb-v2/maps/region_test_identity.authoring.json', nextMapId: null
+});
+assert.equal(registeredLibrary.maps.length, 5, 'one canonical registration should add the region to the ordered catalogue');
+assert.equal(registerBsbV2Region(registeredLibrary, registeredLibrary.maps.at(-1)).maps.length, 5, 'restoring an already-persisted region should not duplicate it');
+const regionDraft = createBsbV2RegionDraft({
+  mapId: 'axiom_region_test_identity', title: 'Untitled Region 5', scenarioId: 'first_escape', width: 64, height: 48
+});
+assert.equal(regionDraft.width, 64);
+assert.equal(regionDraft.spawn.rotation, 0);
+assert.equal(regionDraft.transitions.escapeZone, null);
+const titledDraft = renameBsbV2AuthoringDocument(regionDraft, 'Lantern Vale');
+const titledLibrary = renameBsbV2Region(registeredLibrary, 'region_test_identity', titledDraft.title);
+assert.equal(titledDraft.revision, regionDraft.revision + 1, 'title persistence should invalidate the previous runtime bake revision');
+assert.equal(titledLibrary.maps.at(-1).title, 'Lantern Vale', 'map title and region dropdown title should share one saved value');
+const reorderedLibrary = reorderBsbV2Regions(titledLibrary, 'region_test_identity', 'first_flightless_night', 'before');
+assert.equal(reorderedLibrary.maps[0].id, 'region_test_identity', 'drag order should be represented by canonical manifest array order');
+assert.equal(reorderedLibrary.defaultMapId, library.defaultMapId, 'organising regions must not silently change the launch default');
+
+const rotatedSpawn = patchBsbV2MapMarker(secondBase, 'playerSpawn', { x: 7, y: 8, rotation: Math.PI / 3 });
+assert.deepEqual(rotatedSpawn.spawn, { x: 7, y: 8, rotation: Math.PI / 3 });
+const resizedEscape = patchBsbV2MapMarker(rotatedSpawn, 'escapeZone', { x: 12, y: 9, w: 5, h: 6 });
+assert.deepEqual(resizedEscape.escapeZone, { x: 12, y: 9, w: 5, h: 6 });
+const linkedEscape = configureBsbV2EscapeTransition(resizedEscape, library, 'crown_of_cinders_demo', {
+  arrivalSequenceId: 'smoke_instinct_awakening'
+});
+assert.equal(linkedEscape.transitions.escapeZone.nextMapId, 'axiom_crown_of_cinders');
+assert.equal(linkedEscape.transitions.escapeZone.arrivalSequenceId, 'smoke_instinct_awakening');
+assert.equal(configureBsbV2EscapeTransition(linkedEscape, library, '').transitions.escapeZone, null);
 const publication = resolveBsbV2MapPublication(manifestSource, spawnerPlaced);
 assert.equal(manifestSource.contract, BSB_V2_MAP_MANIFEST_CONTRACT);
 assert.equal(BSB_V2_MAP_MANIFEST_PATH, 'data/maps/manifest.json');
@@ -322,6 +414,8 @@ assert.equal(verifiedRuntime.status, 'current');
 assert.equal(verifiedRuntime.spawnMatches, true);
 assert.equal(inspectBsbV2RuntimeBake(spawnerPlaced, { ...runtimeMap, revision: runtimeMap.revision - 1 }, publication).status, 'stale');
 assert.match(inspectBsbV2RuntimeBake(spawnerPlaced, { ...runtimeMap, spawn: { x: 0, y: 0 } }, publication).mismatches.join(','), /player_spawn_mismatch/);
+assert.match(inspectBsbV2RuntimeBake(spawnerPlaced, { ...runtimeMap, title: 'Stale title' }, publication).mismatches.join(','), /title:/);
+assert.match(inspectBsbV2RuntimeBake(spawnerPlaced, { ...runtimeMap, escapeZone: { x: 0, y: 0, w: 1, h: 1 } }, publication).mismatches.join(','), /escape_zone_mismatch/);
 assert.equal(inspectBsbV2RuntimeBake(spawnerPlaced, null, publication).status, 'failed');
 
 const secondPublication = resolveBsbV2MapPublication(manifestSource, secondBase);

@@ -6,7 +6,7 @@ Completed and reference-gated on 2026-07-31.
 
 Black Sky Bound now renders `grass`, `dirt`, and `scorched` terrain identities as one layered physical floor material plus one culled grass-detail instance batch. The authored Map Forge grid remains the gameplay authority. A renderer-only organic contour field deforms the visual silhouette between identities without changing tile IDs, collision, movement, blocking, or saved map data.
 
-This is a three-material foundation, not a biome system. Forest, rock, and water retain their existing scalar material path.
+This remains a focused terrain foundation, not a biome system. Forest retains its scalar material path; rock and water were subsequently promoted to dedicated physical shaders.
 
 ## Previous rendering path
 
@@ -37,11 +37,11 @@ flowchart LR
   D --> E["ThreeTerrainMaterialSystem"]
   E --> F["one layered floor InstancedMesh"]
   E --> G["renderer-only organic contour mask"]
-  E --> H["three procedural PBR texture arrays"]
+  E --> H["procedural scorch + authored grass/mud/rock PBR + physical water"]
   E --> I["one deterministic grass InstancedMesh"]
 ```
 
-The three target types share one plane-geometry `InstancedMesh` and one customized `MeshStandardMaterial`. World X/Z coordinates drive continuous UVs, so texture phase does not restart at tile borders. Three equal-sized `DataArrayTexture` objects hold base colour, OpenGL normal, and packed roughness/AO/detail-height layers. Array layers eliminate atlas gutters and cross-material mip bleeding; repeat wrapping, generated mipmaps, trilinear filtering, and anisotropy provide stable distance sampling.
+The three target types share one plane-geometry `InstancedMesh` and one customized `MeshStandardMaterial`. World X/Z coordinates drive continuous UVs, so texture phase does not restart at tile borders. Three equal-sized `DataArrayTexture` objects hold the original base colour, OpenGL normal, and packed roughness/AO/detail-height layers. As of 2026-08-11, the active grass and dirt contributions are replaced in that same shader by generated 1024x1024 authored PBR sets; scorch continues to sample its array layer. Array layers eliminate atlas gutters and cross-material mip bleeding; repeat wrapping, generated mipmaps, trilinear filtering, and anisotropy provide stable distance sampling.
 
 The shader uses two differently rotated/scaled micro samples plus world-space macro colour and roughness variation. Height is conservative normal-detail input only; there is no displacement.
 
@@ -66,14 +66,14 @@ Candidates are rejected or suppressed around dirt/scorch, occupied objects, spaw
 
 ## Source and licence
 
-No downloaded, scraped, AI-generated, or third-party texture is shipped. All PBR texels and grass geometry are deterministic project-authored source:
+The original foundation shipped no downloaded, scraped, AI-generated, or third-party texture. Its procedural PBR texels and grass geometry remain deterministic project-authored source:
 
 - definitions: `src/data/terrainMaterialLayers.js`;
 - textures: `src/render/backends/three/ThreeTerrainPbrTextures.js`;
 - contour mask: `src/render/backends/three/ThreeTerrainBlendMask.js`;
 - grass geometry/scatter: `src/render/backends/three/ThreeGrassDetail.js`.
 
-Runtime source is `deterministic_periodic_procedural_original`; licence is the project source's own terms, with no external attribution. Seam periodicity, OpenGL normal orientation, roughness/AO ranges, texel density, and mip/wrap policy are automated in `tests/terrainMaterialSystem.test.mjs`. Full detail is in `docs/TERRAIN_MATERIAL_ASSET_PROVENANCE.md`.
+The active grass and dirt surfaces were subsequently replaced by the reference-guided, project-generated sets documented in `docs/GRASS_TERRAIN_PBR_MATERIAL_V1.md` and `docs/MUD_TERRAIN_PBR_MATERIAL_V1.md`. Scorch, the contour mask and sparse 3D grass remain procedural. Seam periodicity, OpenGL normal orientation, roughness/AO ranges, texel density, mip/wrap policy and fail-visible loading are automated in `tests/terrainMaterialSystem.test.mjs`. Full detail is in `docs/TERRAIN_MATERIAL_ASSET_PROVENANCE.md`.
 
 ## Online visual reference gate
 
@@ -84,7 +84,7 @@ The shared lessons were quiet continuous ground, clean paths, irregular material
 ## Diagnostics and controls
 
 - F3: normal renderer diagnostics plus grass instance count and culling bounds.
-- F6: cycles lit, material-ID, and normal-only terrain views.
+- F6: cycles lit, material-ID, normal-only, and rain-wetness terrain views.
 - F7: toggles all ground-detail geometry.
 - URL tuning: `groundDetail=0|1`, `grassDensity=<0..1.5>`, `grassCullMeters=<2..18>`, and `terrainView=lit|material-id|normal-only`.
 - Source defaults: density `0.36`, two candidates per grass tile, 7.5 m cull distance, 30 triangles per visible clump.
@@ -96,7 +96,7 @@ The final Playwright lane uses the real production Three.js backend at 1440x900 
 
 It also recaptures the original baseline coordinates and light values. Those locations remain heavily canopy-occluded, which is why separate canopy-clear material-proof targets are used for visual judgment.
 
-Evidence root: `artifacts/terrain-material-v1/final-reference-gated/`.
+Foundation evidence root: `artifacts/terrain-material-v1/final-reference-gated/`. The later mud replacement is proved under `artifacts/terrain-material-v1/mud-pbr-v1/`, including close trampled earth, the grass/path boundary, gameplay height, and normal-only views.
 
 ## Performance evidence
 
@@ -140,10 +140,10 @@ Both profiles pass without lowering DPR, light capacity, shadow slots, smoke, pa
 
 ## Known limitations
 
-- Only grass, dirt, and scorched terrain use the layered system; forest, rock, and water remain on the existing instanced scalar-material path.
+- Grass, dirt, and scorched terrain remain the shared layered system. Forest retains the instanced scalar-material path; rock uses the separate triplanar PBR material in `docs/ROCK_TERRAIN_PBR_MATERIAL_V1.md`, and water uses the reflective physical material in `docs/WATER_AND_RAIN_WETNESS_MATERIAL_V1.md`.
 - The contour mask is static per map revision. Dynamic terrain painting would require an explicit rebuild/update path.
 - Detail height affects normals only; parallax and displacement are intentionally absent.
 - Grass has deterministic static lean, not animated wind or interaction bending.
-- The proof uses procedural source rather than hand-authored hero textures; future material additions must meet the same seamlessness, texel-density, diagnostic, and reference gates.
+- Scorch still uses procedural source; grass, mud and rock now use generated hero texture sets. Future material additions must meet the same seamlessness, texel-density, diagnostic, provenance and reference gates.
 - The broad neutral-light repetition rig is validation-only. Production lighting was not brightened to make screenshots pass.
 - Old baseline coordinates are poor art-review locations because mature canopy silhouettes obscure most ground; they are retained for performance/comparison evidence, while canopy-clear targets are the visual acceptance source.

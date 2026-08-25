@@ -30,7 +30,17 @@ export const NAPALM_DRIBBLE_RECIPES = Object.freeze({
       coreColour: 'rgba(255,126,42,0.9)',
       rimColour: 'rgba(255,185,80,0.72)',
       shadowColour: 'rgba(44,10,7,0.58)',
-      smokeColour: 'rgba(39,31,29,0.34)'
+      smokeColour: 'rgba(39,31,29,0.34)',
+      emissionLight: Object.freeze({
+        radius: 0.28,
+        intensity: 0.11,
+        softness: 0.94,
+        luminousPowerLumens: 560,
+        colour: 'rgba(255,92,28,0.72)',
+        innerColour: 'rgba(255,184,84,0.82)',
+        flickerAmount: 0.08,
+        flickerSpeed: 8.6
+      })
     }),
     pool: Object.freeze({
       lifetime: 6.8,
@@ -60,6 +70,7 @@ export const NAPALM_DRIBBLE_RECIPES = Object.freeze({
       radius: 0.42,
       intensity: 0.1,
       softness: 0.9,
+      luminousPowerLumens: 900,
       colour: 'rgba(255,76,22,0.3)',
       innerColour: 'rgba(255,174,74,0.38)',
       flickerAmount: 0.13,

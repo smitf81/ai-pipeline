@@ -9,11 +9,17 @@ import {
 import { createTerrainBlendMask } from './ThreeTerrainBlendMask.js';
 import { ThreeGrassDetail } from './ThreeGrassDetail.js';
 import { createTerrainPbrTextures } from './ThreeTerrainPbrTextures.js';
+import { createRockTerrainMaterial } from './ThreeRockTerrainMaterial.js';
+import { createGrassTerrainPbrTextures } from './ThreeGrassTerrainPbrTextures.js';
+import { createMudTerrainPbrTextures } from './ThreeMudTerrainPbrTextures.js';
+import { createLayeredTerrainMaterial } from './ThreeLayeredTerrainMaterial.js';
+import { createWaterTerrainMaterial } from './ThreeWaterTerrainMaterial.js';
+import { resolveTerrainRainWetness, TERRAIN_WETNESS_RESPONSE } from './ThreeTerrainWetness.js';
 
 export const THREE_TERRAIN_MATERIAL_SYSTEM_CONTRACT = 'black-sky-bound.three-terrain-material-system.v1';
-export const TerrainDebugMode = Object.freeze({ LIT: 'lit', MATERIAL_ID: 'material-id', NORMAL_ONLY: 'normal-only' });
+export const TerrainDebugMode = Object.freeze({ LIT: 'lit', MATERIAL_ID: 'material-id', NORMAL_ONLY: 'normal-only', WETNESS: 'wetness' });
 
-const DEBUG_MODE_VALUE = Object.freeze({ [TerrainDebugMode.LIT]: 0, [TerrainDebugMode.MATERIAL_ID]: 1, [TerrainDebugMode.NORMAL_ONLY]: 2 });
+const DEBUG_MODE_VALUE = Object.freeze({ [TerrainDebugMode.LIT]: 0, [TerrainDebugMode.MATERIAL_ID]: 1, [TerrainDebugMode.NORMAL_ONLY]: 2, [TerrainDebugMode.WETNESS]: 3 });
 const MATERIAL_ID_COLOURS = Object.freeze({
   grass: 0x2fbf71,
   dirt: 0xc98b45,
@@ -27,6 +33,7 @@ export class ThreeTerrainMaterialSystem {
   constructor(root, options = {}) {
     this.root = root;
     this.tileMeters = options.tileMeters;
+    this.chunkSizeTiles = Math.max(1, Math.round(options.chunkSizeTiles ?? 24));
     this.anisotropy = options.anisotropy ?? 1;
     this.search = options.search ?? '';
     this.debugMode = readDebugMode(this.search);
@@ -37,10 +44,15 @@ export class ThreeTerrainMaterialSystem {
     this.group.add(this.grassDetail.group);
     this.root.add(this.group);
     this.pbrTextures = null;
+    this.grassPbrTextures = null;
+    this.mudPbrTextures = null;
     this.blendMask = null;
     this.resources = [];
     this.legacyMaterials = [];
+    this.rockMaterialHandles = [];
+    this.waterMaterialHandles = [];
     this.layeredMaterial = null;
+    this.wetness = resolveTerrainRainWetness(null, 0);
     this.lastError = null;
     this.stats = emptyStats(this.debugMode);
   }
@@ -52,22 +64,26 @@ export class ThreeTerrainMaterialSystem {
     const layeredTiles = (terrain?.tiles ?? []).filter((tile) => isLayeredTerrainType(tile.type));
     const legacyTypes = [...grouped.keys()].filter((type) => !isLayeredTerrainType(type));
     let layeredStatus = 'inactive';
+    let layeredDrawBatches = 0;
+    const legacyDrawBatches = new Map();
     this.lastError = null;
     try {
       if (layeredTiles.length) {
         this.ensurePbrTextures();
+        this.ensureGrassPbrTextures();
+        this.ensureMudPbrTextures();
         validateLayeredTiles(layeredTiles);
         this.blendMask = createTerrainBlendMask(terrain, new Map(TERRAIN_MATERIAL_LAYERS.map((entry) => [entry.terrainType, entry])));
-        this.buildLayeredFloor(layeredTiles, terrain);
+        layeredDrawBatches = this.buildLayeredFloor(layeredTiles, terrain);
         layeredStatus = 'ready';
       }
     } catch (error) {
       this.lastError = String(error?.message || error);
       layeredStatus = 'error_visible_diagnostic';
-      this.buildDiagnosticFloor(layeredTiles, this.lastError);
+      layeredDrawBatches = this.buildDiagnosticFloor(layeredTiles, this.lastError);
       console.error(`[BSB terrain] layered material failure: ${this.lastError}`);
     }
-    for (const type of legacyTypes) this.buildLegacyTerrain(type, grouped.get(type));
+    for (const type of legacyTypes) legacyDrawBatches.set(type, this.buildLegacyTerrain(type, grouped.get(type)));
     if (layeredStatus === 'ready') this.grassDetail.rebuild(terrain, scenery);
     else this.grassDetail.rebuild({ ...terrain, tiles: [], detailExclusionZones: [] }, []);
     this.grassDetail.setDebugVisible(false);
@@ -80,8 +96,10 @@ export class ThreeTerrainMaterialSystem {
       layeredTypes: TERRAIN_MATERIAL_LAYERS.map((entry) => entry.terrainType),
       layeredTileCount: layeredTiles.length,
       legacyTileCount: (terrain?.tiles?.length ?? 0) - layeredTiles.length,
-      layeredDrawBatches: layeredTiles.length ? 1 : 0,
-      legacyDrawBatches: legacyTypes.length,
+      layeredDrawBatches,
+      legacyDrawBatches: [...legacyDrawBatches.values()].reduce((sum, count) => sum + count, 0),
+      chunkSizeTiles: this.chunkSizeTiles,
+      terrainChunkCount: this.resources.length,
       heightPolicy: 'normal_detail_only_no_displacement',
       uvPolicy: 'continuous_world_space_equal_texel_density',
       repetitionPolicy: 'dual_rotated_micro_sample_plus_world_macro_colour_and_roughness',
@@ -98,6 +116,13 @@ export class ThreeTerrainMaterialSystem {
       blendIdentityPolicy: this.blendMask?.identityPolicy ?? null,
       assetSource: this.pbrTextures?.source ?? null,
       assetLicence: this.pbrTextures?.licence ?? null,
+      authoredGrassTextureCount: this.grassPbrTextures ? 4 : 0,
+      authoredMudTextureCount: this.mudPbrTextures ? 4 : 0,
+      rockTileCount: grouped.get('rock')?.length ?? 0,
+      rockDrawBatches: legacyDrawBatches.get('rock') ?? 0,
+      waterTileCount: grouped.get('water')?.length ?? 0,
+      waterDrawBatches: legacyDrawBatches.get('water') ?? 0,
+      wetnessContract: this.wetness.contract,
       fallbackPolicy: 'explicit_magenta_diagnostic_never_flat_colour'
     };
   }
@@ -106,65 +131,122 @@ export class ThreeTerrainMaterialSystem {
     if (!this.pbrTextures) this.pbrTextures = createTerrainPbrTextures({ anisotropy: this.anisotropy });
   }
 
+  ensureGrassPbrTextures() {
+    if (!this.grassPbrTextures) this.grassPbrTextures = createGrassTerrainPbrTextures({ anisotropy: this.anisotropy });
+  }
+
+  ensureMudPbrTextures() { if (!this.mudPbrTextures) this.mudPbrTextures = createMudTerrainPbrTextures({ anisotropy: this.anisotropy }); }
+
   buildLayeredFloor(tiles, terrain) {
-    const geometry = new THREE.PlaneGeometry(this.tileMeters * 1.006, this.tileMeters * 1.006, 1, 1);
-    geometry.rotateX(-Math.PI / 2);
-    const layerValues = new Float32Array(tiles.length);
-    const material = createLayeredMaterial({
+    const material = createLayeredTerrainMaterial({
       pbrTextures: this.pbrTextures,
+      grassPbrTextures: this.grassPbrTextures,
+      mudPbrTextures: this.mudPbrTextures,
       blendMask: this.blendMask,
       mapWidthMeters: terrain.mapWidth * this.tileMeters,
       mapHeightMeters: terrain.mapHeight * this.tileMeters,
       textureWorldMeters: TERRAIN_MATERIAL_LAYERS[0].textureWorldMeters,
-      debugMode: this.debugMode
+      debugModeValue: DEBUG_MODE_VALUE[this.debugMode]
     });
-    const mesh = new THREE.InstancedMesh(geometry, material, tiles.length);
-    const matrix = new THREE.Matrix4();
-    tiles.forEach((tile, index) => {
-      const definition = getTerrainMaterialLayerByProfileId(tile.material?.profileId);
-      layerValues[index] = definition.index;
-      matrix.makeTranslation((tile.x + 0.5) * this.tileMeters, 0.026, (tile.y + 0.5) * this.tileMeters);
-      mesh.setMatrixAt(index, matrix);
-    });
-    geometry.setAttribute('terrainLayer', new THREE.InstancedBufferAttribute(layerValues, 1));
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.receiveShadow = true;
-    mesh.castShadow = false;
-    mesh.name = 'terrain:layered-floor:grass-dirt-scorched';
-    mesh.userData.contract = THREE_TERRAIN_MATERIAL_SYSTEM_CONTRACT;
-    mesh.userData.materialProfileIds = TERRAIN_MATERIAL_LAYERS.map((entry) => entry.materialProfileId);
-    mesh.computeBoundingSphere();
-    this.group.add(mesh);
-    this.resources.push({ mesh, geometry, material, cameraOccluder: false, occlusionRole: 'terrain_ground' });
     this.layeredMaterial = material;
+    const chunks = groupTilesIntoSpatialChunks(tiles, this.chunkSizeTiles);
+    chunks.forEach(({ key, tiles: chunkTiles }, chunkIndex) => {
+      const geometry = new THREE.PlaneGeometry(this.tileMeters * 1.006, this.tileMeters * 1.006, 1, 1);
+      geometry.rotateX(-Math.PI / 2);
+      const layerValues = new Float32Array(chunkTiles.length);
+      const mesh = new THREE.InstancedMesh(geometry, material, chunkTiles.length);
+      const matrix = new THREE.Matrix4();
+      chunkTiles.forEach((tile, index) => {
+        const definition = getTerrainMaterialLayerByProfileId(tile.material?.profileId);
+        layerValues[index] = definition.index;
+        matrix.makeTranslation((tile.x + 0.5) * this.tileMeters, 0.026, (tile.y + 0.5) * this.tileMeters);
+        mesh.setMatrixAt(index, matrix);
+      });
+      geometry.setAttribute('terrainLayer', new THREE.InstancedBufferAttribute(layerValues, 1));
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.receiveShadow = true;
+      mesh.castShadow = false;
+      mesh.name = chunkIndex === 0 ? 'terrain:layered-floor:grass-dirt-scorched' : `terrain:layered-floor:grass-dirt-scorched:${key}`;
+      mesh.userData.contract = THREE_TERRAIN_MATERIAL_SYSTEM_CONTRACT;
+      mesh.userData.materialProfileIds = TERRAIN_MATERIAL_LAYERS.map((entry) => entry.materialProfileId);
+      installChunkBounds(mesh);
+      this.group.add(mesh);
+      this.resources.push({ mesh, geometry, material, cameraOccluder: false, occlusionRole: 'terrain_ground', renderEnvelopeKind: 'terrain' });
+    });
+    return chunks.length;
   }
 
   buildLegacyTerrain(type, tiles) {
     if (!tiles?.length) return;
+    if (type === 'water') {
+      return this.buildWaterTerrain(tiles);
+    }
+    if (type === 'rock') {
+      return this.buildRockTerrain(tiles);
+    }
     const blocked = tiles[0]?.blocks === true;
-    const height = blocked ? 0.72 : type === 'water' ? 0.035 : 0.08;
+    const height = blocked ? 0.72 : 0.08;
     const geometry = new THREE.BoxGeometry(this.tileMeters * 1.015, height, this.tileMeters * 1.015);
     const sample = tiles[0];
     const material = new THREE.MeshStandardMaterial({
       color: sample.material?.uniforms?.baseColour ?? sample.colour,
-      roughness: type === 'water' ? 0.22 : Number(sample.material?.uniforms?.roughness ?? 0.92),
+      roughness: Number(sample.material?.uniforms?.roughness ?? 0.92),
       metalness: 0,
       flatShading: true
     });
     const baseColour = material.color.clone();
-    const mesh = new THREE.InstancedMesh(geometry, material, tiles.length);
-    const matrix = new THREE.Matrix4();
-    tiles.forEach((tile, index) => {
-      matrix.makeTranslation((tile.x + 0.5) * this.tileMeters, height * 0.5 - 0.055, (tile.y + 0.5) * this.tileMeters);
-      mesh.setMatrixAt(index, matrix);
+    const chunks = groupTilesIntoSpatialChunks(tiles, this.chunkSizeTiles);
+    chunks.forEach(({ key, tiles: chunkTiles }, chunkIndex) => {
+      const mesh = createTerrainChunkMesh(geometry, material, chunkTiles, this.tileMeters, height);
+      mesh.castShadow = blocked;
+      mesh.receiveShadow = true;
+      mesh.name = chunkIndex === 0 ? `terrain:${type}` : `terrain:${type}:${key}`;
+      this.group.add(mesh);
+      this.resources.push({ mesh, geometry, material, cameraOccluder: blocked, occlusionRole: blocked ? 'terrain_obstacle' : 'terrain_ground', renderEnvelopeKind: 'terrain' });
     });
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.castShadow = blocked;
-    mesh.receiveShadow = true;
-    mesh.name = `terrain:${type}`;
-    this.group.add(mesh);
-    this.resources.push({ mesh, geometry, material, cameraOccluder: blocked, occlusionRole: blocked ? 'terrain_obstacle' : 'terrain_ground' });
     this.legacyMaterials.push({ type, material, baseColour, roughness: material.roughness });
+    return chunks.length;
+  }
+
+  buildWaterTerrain(tiles) {
+    const height = 0.035;
+    const geometry = new THREE.BoxGeometry(this.tileMeters * 1.015, height, this.tileMeters * 1.015);
+    const handle = createWaterTerrainMaterial({ debugMode: DEBUG_MODE_VALUE[this.debugMode] });
+    handle.setRain(this.wetness);
+    const chunks = groupTilesIntoSpatialChunks(tiles, this.chunkSizeTiles);
+    chunks.forEach(({ key, tiles: chunkTiles }, chunkIndex) => {
+      const mesh = createTerrainChunkMesh(geometry, handle.material, chunkTiles, this.tileMeters, height);
+      mesh.receiveShadow = true;
+      mesh.name = chunkIndex === 0 ? 'terrain:water:reflective' : `terrain:water:reflective:${key}`;
+      mesh.userData.contract = THREE_TERRAIN_MATERIAL_SYSTEM_CONTRACT;
+      mesh.userData.materialContract = handle.state.contract;
+      this.group.add(mesh);
+      this.resources.push({ mesh, geometry, material: handle.material, cameraOccluder: false, occlusionRole: 'terrain_ground', renderEnvelopeKind: 'terrain' });
+    });
+    this.waterMaterialHandles.push(handle);
+    return chunks.length;
+  }
+
+  buildRockTerrain(tiles) {
+    const height = 0.72;
+    const geometry = new THREE.BoxGeometry(this.tileMeters * 1.015, height, this.tileMeters * 1.015);
+    const handle = createRockTerrainMaterial({
+      anisotropy: this.anisotropy,
+      debugMode: DEBUG_MODE_VALUE[this.debugMode]
+    });
+    const chunks = groupTilesIntoSpatialChunks(tiles, this.chunkSizeTiles);
+    chunks.forEach(({ key, tiles: chunkTiles }, chunkIndex) => {
+      const mesh = createTerrainChunkMesh(geometry, handle.material, chunkTiles, this.tileMeters, height);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.name = chunkIndex === 0 ? 'terrain:rock:pbr' : `terrain:rock:pbr:${key}`;
+      mesh.userData.contract = THREE_TERRAIN_MATERIAL_SYSTEM_CONTRACT;
+      mesh.userData.materialContract = handle.state.contract;
+      this.group.add(mesh);
+      this.resources.push({ mesh, geometry, material: handle.material, cameraOccluder: true, occlusionRole: 'terrain_obstacle', renderEnvelopeKind: 'terrain' });
+    });
+    this.rockMaterialHandles.push(handle);
+    return chunks.length;
   }
 
   buildDiagnosticFloor(tiles, error) {
@@ -172,25 +254,44 @@ export class ThreeTerrainMaterialSystem {
     const geometry = new THREE.PlaneGeometry(this.tileMeters * 0.98, this.tileMeters * 0.98);
     geometry.rotateX(-Math.PI / 2);
     const material = new THREE.MeshBasicMaterial({ color: 0xff00cc, wireframe: true, side: THREE.DoubleSide });
-    const mesh = new THREE.InstancedMesh(geometry, material, tiles.length);
-    const matrix = new THREE.Matrix4();
-    tiles.forEach((tile, index) => {
-      matrix.makeTranslation((tile.x + 0.5) * this.tileMeters, 0.045, (tile.y + 0.5) * this.tileMeters);
-      mesh.setMatrixAt(index, matrix);
+    const chunks = groupTilesIntoSpatialChunks(tiles, this.chunkSizeTiles);
+    chunks.forEach(({ key, tiles: chunkTiles }, chunkIndex) => {
+      const mesh = createTerrainChunkMesh(geometry, material, chunkTiles, this.tileMeters, 0.2, 0.045);
+      mesh.name = chunkIndex === 0 ? 'terrain:material-error-visible-diagnostic' : `terrain:material-error-visible-diagnostic:${key}`;
+      mesh.userData.diagnostic = error;
+      this.group.add(mesh);
+      this.resources.push({ mesh, geometry, material, cameraOccluder: false, occlusionRole: 'terrain_diagnostic', renderEnvelopeKind: 'terrain' });
     });
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.name = 'terrain:material-error-visible-diagnostic';
-    mesh.userData.diagnostic = error;
-    this.group.add(mesh);
-    this.resources.push({ mesh, geometry, material, cameraOccluder: false, occlusionRole: 'terrain_diagnostic' });
+    return chunks.length;
   }
 
   updateView(view) { this.grassDetail.update(view?.cameraTarget); }
+
+  updateWeather(packet, renderTime = 0) {
+    this.wetness = resolveTerrainRainWetness(packet, renderTime);
+    const uniforms = this.layeredMaterial?.userData?.terrainUniforms;
+    if (uniforms) {
+      uniforms.uRainWetness.value = this.wetness.rainIntensity;
+      uniforms.uRainRenderTime.value = this.wetness.renderTime;
+    }
+    for (const handle of this.rockMaterialHandles) handle.setRain(this.wetness);
+    for (const handle of this.waterMaterialHandles) handle.setRain(this.wetness);
+    for (const entry of this.legacyMaterials) this.applyLegacyWetness(entry);
+    return this.wetness;
+  }
 
   cameraOcclusionObjects() {
     return this.resources
       .filter((resource) => resource.cameraOccluder === true)
       .map((resource) => ({ object: resource.mesh, role: resource.occlusionRole }));
+  }
+
+  renderEnvelopeObjects() {
+    return this.resources.map((resource) => ({
+      object: resource.mesh,
+      id: resource.mesh.name,
+      kind: resource.renderEnvelopeKind ?? 'terrain'
+    }));
   }
 
   setDebugMode(mode) {
@@ -208,14 +309,17 @@ export class ThreeTerrainMaterialSystem {
   }
 
   applyLegacyDebugMode() {
+    for (const handle of this.rockMaterialHandles) handle.setDebugMode(DEBUG_MODE_VALUE[this.debugMode]);
+    for (const handle of this.waterMaterialHandles) handle.setDebugMode(DEBUG_MODE_VALUE[this.debugMode]);
     for (const entry of this.legacyMaterials) {
       if (this.debugMode === TerrainDebugMode.LIT) {
-        entry.material.color.copy(entry.baseColour);
+        this.applyLegacyWetness(entry);
         entry.material.emissive.set(0x000000);
         entry.material.emissiveIntensity = 0;
-        entry.material.roughness = entry.roughness;
       } else {
-        const colour = this.debugMode === TerrainDebugMode.MATERIAL_ID ? MATERIAL_ID_COLOURS[entry.type] ?? 0xff00cc : 0x8080ff;
+        const colour = this.debugMode === TerrainDebugMode.MATERIAL_ID
+          ? MATERIAL_ID_COLOURS[entry.type] ?? 0xff00cc
+          : this.debugMode === TerrainDebugMode.WETNESS ? 0x3fb8ff : 0x8080ff;
         entry.material.color.setHex(colour);
         entry.material.emissive.setHex(colour);
         entry.material.emissiveIntensity = 0.28;
@@ -223,6 +327,13 @@ export class ThreeTerrainMaterialSystem {
       }
       entry.material.needsUpdate = true;
     }
+  }
+
+  applyLegacyWetness(entry) {
+    const response = TERRAIN_WETNESS_RESPONSE[entry.type] ?? TERRAIN_WETNESS_RESPONSE.forest;
+    const amount = this.wetness.rainIntensity * response.response;
+    entry.material.color.copy(entry.baseColour).multiplyScalar(THREE.MathUtils.lerp(1, response.darken, amount));
+    entry.material.roughness = THREE.MathUtils.lerp(entry.roughness, response.wetRoughness, amount);
   }
 
   setGroundDetailEnabled(value) {
@@ -234,17 +345,38 @@ export class ThreeTerrainMaterialSystem {
   setDebugVisible(value) { this.grassDetail.setDebugVisible(value); }
 
   diagnostics() {
-    return { terrain: { ...this.stats }, grassDetail: this.grassDetail.diagnostics() };
+    const rockMaterial = this.rockMaterialHandles[0]?.state ?? null;
+    const waterMaterial = this.waterMaterialHandles[0]?.state ?? null;
+    const grassMaterial = this.grassPbrTextures?.state ?? null;
+    const mudMaterial = this.mudPbrTextures?.state ?? null;
+    return {
+      terrain: {
+        ...this.stats,
+        grassMaterial: grassMaterial ? { ...grassMaterial, errors: [...grassMaterial.errors] } : null,
+        mudMaterial: mudMaterial ? { ...mudMaterial, errors: [...mudMaterial.errors] } : null,
+        rockMaterial: rockMaterial ? { ...rockMaterial, errors: [...rockMaterial.errors] } : null,
+        waterMaterial: waterMaterial ? { ...waterMaterial, errors: [...waterMaterial.errors] } : null,
+        wetness: this.wetness
+      },
+      grassDetail: this.grassDetail.diagnostics()
+    };
   }
 
   clearSurfaces() {
     this.blendMask?.dispose();
     this.blendMask = null;
+    for (const handle of this.rockMaterialHandles) handle.disposeTextures();
+    this.rockMaterialHandles.length = 0;
+    this.waterMaterialHandles.length = 0;
+    const geometries = new Set();
+    const materials = new Set();
     for (const resource of this.resources) {
       resource.mesh.removeFromParent();
-      resource.geometry.dispose();
-      resource.material.dispose();
+      geometries.add(resource.geometry);
+      materials.add(resource.material);
     }
+    for (const geometry of geometries) geometry.dispose();
+    for (const material of materials) material.dispose();
     this.resources.length = 0;
     this.legacyMaterials.length = 0;
     this.layeredMaterial = null;
@@ -254,134 +386,13 @@ export class ThreeTerrainMaterialSystem {
     this.clearSurfaces();
     this.pbrTextures?.dispose();
     this.pbrTextures = null;
+    this.grassPbrTextures?.dispose();
+    this.grassPbrTextures = null;
+    this.mudPbrTextures?.dispose();
+    this.mudPbrTextures = null;
     this.grassDetail.dispose();
     this.group.removeFromParent();
   }
-}
-
-function createLayeredMaterial(options) {
-  const uniforms = {
-    uTerrainBaseColour: { value: options.pbrTextures.baseColour },
-    uTerrainNormal: { value: options.pbrTextures.normal },
-    uTerrainSurface: { value: options.pbrTextures.surface },
-    uTerrainBlendMask: { value: options.blendMask.texture },
-    uTerrainMapMeters: { value: new THREE.Vector2(options.mapWidthMeters, options.mapHeightMeters) },
-    uTerrainMicroScale: { value: 1 / options.textureWorldMeters },
-    uTerrainDebugMode: { value: DEBUG_MODE_VALUE[options.debugMode] }
-  };
-  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
-  material.name = 'terrain:layered-pbr-array-material';
-  material.userData.terrainUniforms = uniforms;
-  material.customProgramCacheKey = () => THREE_TERRAIN_MATERIAL_SYSTEM_CONTRACT;
-  material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>
-attribute float terrainLayer;
-flat varying float vTerrainLayer;
-varying vec3 vTerrainWorldPosition;`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-vTerrainLayer = terrainLayer;`)
-      .replace('#include <project_vertex>', `vec4 terrainWorldPosition = vec4( transformed, 1.0 );
-#ifdef USE_BATCHING
-terrainWorldPosition = batchingMatrix * terrainWorldPosition;
-#endif
-#ifdef USE_INSTANCING
-terrainWorldPosition = instanceMatrix * terrainWorldPosition;
-#endif
-vTerrainWorldPosition = ( modelMatrix * terrainWorldPosition ).xyz;
-#include <project_vertex>`);
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>
-precision highp sampler2DArray;
-uniform sampler2DArray uTerrainBaseColour;
-uniform sampler2DArray uTerrainNormal;
-uniform sampler2DArray uTerrainSurface;
-uniform sampler2D uTerrainBlendMask;
-uniform vec2 uTerrainMapMeters;
-uniform float uTerrainMicroScale;
-uniform int uTerrainDebugMode;
-flat varying float vTerrainLayer;
-varying vec3 vTerrainWorldPosition;
-
-struct TerrainPbrSample {
-  vec3 colour;
-  vec3 tangentNormal;
-  float roughness;
-  float ao;
-  float height;
-  vec3 weights;
-};
-
-vec4 terrainArrayBlend( sampler2DArray source, vec2 uv, vec3 weights ) {
-  return texture( source, vec3( uv, 0.0 ) ) * weights.r
-    + texture( source, vec3( uv, 1.0 ) ) * weights.g
-    + texture( source, vec3( uv, 2.0 ) ) * weights.b;
-}
-
-vec3 terrainSrgbToLinear( vec3 colour ) {
-  bvec3 cutoff = lessThanEqual( colour, vec3( 0.04045 ) );
-  vec3 low = colour / 12.92;
-  vec3 high = pow( ( colour + 0.055 ) / 1.055, vec3( 2.4 ) );
-  return mix( high, low, vec3( cutoff ) );
-}
-
-float terrainMacroNoise( vec2 worldPosition ) {
-  float broad = sin( worldPosition.x * 0.47 + sin( worldPosition.y * 0.31 ) * 1.6 );
-  float cross = cos( worldPosition.y * 0.37 - sin( worldPosition.x * 0.19 ) * 2.0 );
-  float diagonal = sin( worldPosition.x * 0.13 + worldPosition.y * 0.17 + cross );
-  return clamp( broad * 0.24 + cross * 0.19 + diagonal * 0.13 + 0.5, 0.0, 1.0 );
-}
-
-TerrainPbrSample sampleTerrainPbr( vec2 worldPosition ) {
-  vec2 maskUv = clamp( worldPosition / uTerrainMapMeters, vec2( 0.0001 ), vec2( 0.9999 ) );
-  vec3 weights = texture( uTerrainBlendMask, maskUv ).rgb;
-  float weightSum = weights.r + weights.g + weights.b;
-  if ( weightSum < 0.001 ) {
-    weights = vec3( vTerrainLayer < 0.5 ? 1.0 : 0.0, vTerrainLayer >= 0.5 && vTerrainLayer < 1.5 ? 1.0 : 0.0, vTerrainLayer >= 1.5 ? 1.0 : 0.0 );
-  } else {
-    weights /= weightSum;
-  }
-  vec2 microUv = worldPosition * uTerrainMicroScale;
-  mat2 rotated = mat2( 0.819152, -0.573576, 0.573576, 0.819152 );
-  vec2 secondaryUv = rotated * microUv * 0.537 + vec2( 0.173, 0.419 );
-  float macro = terrainMacroNoise( worldPosition );
-  vec4 baseA = terrainArrayBlend( uTerrainBaseColour, microUv, weights );
-  vec4 baseB = terrainArrayBlend( uTerrainBaseColour, secondaryUv, weights );
-  vec4 normalA = terrainArrayBlend( uTerrainNormal, microUv, weights );
-  vec4 normalB = terrainArrayBlend( uTerrainNormal, secondaryUv, weights );
-  vec4 surfaceA = terrainArrayBlend( uTerrainSurface, microUv, weights );
-  vec4 surfaceB = terrainArrayBlend( uTerrainSurface, secondaryUv, weights );
-  float secondaryMix = 0.18 + macro * 0.12;
-  TerrainPbrSample sampleValue;
-  sampleValue.colour = terrainSrgbToLinear( mix( baseA.rgb, baseB.rgb, secondaryMix ) ) * mix( 0.94, 1.09, macro );
-  sampleValue.tangentNormal = normalize( mix( normalA.rgb, normalB.rgb, secondaryMix * 0.7 ) * 2.0 - 1.0 );
-  vec3 surfaceValue = mix( surfaceA.rgb, surfaceB.rgb, secondaryMix );
-  sampleValue.roughness = clamp( surfaceValue.r + ( 0.5 - macro ) * 0.09, 0.68, 1.0 );
-  sampleValue.ao = clamp( surfaceValue.g, 0.68, 1.0 );
-  sampleValue.height = surfaceValue.b;
-  sampleValue.weights = weights;
-  return sampleValue;
-}`)
-      .replace('#include <map_fragment>', `#include <map_fragment>
-TerrainPbrSample terrainPbr = sampleTerrainPbr( vTerrainWorldPosition.xz );
-diffuseColor.rgb = terrainPbr.colour;`)
-      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-roughnessFactor = terrainPbr.roughness;`)
-      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-vec3 terrainWorldNormal = normalize( vec3( terrainPbr.tangentNormal.x, max( 0.08, terrainPbr.tangentNormal.z ), terrainPbr.tangentNormal.y ) );
-normal = normalize( mat3( viewMatrix ) * terrainWorldNormal );`)
-      .replace('#include <aomap_fragment>', `#include <aomap_fragment>
-reflectedLight.indirectDiffuse *= terrainPbr.ao;
-reflectedLight.indirectSpecular *= terrainPbr.ao;`)
-      .replace('#include <opaque_fragment>', `if ( uTerrainDebugMode == 1 ) {
-  outgoingLight = terrainPbr.weights.r * vec3( 0.08, 0.72, 0.28 ) + terrainPbr.weights.g * vec3( 0.72, 0.31, 0.08 ) + terrainPbr.weights.b * vec3( 0.74, 0.06, 0.28 );
-} else if ( uTerrainDebugMode == 2 ) {
-  outgoingLight = terrainPbr.tangentNormal * 0.5 + 0.5;
-}
-#include <opaque_fragment>`);
-  };
-  return material;
 }
 
 function validateLayeredTiles(tiles) {
@@ -402,6 +413,34 @@ function groupTiles(tiles) {
     grouped.get(tile.type).push(tile);
   }
   return grouped;
+}
+
+function groupTilesIntoSpatialChunks(tiles, chunkSizeTiles) {
+  const groups = new Map();
+  for (const tile of tiles) {
+    const key = `${Math.floor(tile.x / chunkSizeTiles)}:${Math.floor(tile.y / chunkSizeTiles)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(tile);
+  }
+  return [...groups.entries()].map(([key, chunkTiles]) => ({ key, tiles: chunkTiles }));
+}
+
+function createTerrainChunkMesh(geometry, material, tiles, tileMeters, height, y = height * 0.5 - 0.055) {
+  const mesh = new THREE.InstancedMesh(geometry, material, tiles.length);
+  const matrix = new THREE.Matrix4();
+  tiles.forEach((tile, index) => {
+    matrix.makeTranslation((tile.x + 0.5) * tileMeters, y, (tile.y + 0.5) * tileMeters);
+    mesh.setMatrixAt(index, matrix);
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  installChunkBounds(mesh);
+  return mesh;
+}
+
+function installChunkBounds(mesh) {
+  mesh.computeBoundingBox();
+  mesh.computeBoundingSphere();
+  mesh.frustumCulled = true;
 }
 
 function readDetailOptions(search) {

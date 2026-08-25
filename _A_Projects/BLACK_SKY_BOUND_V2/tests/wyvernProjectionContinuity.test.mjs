@@ -35,9 +35,13 @@ wyvernProjectionSystem({ game: transported.game, dt: 1 / 60 });
 assert(distance(transportedProjection.bodyPoints[0], transportedTransform) < 0.001, 'root transport should keep the axial head attached after sudden movement');
 const forward = { x: Math.cos(transportedTransform.rotation), y: Math.sin(transportedTransform.rotation) };
 const tail = transportedProjection.bodyPoints.at(-1);
-assert(dot({ x: tail.x - transportedTransform.x, y: tail.y - transportedTransform.y }, forward) < -0.5, 'root transport should carry the chain through a sudden facing change');
+assert(Math.abs(dot({ x: tail.x - transportedTransform.x, y: tail.y - transportedTransform.y }, forward)) < 0.5, 'sudden facing change should leave the rear chain behind for visible turn follow-through');
+equal(transportedProjection.rootTransport.rotationAppliedToChain, false, 'root transport should translate the body without rigidly rotating every axial point');
+assert(Math.abs(transportedProjection.axialTurn.hipLag) > 0.1, 'projection should publish the resulting hip lag');
 for (let index = 1; index < transportedProjection.bodyPoints.length; index += 1) {
+  const minDistance = recipe.chain.segmentLengthScales[index - 1] * transportedCollider.radius * recipe.proportionProfile.constraints.minBodyChainStretch - 0.0001;
   const maxDistance = recipe.chain.segmentLengthScales[index - 1] * transportedCollider.radius * recipe.proportionProfile.constraints.maxBodyChainStretch + 0.0001;
+  assert(distance(transportedProjection.bodyPoints[index - 1], transportedProjection.bodyPoints[index]) >= minDistance, 'transported chain segments should not collapse');
   assert(distance(transportedProjection.bodyPoints[index - 1], transportedProjection.bodyPoints[index]) <= maxDistance, 'transported chain segments should remain connected');
 }
 

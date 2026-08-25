@@ -55,7 +55,8 @@ equal(greybox.segmentCount, 13, 'greybox should display a compact body hierarchy
 equal(greybox.massCount, 7, 'greybox should expose pelvis, chest, head, hands, and feet without finished armour masses');
 equal(greybox.contactMarkerCount, 2, 'greybox should expose both physical foot contacts');
 equal(greybox.plantedContactCount, 2, 'wind-up stance should brace both foot contacts');
-equal(first.proceduralHumanoids.actorCount, 0, 'finished recipe body and attachments should be suppressed in greybox mode');
+equal(first.inkHumanoids.actorCount, 0, 'production ink body and props should be suppressed in greybox mode');
+equal(first.proceduralHumanoids.actorCount, 0, 'faceted fallback body should also remain suppressed in greybox mode');
 assert(!layer.entries.has(raider), 'greybox raider should bypass legacy and finished-body actor entries');
 assert(layer.raiderMotionGreybox.root.visible, 'greybox root should be visible');
 

@@ -9,6 +9,8 @@ import { execFile, spawn } from "child_process";
 import { fileURLToPath } from "url";
 import { registerSSE, broadcast, getClientCount } from "./server/sse.js";
 import { createProjectDiaryService } from "./server/project-diary.js";
+import { createLevelDesignSessionService, LEVEL_DESIGN_SESSION_CONTRACT, MAP_FORGE_SPATIAL_SCORECARD_CONTRACT, MAP_INTENT_PREFLIGHT_CONTRACT } from "./server/level-design-session.js";
+import { auditRuntimeTraversal } from "./server/runtime-traversal-audit.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +21,10 @@ const PROJECT_ROOT = __dirname;
 const WORKSPACE_ROOT = path.resolve(__dirname, "..", "..", "..");
 const A_PROJECTS_ROOT = path.join(WORKSPACE_ROOT, "_A_Projects");
 const FILE_MANAGER_BRIDGE_VERSION = "axiom-file-manager-bridge.v0.5-project-roots";
+const LAUNCHER_RUNTIME_CONTRACT = "axiom.launcher-runtime.v7-capability-acquisition-r7";
+const AGENT_INTENT_CONTRACT = "axiom.agent-intent.v1";
+const CAPABILITY_ACQUISITION_CONTRACT = "axiom.capability-acquisition.v1";
+const LAUNCHER_STARTED_AT = new Date().toISOString();
 const FULL_PROJECT_FILE_MAX_LINES = 100000;
 const BASE_REGISTERED_PROJECTS = Object.freeze({
   axiom: Object.freeze({
@@ -74,6 +80,10 @@ const PROJECT_DIARY = createProjectDiaryService({
   debounceMs: 1200,
   maxEvidenceFiles: 420
 });
+const LEVEL_DESIGN_SESSIONS = createLevelDesignSessionService({
+  dataRoot: path.join(PROJECT_ROOT, "data", "level-design-sessions"),
+  staleAfterMs: 8000
+});
 
 let latestSceneState = {
   objectCount: 0,
@@ -82,7 +92,7 @@ let latestSceneState = {
   updatedAt: null
 };
 
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "8mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 registerSSE(app);
@@ -155,6 +165,8 @@ const MCP_TOOLS = [
         y: { type: "integer" },
         species: { type: "string", enum: ["old_pine", "silver_birch", "ancient_oak"] },
         seed: { type: "integer" },
+        expectedRevision: { type: "integer", description: "Map Forge revision observed when the proposal was created. Apply is blocked if it has changed." },
+        proposalId: { type: "string", description: "Correlated non-canonical proposal identifier." },
         years: { type: "number" },
         amount: { type: "number" },
         heightMeters: { type: "number" },
@@ -435,7 +447,9 @@ const MCP_TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        plugin_id: { type: "string" }
+        plugin_id: { type: "string" },
+        strict: { type: "boolean" },
+        request_id: { type: "string" }
       },
       required: ["plugin_id"]
     }
@@ -447,7 +461,9 @@ const MCP_TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        plugin_id: { type: "string" }
+        plugin_id: { type: "string" },
+        include_source_maps: { type: "boolean" },
+        request_id: { type: "string" }
       },
       required: ["plugin_id"]
     }
@@ -459,7 +475,10 @@ const MCP_TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        plugin_id: { type: "string" }
+        plugin_id: { type: "string" },
+        activate: { type: "boolean" },
+        auto_activate: { type: "boolean" },
+        request_id: { type: "string" }
       },
       required: ["plugin_id"]
     }
@@ -472,7 +491,8 @@ const MCP_TOOLS = [
       type: "object",
       properties: {
         plugin_id: { type: "string" },
-        force: { type: "boolean" }
+        force: { type: "boolean" },
+        request_id: { type: "string" }
       },
       required: ["plugin_id"]
     }
@@ -484,7 +504,9 @@ const MCP_TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        plugin_id: { type: "string" }
+        plugin_id: { type: "string" },
+        include_files: { type: "boolean" },
+        request_id: { type: "string" }
       },
       required: ["plugin_id"]
     }
@@ -517,7 +539,11 @@ const MCP_TOOLS = [
     remoteCallUrl: "http://127.0.0.1:4242/call",
     inputSchema: {
       type: "object",
-      properties: {}
+      properties: {
+        status_filter: { type: "string" },
+        capability_filter: { type: "string" },
+        request_id: { type: "string" }
+      }
     }
   },
   {
@@ -586,7 +612,7 @@ const MCP_TOOLS = [
   },
   {
     name: "axiom_plugin_model_build_slice",
-    description: "Ask the local Ollama model for plugin code, then write, validate, package, and register it. Bad output returns exact validation/retry feedback.",
+    description: "Ask the local Ollama model for a bounded capability design, compile the governed runtime wrapper, then validate, package, and register it. Bad output returns exact validation/retry feedback.",
     remoteCallUrl: "http://127.0.0.1:4242/call",
     inputSchema: {
       type: "object",
@@ -602,6 +628,9 @@ const MCP_TOOLS = [
         host: { type: "string" },
         timeout_ms: { type: "number" },
         model_candidate: { type: "object" },
+        original_request: { type: "string" },
+        acquisition_mode: { type: "string", enum: ["bounded_runtime_tool"] },
+        runtime_contract: { type: "object" },
         request_id: { type: "string" }
       }
     }
@@ -1414,6 +1443,23 @@ async function walk(dir, limit = 500) {
   return out;
 }
 
+function normalizeMcpCallMeta(input = {}) {
+  const id = (value, prefix, required = false) => {
+    const text = String(value || '').trim();
+    if (text && /^[a-z0-9:_-]{1,160}$/i.test(text)) return text;
+    if (!required) return null;
+    return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  };
+  return {
+    contract: 'axiom.mcp-call-meta.v1',
+    attemptId: id(input.attemptId, 'attempt'),
+    proposalId: id(input.proposalId, 'proposal'),
+    callId: id(input.callId, 'call', true),
+    sourceSurface: String(input.sourceSurface || 'bridge').trim().slice(0, 80) || 'bridge',
+    receivedAt: new Date().toISOString()
+  };
+}
+
 async function callTool(tool, params = {}) {
   const now = new Date().toISOString();
 
@@ -1525,6 +1571,7 @@ if (toolDef?.remoteCallUrl) {
     };
   }
 }
+
   if (tool === "scene.get" || tool === "axiom_get_scene") {
     return { ok: true, result: { ...latestSceneState, source: "posted_scene_state" } };
   }
@@ -1920,6 +1967,17 @@ app.get("/health", (_req, res) => {
     ok: true,
     service: "axiom-sse-bridge",
     bridgeVersion: FILE_MANAGER_BRIDGE_VERSION,
+    runtimeContract: LAUNCHER_RUNTIME_CONTRACT,
+    agentIntentContract: AGENT_INTENT_CONTRACT,
+    capabilityAcquisitionContract: CAPABILITY_ACQUISITION_CONTRACT,
+    levelDesignSessionContract: LEVEL_DESIGN_SESSION_CONTRACT,
+    mapForgeSpatialScorecardContract: MAP_FORGE_SPATIAL_SCORECARD_CONTRACT,
+    mapIntentPreflightContract: MAP_INTENT_PREFLIGHT_CONTRACT,
+    launcherRoot: PROJECT_ROOT,
+    workspaceRoot: WORKSPACE_ROOT,
+    serverFile: __filename,
+    processId: process.pid,
+    startedAt: LAUNCHER_STARTED_AT,
     clients: getClientCount(),
     mcpTools: MCP_TOOLS.map(t => t.name),
     projects: Object.values(projects).map(project => projectInfo(project, { includeVerification: true })),
@@ -1965,10 +2023,12 @@ app.get("/mcp/tools", (_req, res) => {
 
 app.post("/mcp/call", async (req, res) => {
   const { tool, params = {} } = req.body || {};
-  if (!tool) return res.status(400).json({ ok: false, error: "Missing tool" });
+  const meta = normalizeMcpCallMeta(req.body?.meta || {});
+  if (!tool) return res.status(400).json({ ok: false, error: "Missing tool", meta });
   try {
     const result = await callTool(tool, params);
     broadcast("mcp_result", {
+      meta,
       tool,
       ok: result.ok !== false,
       result: result.result || null,
@@ -1977,9 +2037,9 @@ app.post("/mcp/call", async (req, res) => {
       clientAction: result.clientAction || null,
       at: new Date().toISOString()
     });
-    res.status(result.ok === false ? 400 : 200).json(result);
+    res.status(result.ok === false ? 400 : 200).json({ ...result, meta });
   } catch (error) {
-    res.status(500).json({ ok: false, error: error.message });
+    res.status(500).json({ ok: false, error: error.message, meta });
   }
 });
 
@@ -2003,15 +2063,105 @@ function projectDiaryProject(input = {}) {
 
 function projectDiaryError(res, error) {
   const message = String(error?.message || error || "project_diary_error");
-  const notFound = message === "project_diary_entry_not_found";
+  const notFound = message === "project_diary_entry_not_found" || message === "project_diary_attachment_not_found";
   const badRequest = notFound
     || message.includes("required")
     || message.includes("unsupported")
     || message.includes("invalid")
     || message.includes("mismatch")
+    || message.includes("too_large")
     || ["UNKNOWN_PROJECT", "UNREGISTERED_PROJECT_ROOT"].includes(error?.code);
   res.status(notFound ? 404 : badRequest ? 400 : 500).json({ ok: false, error: message });
 }
+
+function levelDesignSessionError(res, error) {
+  const message = String(error?.message || error || "level_design_session_error");
+  const notFound = message === "level_design_session_not_found";
+  const conflict = message.includes("terminal")
+    || message.includes("stale")
+    || message.includes("inactive_record")
+    || message.includes("ownership_mismatch")
+    || message.includes("already_approved");
+  const badRequest = message.includes("required")
+    || message.includes("invalid")
+    || message.includes("mismatch")
+    || message.includes("not_approved")
+    || message.includes("lineage");
+  res.status(notFound ? 404 : conflict ? 409 : badRequest ? 400 : 500).json({ ok: false, error: message });
+}
+
+function broadcastLevelDesignSession(session, event) {
+  broadcast("level_design_session", {
+    contract: session.contract,
+    sessionId: session.id,
+    projectId: session.project.id,
+    mapId: session.map.mapId,
+    state: session.state,
+    phase: session.phase,
+    iteration: session.iteration,
+    currentRevision: session.map.currentRevision,
+    currentAction: session.currentAction,
+    event,
+    updatedAt: session.updatedAt
+  });
+}
+
+app.post("/api/level-design-sessions", (req, res) => {
+  try {
+    const session = LEVEL_DESIGN_SESSIONS.create(req.body || {});
+    broadcastLevelDesignSession(session, "session_created");
+    res.status(201).json({ ok: true, session });
+  } catch (error) {
+    levelDesignSessionError(res, error);
+  }
+});
+
+app.get("/api/level-design-sessions/latest", (req, res) => {
+  try {
+    res.json(LEVEL_DESIGN_SESSIONS.latest(req.query || {}));
+  } catch (error) {
+    levelDesignSessionError(res, error);
+  }
+});
+
+app.get("/api/level-design-sessions/:sessionId", (req, res) => {
+  try {
+    res.json({ ok: true, session: LEVEL_DESIGN_SESSIONS.get(req.params.sessionId) });
+  } catch (error) {
+    levelDesignSessionError(res, error);
+  }
+});
+
+app.post("/api/level-design-sessions/:sessionId/control", (req, res) => {
+  try {
+    const session = LEVEL_DESIGN_SESSIONS.control(req.params.sessionId, req.body || {});
+    broadcastLevelDesignSession(session, `control_${String(req.body?.action || "unknown")}`);
+    res.json({ ok: true, session });
+  } catch (error) {
+    levelDesignSessionError(res, error);
+  }
+});
+
+app.post("/api/level-design-sessions/:sessionId/records", (req, res) => {
+  try {
+    const session = LEVEL_DESIGN_SESSIONS.record(req.params.sessionId, req.body || {});
+    broadcastLevelDesignSession(session, `record_${String(req.body?.type || "unknown")}`);
+    res.json({ ok: true, session });
+  } catch (error) {
+    levelDesignSessionError(res, error);
+  }
+});
+
+app.post("/api/mapforge/runtime-traversal-audit", (req, res) => {
+  try {
+    const audit = auditRuntimeTraversal(req.body?.document, { sessionId: req.body?.sessionId });
+    res.json({ ok: true, audit });
+  } catch (error) {
+    const message = String(error?.message || error || "runtime_traversal_audit_failed");
+    const badRequest = /missing|invalid|forbidden|required|mismatch|route/.test(message);
+    res.status(badRequest ? 400 : 500).json({ ok: false, error: message });
+  }
+});
 
 app.get("/api/project-diary", (req, res) => {
   try {
@@ -2035,6 +2185,22 @@ app.get("/api/project-diary/entries/:entryId", (req, res) => {
   try {
     const project = projectDiaryProject(req.query || {});
     res.json({ ok: true, entry: PROJECT_DIARY.get(project, req.params.entryId) });
+  } catch (error) {
+    projectDiaryError(res, error);
+  }
+});
+
+app.get("/api/project-diary/entries/:entryId/attachments/:attachmentId", (req, res) => {
+  try {
+    const project = projectDiaryProject(req.query || {});
+    const attachment = PROJECT_DIARY.readAttachment(project, req.params.entryId, req.params.attachmentId);
+    const inline = String(attachment.type || '').startsWith('image/');
+    res.type(attachment.type || 'application/octet-stream');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(attachment.name || 'attachment')}`);
+    res.sendFile(attachment.path, error => {
+      if (error && !res.headersSent) projectDiaryError(res, error);
+    });
   } catch (error) {
     projectDiaryError(res, error);
   }

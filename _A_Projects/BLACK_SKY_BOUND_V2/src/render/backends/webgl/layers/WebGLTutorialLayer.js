@@ -68,7 +68,7 @@ export class WebGLTutorialLayer {
     this.addAshStreaks(anchor.x, y, cue.elapsedReal, opacity, reducedMotion);
     if (cue.presentationType === 'movement_keys') this.buildMovementCue(cue, anchor.x, y, opacity);
     else if (cue.presentationType === 'combo_only') this.buildCombatCue(cue, anchor.x, y, opacity);
-    else if (cue.presentationType === 'dodge_charge_sequence') this.buildChargeCue(cue, anchor.x, y, opacity);
+    else if (cue.presentationType === 'dodge_pounce_sequence') this.buildPounceCue(cue, anchor.x, y, opacity);
     else if (cue.presentationType === 'message') this.buildMessageCue(cue, anchor.x, y, opacity);
     else this.buildSingleCue(cue, anchor.x, y, opacity);
   }
@@ -112,16 +112,19 @@ export class WebGLTutorialLayer {
     if (cue.supportingText) this.writeCentered(cue.supportingText, centerX, y + 65, 1, withAlpha(ASH, opacity));
   }
 
-  buildChargeCue(cue, centerX, y, opacity) {
-    const label = cue.inputRows[0]?.bindings?.[0] ?? 'SPACE';
-    const width = keyWidth(label, 2);
+  buildPounceCue(cue, centerX, y, opacity) {
+    const firstLabel = cue.inputRows[0]?.bindings?.[0] ?? 'SPACE';
+    const secondLabel = cue.inputRows[1]?.bindings?.[0] ?? 'LMB';
+    const firstWidth = keyWidth(firstLabel, 2);
+    const secondWidth = keyWidth(secondLabel, 2);
     const gap = 38;
-    const total = width * 2 + gap;
+    const total = firstWidth + secondWidth + gap;
     const firstX = centerX - total * 0.5;
-    const secondX = firstX + width + gap;
-    this.drawKey(label, firstX, y, cue.progress.dodgeAccepted || cue.progress.pressedLabels.includes(label), opacity, 2, cue.progress.dodgeAccepted);
-    this.write('>', firstX + width + 13, y + 9, 2, withAlpha(cue.progress.dodgeAccepted ? EMBER : ASH, opacity));
-    this.drawKey(label, secondX, y, cue.progress.chargeAccepted || (cue.progress.dodgeAccepted && cue.progress.pressedLabels.includes(label)), opacity, 2, cue.progress.chargeAccepted);
+    const secondX = firstX + firstWidth + gap;
+    const pounceAvailable = cue.progress.pounceAvailable !== false;
+    this.drawKey(firstLabel, firstX, y, cue.progress.dodgeAccepted || cue.progress.pressedLabels.includes(firstLabel), opacity, 2, cue.progress.dodgeAccepted);
+    this.write('>', firstX + firstWidth + 13, y + 9, 2, withAlpha(cue.progress.dodgeAccepted && pounceAvailable ? EMBER : ASH, opacity * (pounceAvailable ? 1 : 0.4)));
+    this.drawKey(secondLabel, secondX, y, cue.progress.pounceAccepted || (pounceAvailable && cue.progress.dodgeAccepted && cue.progress.pressedLabels.includes(secondLabel)), opacity * (pounceAvailable ? 1 : 0.34), 2, cue.progress.pounceAccepted);
     this.writeCentered(cue.title, centerX, y + 43, 2, withAlpha(IVORY, opacity));
     if (cue.supportingText) this.writeCentered(cue.supportingText, centerX, y + 65, 1, withAlpha(ASH, opacity));
   }

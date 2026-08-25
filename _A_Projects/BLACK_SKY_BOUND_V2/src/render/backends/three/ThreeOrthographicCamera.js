@@ -10,6 +10,7 @@ export class ThreeOrthographicCamera {
     this.dpr = 1;
     this.frustumHeight = reference ? 16 : 10;
     this.target = new THREE.Vector3(0, 0, 0);
+    this.stormImpulse = { active: false, worldX: 0, worldY: 0, sourceKey: null };
     this.camera = new THREE.OrthographicCamera(-8, 8, 5, -5, 0.1, 160);
     this.syncPose();
   }
@@ -34,9 +35,22 @@ export class ThreeOrthographicCamera {
     if (this.reference) return;
     const target = renderWorldPointToWorld3D(cameraState.x, cameraState.y, tileSize, 0);
     this.target.set(target.x, 0, target.z);
+    this.stormImpulse = { active: false, worldX: 0, worldY: 0, sourceKey: null };
     this.frustumHeight = Math.max(4, this.viewportH / Math.max(0.1, cameraState.zoom) / tileSize * 0.5);
     this.updateFrustum();
     this.syncPose();
+  }
+
+  applyWorldImpulse(packet, tileSize) {
+    if (this.reference || packet?.active !== true) return false;
+    const worldX = Number(packet.impulseWorldX) || 0;
+    const worldY = Number(packet.impulseWorldY) || 0;
+    const metersPerWorldPixel = WORLD_TRANSFORM_3D.tileMeters / Math.max(1, Number(tileSize) || 1);
+    this.target.x += worldX * metersPerWorldPixel;
+    this.target.z += worldY * metersPerWorldPixel;
+    this.stormImpulse = { active: true, worldX: round(worldX), worldY: round(worldY), sourceKey: packet.sourceKey ?? null };
+    this.syncPose();
+    return true;
   }
 
   setReferenceTarget(x, y, z, frustumHeight = 16) {
@@ -77,7 +91,8 @@ export class ThreeOrthographicCamera {
       yawDegrees: WORLD_TRANSFORM_3D.camera.yawDegrees,
       elevationDegrees: WORLD_TRANSFORM_3D.camera.elevationDegrees,
       frustumHeight: Number(this.frustumHeight.toFixed(3)),
-      target: { x: round(this.target.x), y: round(this.target.y), z: round(this.target.z) }
+      target: { x: round(this.target.x), y: round(this.target.y), z: round(this.target.z) },
+      stormImpulse: { ...this.stormImpulse }
     };
   }
 }

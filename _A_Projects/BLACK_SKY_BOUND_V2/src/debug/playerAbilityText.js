@@ -1,16 +1,17 @@
 export function buildPlayerAbilityText(dragon) {
   return {
-    chargeCounter: dragon.chargeCounterState ? {
-      state: dragon.chargeCounterState.state,
-      active: dragon.chargeCounterState.active === true,
-      queued: dragon.chargeCounterState.queued === true,
-      followupWindowRemaining: rounded(dragon.chargeCounterState.followupWindowRemaining),
-      directionX: rounded(dragon.chargeCounterState.queuedDirectionX),
-      directionY: rounded(dragon.chargeCounterState.queuedDirectionY),
-      count: dragon.chargeCounterState.count ?? 0,
-      hitCount: dragon.chargeCounterState.hitCount ?? 0,
-      lastDeniedReason: dragon.chargeCounterState.lastDeniedReason ?? null,
-      lastReceipt: dragon.chargeCounterState.lastReceipt ?? null
+    pounceCounter: (dragon.pounceCounterState ?? dragon.chargeCounterState) ? {
+      state: (dragon.pounceCounterState ?? dragon.chargeCounterState).state,
+      active: (dragon.pounceCounterState ?? dragon.chargeCounterState).active === true,
+      queued: (dragon.pounceCounterState ?? dragon.chargeCounterState).queued === true,
+      followupWindowRemaining: rounded((dragon.pounceCounterState ?? dragon.chargeCounterState).followupWindowRemaining),
+      directionX: rounded((dragon.pounceCounterState ?? dragon.chargeCounterState).queuedDirectionX),
+      directionY: rounded((dragon.pounceCounterState ?? dragon.chargeCounterState).queuedDirectionY),
+      count: (dragon.pounceCounterState ?? dragon.chargeCounterState).count ?? 0,
+      hitCount: (dragon.pounceCounterState ?? dragon.chargeCounterState).hitCount ?? 0,
+      lastDeniedReason: (dragon.pounceCounterState ?? dragon.chargeCounterState).lastDeniedReason ?? null,
+      lastReceipt: (dragon.pounceCounterState ?? dragon.chargeCounterState).lastReceipt ?? null,
+      lastImpactReceipt: dragon.wyvernProjection?.actionState?.lastImpactReceipt ?? null
     } : null,
     abilities: dragon.abilityProgression ? {
       unlocked: [...dragon.abilityProgression.unlockedAbilities],

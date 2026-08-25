@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const artifactRoot = path.join(projectRoot, 'artifacts', 'webgl3d-tree-mesh-v2');
+const artifactRoot = path.join(projectRoot, 'artifacts', 'webgl3d-foliage-pbr-v1');
 await mkdir(artifactRoot, { recursive: true });
 const server = await startRuntime();
 const browser = await launchBrowser();
@@ -32,6 +32,18 @@ try {
     ['12-oak-gameplay-canopy', { lighting: 'torch-b', tree: 'ancient_oak', canopy: 1, framing: 'gameplay', angle: 'three-quarter' }]
   ];
   for (const [name, params] of isolated) captures.push(await capture(name, params, 1));
+  const barkVariants = [
+    ['13-pine-bark-close', { lighting: 'studio', tree: 'old_pine', canopy: 0, framing: 'bark', angle: 'front' }],
+    ['14-birch-bark-close', { lighting: 'studio', tree: 'silver_birch', canopy: 0, framing: 'bark', angle: 'front' }],
+    ['15-oak-bark-close', { lighting: 'studio', tree: 'ancient_oak', canopy: 0, framing: 'bark', angle: 'front' }]
+  ];
+  for (const [name, params] of barkVariants) captures.push(await capture(name, params, 1));
+  const foliageVariants = [
+    ['16-pine-foliage-close', { lighting: 'studio', tree: 'old_pine', canopy: 1, framing: 'foliage', angle: 'front' }],
+    ['17-birch-foliage-close', { lighting: 'studio', tree: 'silver_birch', canopy: 1, framing: 'foliage', angle: 'front' }],
+    ['18-oak-foliage-close', { lighting: 'studio', tree: 'ancient_oak', canopy: 1, framing: 'foliage', angle: 'front' }]
+  ];
+  for (const [name, params] of foliageVariants) captures.push(await capture(name, params, 1));
   const rootViews = captures.slice(4, 8);
   if (rootViews.some(({ state }) => state.diagnostics.tree.boundaryEdges !== 0 || state.diagnostics.tree.nonManifoldEdges !== 0)) {
     throw new Error('tree_topology_invalid_in_browser');
@@ -40,7 +52,7 @@ try {
     throw new Error(`browser_issues:${JSON.stringify(issues)}`);
   }
   const report = {
-    contract: 'black-sky-bound.webgl3d-tree-mesh.browser-proof.v2',
+    contract: 'black-sky-bound.webgl3d-foliage-pbr.browser-proof.v1',
     generatedAt: new Date().toISOString(),
     captures,
     issues
@@ -58,6 +70,8 @@ async function capture(name, values, expectedTreeCount) {
   const url = `${server.url}?${params}`;
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dActive === true);
+  await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.cache?.barkPbr?.status === 'ready');
+  await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.cache?.foliagePbr?.status === 'ready');
   await page.evaluate(() => window.advanceTime?.(1000 / 60));
   await page.waitForTimeout(220);
   const state = await page.evaluate(() => {
@@ -71,6 +85,14 @@ async function capture(name, values, expectedTreeCount) {
     };
   });
   if (state.activeBackend !== 'webgl3d' || state.backendStatus !== 'active') throw new Error(`webgl3d_not_active:${name}`);
+  if (state.diagnostics?.cache?.barkPbr?.loadedTextureCount !== 4 || state.diagnostics?.cache?.barkPbr?.errors?.length) {
+    throw new Error(`bark_pbr_not_ready:${name}:${JSON.stringify(state.diagnostics?.cache?.barkPbr)}`);
+  }
+  if (state.diagnostics?.cache?.barkPbr?.textureSetCount !== 1) throw new Error(`bark_texture_set_duplicated:${name}`);
+  if (state.diagnostics?.cache?.foliagePbr?.loadedTextureCount !== 4 || state.diagnostics?.cache?.foliagePbr?.errors?.length) {
+    throw new Error(`foliage_pbr_not_ready:${name}:${JSON.stringify(state.diagnostics?.cache?.foliagePbr)}`);
+  }
+  if (state.diagnostics?.cache?.foliagePbr?.textureSetCount !== 1) throw new Error(`foliage_texture_set_duplicated:${name}`);
   if (state.diagnostics?.tree?.count !== expectedTreeCount) throw new Error(`tree_count_invalid:${name}:${state.diagnostics?.tree?.count}`);
   if (state.diagnostics?.triangles <= 0 || state.diagnostics?.calls <= 0) throw new Error(`render_geometry_missing:${name}`);
   const screenshot = path.join(artifactRoot, `${name}.png`);

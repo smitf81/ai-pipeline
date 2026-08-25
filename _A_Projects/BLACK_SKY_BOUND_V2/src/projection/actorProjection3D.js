@@ -113,6 +113,7 @@ function buildHumanoidVisualProjection(projection, tileSize, creatureTuning, cre
   return {
     classification: 'renderer_neutral_humanoid_visual_projection',
     profileId: projection.profileId,
+    embodimentId: profile.embodimentId ?? creatureRecipe?.bodyPlan?.embodimentId ?? null,
     profile,
     scaleProfileId: projection.scaleProfileId ?? profile.scaleProfileId,
     gaitPhase: projection.gaitPhase ?? 0,
@@ -195,6 +196,8 @@ function buildWyvernVisualProjection(projection, tileSize, creatureTuning) {
     idlePhase: projection.idlePhase ?? 0,
     movement01: projection.movement01 ?? 0,
     motionState: projection.motionState ?? null,
+    axialTurn: projection.axialTurn ?? null,
+    malformedTurnFrameCount: projection.malformedTurnFrameCount ?? 0,
     actionState: projection.actionState ?? null,
     comboState: projection.comboState ?? null,
     limbRig: projection.limbRig ?? null,

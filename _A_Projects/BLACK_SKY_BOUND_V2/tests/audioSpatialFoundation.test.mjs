@@ -29,6 +29,9 @@ const creature = getAudioSpatialProfile('creature_voice_spatial_v1');
 equal(inverseDistanceGain(1, creature), 1, 'inverse falloff should remain full inside reference distance');
 assert(inverseDistanceGain(12, creature) < 0.2, 'inverse falloff should attenuate a distant creature');
 equal(inverseDistanceGain(45, creature), 0, 'point cues should be inaudible at max distance');
+const storm = getAudioSpatialProfile('storm_spatial_v1');
+assert(storm.referenceDistanceMeters >= 18 && storm.rolloffFactor <= 0.2, 'thunder should retain much more carrying power than a creature voice');
+assert(inverseDistanceGain(50, storm) > 0.7, 'thunder should remain forceful at a typical distant strike position');
 
 const movingListener = { ...listener, velocity: { x: 18, y: 0, z: 0 } };
 const stationarySource = { position: { x: 20, y: 0, z: 0 }, velocity: { x: 0, y: 0, z: 0 }, profile: creature };

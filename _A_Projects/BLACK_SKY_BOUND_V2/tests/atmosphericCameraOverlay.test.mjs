@@ -19,9 +19,10 @@ import { createDemoMap } from '../src/world/map.js';
 
 equal(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.rainEnabled, true, 'rain should be enabled by default');
 equal(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.sparkEnabled, true, 'sparks should be enabled by default');
-assert(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.rainDensity >= 0.85 && ATMOSPHERIC_CAMERA_OVERLAY_TUNING.rainDensity <= 1, 'rain density should stay visibly present by default');
-assert(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.sparkRate > 2 && ATMOSPHERIC_CAMERA_OVERLAY_TUNING.sparkRate <= 4, 'default sparks should be present enough to read in-scene');
-assert(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.overlayOpacity >= 0.8 && ATMOSPHERIC_CAMERA_OVERLAY_TUNING.overlayOpacity <= 0.95, 'overlay opacity should preserve user-authored visible weather tuning');
+equal(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.rainDensity, 1, 'rain should use the full bounded density for a properly stormy field');
+equal(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.sparkRate, 3.4, 'sparks should preserve the accepted sparse pre-3D cadence');
+equal(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.sparkDrift.y, -118, 'sparks should preserve the accepted lazy pre-3D upward drift');
+assert(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.overlayOpacity >= 0.95, 'overlay opacity should preserve the stronger storm presentation');
 equal(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.emitterReactiveOverlayEnabled, true, 'emitter reaction should be enabled by default');
 assert(ATMOSPHERIC_CAMERA_OVERLAY_TUNING.maxAtmosphereEmitters > 0 && ATMOSPHERIC_CAMERA_OVERLAY_TUNING.maxAtmosphereEmitters <= 16, 'emitter reaction should stay capped');
 equal(RENDER_BUDGETS.atmosphericCameraOverlay.policy, 'screen_space_camera_overlay_visual_only_v0', 'render budget should name the visual-only overlay owner');

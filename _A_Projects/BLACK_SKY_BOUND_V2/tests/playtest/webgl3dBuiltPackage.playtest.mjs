@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { collectSoundAssetFiles, SOUND_CUES } from '../../src/audio/soundManifest.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const artifacts = path.join(root, 'artifacts', 'webgl3d-built-package-v1');
@@ -20,6 +21,9 @@ page.on('response', (response) => { if (response.status() >= 400) issues.httpErr
 try {
   await page.goto(`${runtime.url}/play/?skipHatch=1`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dActive === true);
+  await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.cache?.barkPbr?.status === 'ready');
+  await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.cache?.foliagePbr?.status === 'ready');
+  await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.terrain?.mudMaterial?.status === 'ready');
   const before = await player(page);
   await page.keyboard.down('w');
   await page.waitForTimeout(280);
@@ -40,8 +44,29 @@ try {
   if (state.backend !== 'webgl3d') throw new Error(`built_backend_wrong:${state.backend}`);
   if (state.arena?.activeWaveId !== 'first_blood') throw new Error(`built_arena_wave_missing:${state.arena?.activeWaveId}`);
   if ((state.diagnostics?.liveWorld?.terrainTiles ?? 0) <= 0) throw new Error('built_live_world_missing');
+  if (state.diagnostics?.cache?.barkPbr?.loadedTextureCount !== 4 || state.diagnostics?.cache?.barkPbr?.textureSetCount !== 1) {
+    throw new Error(`built_bark_pbr_not_ready:${JSON.stringify(state.diagnostics?.cache?.barkPbr)}`);
+  }
+  if (state.diagnostics?.cache?.foliagePbr?.loadedTextureCount !== 4 || state.diagnostics?.cache?.foliagePbr?.textureSetCount !== 1) {
+    throw new Error(`built_foliage_pbr_not_ready:${JSON.stringify(state.diagnostics?.cache?.foliagePbr)}`);
+  }
+  if (state.diagnostics?.liveWorld?.terrain?.mudMaterial?.loadedTextureCount !== 4 || state.diagnostics?.liveWorld?.terrain?.mudMaterial?.textureSetCount !== 1) {
+    throw new Error(`built_mud_pbr_not_ready:${JSON.stringify(state.diagnostics?.liveWorld?.terrain?.mudMaterial)}`);
+  }
+  const builtTerrain = state.diagnostics?.liveWorld?.terrain;
+  if ((builtTerrain?.waterTileCount ?? 0) > 0 && (builtTerrain?.waterMaterial?.contract !== 'black-sky-bound.three-water-terrain-material.v1' || builtTerrain?.waterDrawBatches !== 1)) {
+    throw new Error(`built_reflective_water_not_ready:${JSON.stringify(builtTerrain?.waterMaterial)}`);
+  }
+  if (builtTerrain?.wetness?.contract !== 'black-sky-bound.three-rain-terrain-wetness.v1' || builtTerrain?.wetness?.rainIntensity <= 0) {
+    throw new Error(`built_rain_wetness_not_active:${JSON.stringify(builtTerrain?.wetness)}`);
+  }
+  if (state.diagnostics?.liveWorld?.actors?.wyvernContract !== 'black-sky-bound.procedural-wyvern-mesh-recipe.v2') throw new Error('built_production_wyvern_v2_missing');
+  if (state.diagnostics?.liveWorld?.actors?.wyvernEmbodimentVersion !== 'surface-v2-production') throw new Error('built_production_wyvern_version_wrong');
   if (state.diagnostics?.liveWorld?.effects?.mamaFlyoverAsset?.status !== 'ready') throw new Error('built_mama_flyover_asset_not_ready');
   if (!state.requests.some((url) => /dragon_main_march_v5_flyover.*\.glb/i.test(url))) throw new Error('built_mama_flyover_asset_not_requested');
+  for (const file of collectSoundAssetFiles(SOUND_CUES)) {
+    if (!state.requests.some((url) => url.endsWith(`/${file}`))) throw new Error(`built_audio_asset_not_requested:${file}`);
+  }
   if (state.requests.some((url) => /node_modules|three\.module/i.test(url))) throw new Error('built_runtime_requested_node_modules');
   if (rawSourceStatus !== 404) throw new Error(`built_raw_source_exposed:${rawSourceStatus}`);
   if (issues.consoleErrors.length || issues.pageErrors.length || issues.requestFailures.length || issues.httpErrors.length) throw new Error(`built_browser_issues:${JSON.stringify(issues)}`);

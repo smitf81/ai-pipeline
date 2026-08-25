@@ -154,11 +154,16 @@ function applyAcceptedAction(runtime, state, payload, persistProfile) {
   } else if (active.id === TutorialCueId.CHARGE_INSTINCT) {
     if (payload.inputAction === InputActionId.DODGE) {
       active.progress.dodgeAccepted = true;
+      active.progress.pounceAvailable = payload.followupsEnabled !== false;
+      active.progress.emergencyDodgeAccepted = payload.dodgeMode === 'emergency';
+      active.supportingText = active.progress.pounceAvailable
+        ? getTutorialCue(TutorialCueId.CHARGE_INSTINCT).supportingText
+        : 'LOW STAMINA · RECOVER TO COUNTER';
       releaseTutorialSlowTime(state, 'instinct_first_dodge_accepted');
     }
-    if (payload.inputAction === InputActionId.DODGE_FOLLOWUP) {
-      active.progress.chargeAccepted = true;
-      completeCue(runtime, state, 'charge_followup_accepted', persistProfile);
+    if (payload.inputAction === InputActionId.POUNCE_COUNTER) {
+      active.progress.pounceAccepted = true;
+      completeCue(runtime, state, 'pounce_counter_accepted', persistProfile);
     }
   }
 }
@@ -219,7 +224,9 @@ function createActiveCue(cue, context) {
       smokeAccepted: false,
       pursuitBroken: false,
       dodgeAccepted: false,
-      chargeAccepted: false,
+      pounceAccepted: false,
+      pounceAvailable: true,
+      emergencyDodgeAccepted: false,
       attackResolved: false
     }
   };

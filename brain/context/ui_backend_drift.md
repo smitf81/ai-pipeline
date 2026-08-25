@@ -1,9 +1,68 @@
 # UI Backend Drift
 
-Last updated: 2026-07-21
+Last updated: 2026-08-17
 
 This file is an operational drift note for ACE work.
 Treat it as audit context, not canonical truth.
+
+## 2026-08-17 - Map Forge completion drift repaired
+
+- `axiom.map-forge-spatial-scorecard.v1` now owns route monotony, route treatment, pacing-zone family/landmark coverage, integrity and next action. The server verifies gate/action consistency and no longer trusts model confidence.
+- Pacing beats now change route geometry through direction, topology, lateral offset, openness, pressure and landmark intent; the old target-length lawnmower builder is gone.
+- Boundary UI claims are grounded in `axiom.runtime-traversal-audit.v1`, compiled through Black Sky Bound's runtime map loader, terrain collision, scene-object collision and canonical young-dragon radius. Decorative forest is never treated as an invisible wall.
+- Boundary projections that expose a shortcut are not committed. The agent tightens the corridor and retries visibly; only a passing audit creates a boundary receipt and `runtime_verified` readback.
+- Browser proof on runtime `v5-semantic-route-boundaries-r3` produced a 146×104 Ash Road semantic route and 761 visible ridge tiles, retained 75% shortest legal traversal against the 68% `prevent` threshold, preserved source hashes and reported zero unexpected browser issues.
+- Remaining product limit: the generated route is a truthful, contained semantic skeleton, not proof of aesthetic excellence or ten-minute runtime duration. Those claims require later game playtesting and environmental/encounter iteration.
+
+## 2026-08-17 - Map Forge level-design completion truth audit
+
+Active audit target: `AXIOM/apps/launcher`, specifically whether the live Map Forge goal session's visible completion state is grounded in useful level-design evidence.
+
+### Confirmed wired relationship: the agent is applying real reversible Map Forge work
+
+- Exact files involved: `AXIOM/apps/launcher/public/map-intent-preflight.js`, `AXIOM/apps/launcher/public/bsb-v2-map-authoring.js`, `AXIOM/apps/launcher/public/level-design-session.js`, `AXIOM/apps/launcher/server/level-design-session.js`.
+- Evidence: the latest persisted Ash Road session binds `ash_road_threshold`, prepares a revision-bound `146x104` document with an 893-tile route target, records three canonical brush receipts, advances revisions 225 to 229, reads back 35 created objects and retains session undo lineage.
+- Confidence: high.
+- Boundary: this proves transport, authority, mutation and receipting. It does not prove composition, pacing or playability.
+
+### Frontend with weak backend grounding: `COMPLETED` means mechanically valid, not well designed
+
+- Exact files involved: `AXIOM/apps/launcher/public/level-design-session.js`, `AXIOM/apps/launcher/server/level-design-session.js`.
+- Evidence: the backend success contract requires only tree, undergrowth and geology, at least 12 created records, canonical readback and zero path-clearance violations. The client immediately publishes goal completion when those checks pass. The latest session therefore completed on iteration 3 with 35 objects despite the visibly repetitive route and sparse, undifferentiated treatment.
+- Confidence: high.
+- Recommended action: preserve these checks as an integrity gate and add a separate spatial-quality gate before completion can be published.
+
+### Backend data with no evaluating consumer: pacing beats are labels, not constraints
+
+- Exact files involved: `AXIOM/apps/launcher/public/map-intent-preflight.js`, `AXIOM/apps/launcher/public/level-design-session.js`.
+- Evidence: the preflight stores arrival, encounter, climax and exit fractions, but session evaluation does not measure coverage, density, landmark differentiation or staging in those zones.
+- Confidence: high.
+- Recommended action: segment the canonical route by pacing fractions and report per-zone spatial metrics to both the goal card and planner.
+
+### Heuristic carrying accidental authority: duration becomes a lawnmower route
+
+- Exact files involved: `AXIOM/apps/launcher/public/map-intent-preflight.js`, `AXIOM/apps/launcher/public/bsb-v2-map-authoring.js`.
+- Evidence: requested minutes are converted to uninterrupted traversal seconds and raw target route tiles. `buildPlayableRoute()` then fills that length using alternating edge-to-edge rows. The planning estimate is labelled honestly, but the deterministic serpentine is applied as authored scene geometry without any route-quality review.
+- Confidence: high.
+- Recommended action: add route monotony and topology checks now; permit completion only after a later semantic route planner replaces or approves the route.
+
+### Heuristic carrying accidental authority: iteration is fixed family enumeration
+
+- Exact files involved: `AXIOM/apps/launcher/public/level-design-session.js`.
+- Evidence: `nextFamily()` selects the first missing family, while the model is allowed to choose only one family's band, radius, density, falloff and variant. Two successful plans repeated the schema's literal placeholder summary and rationale. The loop cannot choose the weakest spatial zone, revise the route, remove bad work or decide which design problem matters next.
+- Confidence: high.
+- Recommended action: feed the model a compact canonical scorecard and restrict its next action to the evaluator's weakest failed zone.
+
+### High-risk drift area: a model-authored critique could become another fake success surface
+
+- Risk: natural-language self-assessment is persuasive but cannot be the source of truth for spatial quality.
+- Confidence: high.
+- Recommended action: deterministic Map Forge metrics must own pass/fail; the local model may interpret those metrics and propose bounded actions, but may not certify completion.
+
+### Current uncertainty
+
+- It is not yet proven that the installed local text model can reliably improve a semantic spatial scorecard without a vision model. The first proof should use canonical grid-derived metrics and fixtures; visual critique can remain a later advisory layer.
+- Recommended next validation step: replay the persisted screenshot-class Ash Road session and require it to pass integrity, fail design quality with explicit reasons, target the weakest zone or request route revision, and never display `COMPLETED`.
 
 ## 2026-08-03 - AXIOM/BSB entity authoring and animation audit
 

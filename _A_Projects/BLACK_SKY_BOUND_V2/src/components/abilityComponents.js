@@ -1,6 +1,6 @@
-export function createChargeCounterState(ability) {
+export function createPounceCounterState(ability) {
   return {
-    classification: 'buffered_dodge_charge_counter_state_v0',
+    classification: 'buffered_pounce_counter_state_v1',
     abilityId: ability?.id ?? 'charge_counter',
     state: 'idle',
     active: false,
@@ -13,16 +13,20 @@ export function createChargeCounterState(ability) {
     count: 0,
     hitCount: 0,
     lastHitIds: [],
+    lastImpactReceipt: null,
     lastDeniedReason: null,
     lastReceipt: null
   };
 }
+
+export const createChargeCounterState = createPounceCounterState;
 
 export function createAbilityProgression(unlockedAbilities = []) {
   return {
     classification: 'player_ability_progression_state_v0',
     unlockedAbilities: [...new Set(unlockedAbilities)],
     consumedUnlockEvents: [],
+    discoveredInstincts: [],
     lastUnlockReceipt: null
   };
 }

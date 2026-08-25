@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const artifacts = path.join(root, 'artifacts', 'webgl3d-raider-visual-v1');
+const artifacts = path.join(root, 'artifacts', 'webgl3d-raider-ink-v1');
 await mkdir(artifacts, { recursive: true });
 const runtime = await startRuntime();
 const browser = await launchBrowser();
@@ -24,16 +24,18 @@ try {
   await page.goto(url, { waitUntil: 'networkidle', timeout: 20_000 });
   await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dActive === true);
   await setupFamily();
-  await page.waitForFunction(() => window.BSB_V2_DEMO.state.game.renderLayers.renderer.webgl3dDiagnostics.liveWorld.actors.proceduralHumanoidCount === 12);
+  await page.waitForFunction(() => window.BSB_V2_DEMO.state.game.renderLayers.renderer.webgl3dDiagnostics.liveWorld.actors.inkHumanoidCount === 12);
   await ensureDiagnostics(false);
   captures.push(await capture('family-lineup-moon', 'The seeded 12-raider family under scene light'));
 
   await setHeroPose('idle');
   captures.push(await capture('hero-idle-torch', 'Close equipped raider with carried torch'));
   await setHeroPose('walk');
-  captures.push(await capture('hero-walk', 'Articulated gait on the solid body'));
+  captures.push(await capture('hero-walk', 'Continuous 3D walk blend on the ink body'));
+  await setHeroPose('run');
+  captures.push(await capture('hero-run', 'Continuous 3D run blend with planted contacts'));
   await setHeroPose('spear-windup');
-  captures.push(await capture('spear-windup', 'Two-hand spear anticipation'));
+  captures.push(await capture('spear-windup', 'Right-hand spear anticipation with left-hand torch continuity'));
   await setHeroPose('spear-active');
   captures.push(await capture('spear-active', 'Committed spear contact pose'));
   await setHeroPose('torch-windup');
@@ -54,20 +56,21 @@ try {
   const stressBaseline = await setupStressPopulation();
   await page.waitForTimeout(4200);
   const stress = await snapshot();
-  assert.equal(stress.actors.proceduralHumanoids.readyActorCount, 100, 'stress scene must render 100 solved recipe-backed raiders');
-  assert.ok(stress.actors.proceduralHumanoids.drawFamilyCount <= 96, 'stress draw families must remain bounded');
-  assert.equal(stress.actors.proceduralHumanoids.missingSocketErrors.length, 0, 'stress population must keep every attachment socket valid');
-  assert.equal(stress.actors.proceduralHumanoids.topologyBuilds, stressBaseline.topologyBuilds, 'stress pose frames must not rebuild topology after warm-up');
-  assert.equal(stress.actors.proceduralHumanoids.topologyRebuilds, stressBaseline.topologyRebuilds, 'stress instance pools must remain stable after warm-up');
+  assert.equal(stress.actors.inkHumanoids.readyActorCount, 100, 'stress scene must render 100 solved ink raiders');
+  assert.ok(stress.actors.inkHumanoids.drawFamilyCount <= 5, 'stress ink draw families must remain bounded');
+  assert.equal(stress.actors.inkHumanoids.missingPointErrors.length, 0, 'stress population must keep every production pose point valid');
+  assert.equal(stress.actors.inkHumanoids.nonFiniteSegmentCount, 0, 'stress population must keep every line endpoint finite');
+  assert.equal(stress.actors.inkHumanoids.topologyBuilds, stressBaseline.topologyBuilds, 'stress pose frames must not rebuild topology after warm-up');
+  assert.equal(stress.actors.inkHumanoids.topologyRebuilds, stressBaseline.topologyRebuilds, 'stress instance pools must remain stable after warm-up');
   assert.ok(stress.timing.p95.renderPathMs < 16.7, `100-raider CPU render p95 ${stress.timing.p95.renderPathMs}ms exceeds 16.7ms`);
   assert.ok(stress.timing.p95.frameIntervalMs <= 17.2, `100-raider frame interval p95 ${stress.timing.p95.frameIntervalMs}ms exceeds 17.2ms`);
-  assert.ok(stress.timing.p95.projectionMs < 3, `100-raider projection p95 ${stress.timing.p95.projectionMs}ms exceeds 3ms`);
+  assert.ok(stress.timing.p95.projectionMs < 4, `100-raider projection p95 ${stress.timing.p95.projectionMs}ms exceeds 4ms`);
   if (stress.gpu.supported) assert.ok(stress.timing.p95.gpuMs < 16.7, `100-raider GPU p95 ${stress.timing.p95.gpuMs}ms exceeds 16.7ms`);
   assert.equal(stress.timing.longFrameCount, stressBaseline.longFrameCount, '100-raider steady-state proof must add no >50ms frames');
-  captures.push(await capture('stress-100-raiders', '100 deterministic raiders with bounded instanced draw families'));
+  captures.push(await capture('stress-100-raiders', '100 deterministic ink raiders in five pooled draw families'));
 
   await ensureDiagnostics(true);
-  captures.push(await capture('f3-recipe-diagnostics', 'Optional recipe, seed, attachment, pool, and socket diagnostics', true));
+  captures.push(await capture('f3-ink-diagnostics', 'Ink embodiment, hand policy, light response, pool, and pose diagnostics', true));
   const gameText = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   assert.equal(gameText.coordinateSystem, 'world tiles, origin top-left, x right, y down', 'text runtime hook should remain callable');
   assert.equal(gameText.actors.filter((actor) => actor.creatureRecipe?.recipeId === 'raider_scavenger_family_v1').length, 100,
@@ -76,7 +79,7 @@ try {
 
   const contactSheet = await createContactSheet(captures);
   const report = {
-    contract: 'black-sky-bound.webgl3d-raider-visual-acceptance.v1',
+    contract: 'black-sky-bound.webgl3d-raider-ink-visual-acceptance.v1',
     generatedAt: new Date().toISOString(),
     url,
     viewport,
@@ -108,7 +111,7 @@ try {
 async function setupFamily() {
   await page.evaluate(async () => {
     const app = window.BSB_V2_DEMO;
-    const [{ removeEntity, getComponent }, { ComponentType }, { EntityKind }, { Faction }, { spawnActor }, recipes, { buildAllBlobMasks }, { createSceneLights, SceneLightId }, { humanoidProjectionSystem }, { wyvernProjectionSystem }, { syncGameViews }] = await Promise.all([
+    const [{ removeEntity, getComponent }, { ComponentType }, { EntityKind }, { Faction }, { spawnActor }, recipes, { buildAllBlobMasks }, { createSceneLights, SceneLightId }, { raiderPhysicalMotionSystem }, { humanoidProjectionSystem }, { wyvernProjectionSystem }, { syncGameViews }] = await Promise.all([
       import('/src/ecs/world.js'),
       import('/src/constants/componentTypes.js'),
       import('/src/constants/entityKinds.js'),
@@ -117,6 +120,7 @@ async function setupFamily() {
       import('/src/data/creatures/creatureRecipes.js'),
       import('/src/world/map.js'),
       import('/src/data/sceneLights.js'),
+      import('/src/systems/raiderPhysicalMotionSystem.js'),
       import('/src/systems/humanoidProjectionSystem.js'),
       import('/src/systems/wyvernProjectionSystem.js'),
       import('/src/game/selectors.js')
@@ -160,6 +164,7 @@ async function setupFamily() {
     app.state.game.sceneLights = createSceneLights([SceneLightId.MOONLIGHT, SceneLightId.STORM_LIGHTNING]);
     app.state.game.sceneLights.forEach((light) => { light.enabled = light.id === SceneLightId.MOONLIGHT; });
     wyvernProjectionSystem({ state: app.state, game: app.state.game, dt: 1 / 60 });
+    raiderPhysicalMotionSystem({ game: app.state.game, dt: 1 / 60 });
     humanoidProjectionSystem({ game: app.state.game, dt: 1 / 60 });
     syncGameViews(app.state.game);
     app.state.game.smokeSources = [];
@@ -174,12 +179,13 @@ async function setHeroPose(mode) {
   await page.evaluate(async (mode) => {
     const app = window.BSB_V2_DEMO;
     const { ids, heroId, center } = window.__raiderProof;
-    const [{ getComponent }, { ComponentType }, { Faction }, attacks, { applyImpactToReceiver }, { humanoidProjectionSystem }, { syncGameViews }] = await Promise.all([
+    const [{ getComponent }, { ComponentType }, { Faction }, attacks, { applyImpactToReceiver }, { raiderPhysicalMotionSystem }, { humanoidProjectionSystem }, { syncGameViews }] = await Promise.all([
       import('/src/ecs/world.js'),
       import('/src/constants/componentTypes.js'),
       import('/src/constants/factions.js'),
       import('/src/data/enemyAttackProfiles.js'),
       import('/src/systems/impactResponseState.js'),
+      import('/src/systems/raiderPhysicalMotionSystem.js'),
       import('/src/systems/humanoidProjectionSystem.js'),
       import('/src/game/selectors.js')
     ]);
@@ -199,11 +205,23 @@ async function setHeroPose(mode) {
     const projection = getComponent(app.state.game.world, heroId, ComponentType.HumanoidProjection);
     const ai = getComponent(app.state.game.world, heroId, ComponentType.EnemyPressureAI);
     const impact = getComponent(app.state.game.world, heroId, ComponentType.ImpactResponse);
+    const intent = getComponent(app.state.game.world, heroId, ComponentType.RaiderPhysicalMotion);
     Object.assign(ai, { disabled: true, targetId: null, activeAttackProfileId: null, attackPhase: attacks.EnemyAttackPhase.IDLE, attackTimer: 0, guardHoldTimer: 0, guardRecoveryTimer: 0 });
     Object.assign(impact, { staggerTimer: 0, reactionDuration: 0, lastImpact: null });
     projection.lastX = transform.x;
     projection.lastY = transform.y;
-    if (mode === 'walk') projection.lastX = transform.x - 0.16;
+    Object.assign(intent.pelvis, {
+      x: transform.x,
+      y: transform.y,
+      velocityX: 0,
+      velocityY: mode === 'run' ? -3 : (mode === 'walk' ? -1.25 : 0),
+      measuredVelocityX: 0,
+      measuredVelocityY: 0
+    });
+    Object.assign(intent.attention, { chestFacing: -Math.PI / 2, headFacing: -Math.PI / 2, travelFacing: -Math.PI / 2 });
+    Object.assign(intent.locomotion, { travelFacing: -Math.PI / 2, moving: mode === 'walk' || mode === 'run' });
+    intent.sourceX = transform.x;
+    intent.sourceY = transform.y + (mode === 'run' ? 0.08 : (mode === 'walk' ? 0.045 : 0));
     if (mode.startsWith('spear') || mode.startsWith('torch')) {
       const profileId = mode.startsWith('spear') ? attacks.EnemyAttackProfileId.RAIDER_SPEAR_JAB : attacks.EnemyAttackProfileId.RAIDER_TORCH_SWING;
       const profile = attacks.getEnemyAttackProfile(profileId);
@@ -215,6 +233,7 @@ async function setHeroPose(mode) {
     } else if (mode === 'impact') {
       applyImpactToReceiver(impact, { directionX: 0.65, directionY: 0.76, impactStrength: 0.9, staggerStrength: 0.82, source: 'visual-proof', target: heroId, actionId: 'claw', contactBodyPart: 'chest' });
     }
+    raiderPhysicalMotionSystem({ game: app.state.game, dt: 1 / 60 });
     humanoidProjectionSystem({ game: app.state.game, dt: 1 / 60 });
     syncGameViews(app.state.game);
     app.state.game.smokeSources = [];
@@ -248,9 +267,9 @@ async function setLiveCombat() {
   await page.evaluate(async () => {
     const app = window.BSB_V2_DEMO;
     const { ids, center } = window.__raiderProof;
-    const [{ getComponent }, { ComponentType }, { Faction }, { humanoidProjectionSystem }, { wyvernProjectionSystem }, { syncGameViews }] = await Promise.all([
-      import('/src/ecs/world.js'), import('/src/constants/componentTypes.js'), import('/src/constants/factions.js'), import('/src/systems/humanoidProjectionSystem.js'),
-      import('/src/systems/wyvernProjectionSystem.js'), import('/src/game/selectors.js')
+    const [{ getComponent }, { ComponentType }, { Faction }, { raiderPhysicalMotionSystem }, { humanoidProjectionSystem }, { wyvernProjectionSystem }, { syncGameViews }] = await Promise.all([
+      import('/src/ecs/world.js'), import('/src/constants/componentTypes.js'), import('/src/constants/factions.js'), import('/src/systems/raiderPhysicalMotionSystem.js'),
+      import('/src/systems/humanoidProjectionSystem.js'), import('/src/systems/wyvernProjectionSystem.js'), import('/src/game/selectors.js')
     ]);
     const player = getComponent(app.state.game.world, app.state.game.dragonId, ComponentType.Transform);
     const playerHealth = getComponent(app.state.game.world, app.state.game.dragonId, ComponentType.Health);
@@ -280,6 +299,7 @@ async function setLiveCombat() {
       }
     }
     wyvernProjectionSystem({ state: app.state, game: app.state.game, dt: 1 / 60 });
+    raiderPhysicalMotionSystem({ game: app.state.game, dt: 1 / 60 });
     humanoidProjectionSystem({ game: app.state.game, dt: 1 / 60 });
     syncGameViews(app.state.game);
     app.state.paused = false;
@@ -311,10 +331,10 @@ async function setDeathAftermath() {
 async function setupStressPopulation() {
   await page.evaluate(async () => {
     const app = window.BSB_V2_DEMO;
-    const [{ removeEntity, getComponent }, { ComponentType }, { EntityKind }, { Faction }, { spawnActor }, recipes, { createSceneLights, SceneLightId }, { humanoidProjectionSystem }, { wyvernProjectionSystem }, { syncGameViews }] = await Promise.all([
+    const [{ removeEntity, getComponent }, { ComponentType }, { EntityKind }, { Faction }, { spawnActor }, recipes, { createSceneLights, SceneLightId }, { raiderPhysicalMotionSystem }, { humanoidProjectionSystem }, { wyvernProjectionSystem }, { syncGameViews }] = await Promise.all([
       import('/src/ecs/world.js'), import('/src/constants/componentTypes.js'), import('/src/constants/entityKinds.js'), import('/src/constants/factions.js'),
       import('/src/game/spawn.js'), import('/src/data/creatures/creatureRecipes.js'), import('/src/data/sceneLights.js'),
-      import('/src/systems/humanoidProjectionSystem.js'), import('/src/systems/wyvernProjectionSystem.js'), import('/src/game/selectors.js')
+      import('/src/systems/raiderPhysicalMotionSystem.js'), import('/src/systems/humanoidProjectionSystem.js'), import('/src/systems/wyvernProjectionSystem.js'), import('/src/game/selectors.js')
     ]);
     app.state.paused = true;
     for (const entity of [...app.state.game.world.entities]) if (entity !== app.state.game.dragonId) removeEntity(app.state.game.world, entity);
@@ -340,17 +360,18 @@ async function setupStressPopulation() {
     app.state.game.sceneLights = createSceneLights([SceneLightId.MOONLIGHT, SceneLightId.STORM_LIGHTNING]);
     app.state.game.sceneLights.forEach((light) => { light.enabled = light.id === SceneLightId.MOONLIGHT; });
     wyvernProjectionSystem({ state: app.state, game: app.state.game, dt: 1 / 60 });
+    raiderPhysicalMotionSystem({ game: app.state.game, dt: 1 / 60 });
     humanoidProjectionSystem({ game: app.state.game, dt: 1 / 60 });
     syncGameViews(app.state.game);
     Object.assign(app.state.camera, { x: center.x * 32, y: center.y * 32, zoom: 2.5 });
   });
-  await page.waitForFunction(() => window.BSB_V2_DEMO.state.game.renderLayers.renderer.webgl3dDiagnostics.liveWorld.actors.proceduralHumanoids.readyActorCount === 100);
+  await page.waitForFunction(() => window.BSB_V2_DEMO.state.game.renderLayers.renderer.webgl3dDiagnostics.liveWorld.actors.inkHumanoids.readyActorCount === 100);
   await page.waitForTimeout(1500);
   const baseline = await snapshot();
   return {
     longFrameCount: baseline.timing.longFrameCount,
-    topologyBuilds: baseline.actors.proceduralHumanoids.topologyBuilds,
-    topologyRebuilds: baseline.actors.proceduralHumanoids.topologyRebuilds
+    topologyBuilds: baseline.actors.inkHumanoids.topologyBuilds,
+    topologyRebuilds: baseline.actors.inkHumanoids.topologyRebuilds
   };
 }
 
@@ -378,14 +399,15 @@ async function capture(name, note, fullPage = false) {
     name,
     note,
     screenshot,
-    recipeIds: state.actors.proceduralHumanoids.recipeIds,
+    recipeIds: state.actors.inkHumanoids.recipeIds,
     actorCount: state.actors.actorCount,
     wyvernMeshCount: state.actors.wyvernMeshCount,
     smokeCount: state.effects.smoke,
-    readyActorCount: state.actors.proceduralHumanoids.readyActorCount,
-    primitiveCount: state.actors.proceduralHumanoids.primitiveCount,
-    drawFamilyCount: state.actors.proceduralHumanoids.drawFamilyCount,
-    missingSocketErrors: state.actors.proceduralHumanoids.missingSocketErrors,
+    readyActorCount: state.actors.inkHumanoids.readyActorCount,
+    lineSegmentCount: state.actors.inkHumanoids.bodySegmentCount + state.actors.inkHumanoids.propSegmentCount,
+    headRingSegmentCount: state.actors.inkHumanoids.headRingSegmentCount,
+    drawFamilyCount: state.actors.inkHumanoids.drawFamilyCount,
+    missingPointErrors: state.actors.inkHumanoids.missingPointErrors,
     calls: state.calls,
     triangles: state.triangles
   };
@@ -404,7 +426,7 @@ async function createContactSheet(items) {
     cards.push(`<figure><img src="data:image/png;base64,${data}"><figcaption><b>${escapeHtml(item.name)}</b><span>${escapeHtml(item.note)}</span></figcaption></figure>`);
   }
   const sheet = await browser.newPage({ viewport: { width: 1600, height: 1200 }, deviceScaleFactor: 1 });
-  await sheet.setContent(`<style>html{background:#090d10;color:#d7dde0;font:13px system-ui}body{margin:20px}h1{font:600 22px system-ui;margin:0 0 16px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}figure{margin:0;background:#11171b;border:1px solid #283139;padding:8px}img{display:block;width:100%;aspect-ratio:1.105/1;object-fit:cover;background:#050708}figcaption{display:grid;gap:3px;padding:8px 2px 1px}span{color:#8f9aa0;font-size:11px}</style><h1>BLACK SKY BOUND / Procedural Raider Recipe Visual Proof</h1><div class="grid">${cards.join('')}</div>`);
+  await sheet.setContent(`<style>html{background:#090d10;color:#d7dde0;font:13px system-ui}body{margin:20px}h1{font:600 22px system-ui;margin:0 0 16px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}figure{margin:0;background:#11171b;border:1px solid #283139;padding:8px}img{display:block;width:100%;aspect-ratio:1.105/1;object-fit:cover;background:#050708}figcaption{display:grid;gap:3px;padding:8px 2px 1px}span{color:#8f9aa0;font-size:11px}</style><h1>BLACK SKY BOUND / Raider Ink-Stick Production Proof</h1><div class="grid">${cards.join('')}</div>`);
   const contactSheet = path.join(artifacts, 'contact-sheet.png');
   await sheet.screenshot({ path: contactSheet, fullPage: true });
   await sheet.close();

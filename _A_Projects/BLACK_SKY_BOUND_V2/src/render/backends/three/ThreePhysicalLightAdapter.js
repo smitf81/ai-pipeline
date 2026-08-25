@@ -14,6 +14,7 @@ export class ThreePhysicalLightAdapter {
     this.shadowSlots = Array.from({ length: 2 }, (_, index) => createShadowSlot(root, index));
     this.activeLocalCount = 0;
     this.droppedLocalCount = 0;
+    this.physicalShadowLodCount = 0;
     this.activeSourceKinds = {};
     this.shadowOwners = new Set();
     this.lastOwnerChangeMs = -Infinity;
@@ -22,6 +23,7 @@ export class ThreePhysicalLightAdapter {
     this.moonDirection = { x: -0.6, y: -0.8 };
     this.moonFocusCell = '';
     this.sky = new THREE.HemisphereLight(0x26384d, 0x090806, 0.04);
+    this.stormSky = new THREE.HemisphereLight(0xdce8ff, 0x4f5872, 0);
     this.moon = new THREE.DirectionalLight(0x9bbbe0, 0.72);
     this.moon.position.set(-16, 25, -12);
     this.moon.target.position.set(8, 0, 7);
@@ -29,7 +31,7 @@ export class ThreePhysicalLightAdapter {
     this.moon.shadow.mapSize.set(1024, 1024);
     Object.assign(this.moon.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 0.5, far: 80 });
     this.moon.shadow.normalBias = 0.03;
-    root.add(this.sky, this.moon, this.moon.target);
+    root.add(this.sky, this.stormSky, this.moon, this.moon.target);
   }
 
   update(packets = [], renderTime = 0, opening = null, focus = null) {
@@ -41,11 +43,18 @@ export class ThreePhysicalLightAdapter {
     }
     this.syncMoonFocus(focus);
     this.sky.intensity = 0.04 * Math.max(0.08, openingMoonlight);
+    this.stormSky.intensity = packets.reduce((strongest, packet) => {
+      if (packet.enabled === false || !/lightning/i.test(packet.sourceKind ?? packet.id ?? '')) return strongest;
+      const strength = Math.max(0, Number(packet.effectiveIntensity ?? packet.intensity ?? 0));
+      const overhead = Math.max(0, Number(packet.overheadIlluminationIntensity ?? 1.5));
+      return Math.max(strongest, strength * overhead);
+    }, 0);
     const localPackets = packets.filter((packet) => packet.enabled !== false && !/moon/i.test(packet.sourceKind ?? packet.id ?? ''));
     const selectedPackets = localPackets.slice(0, this.localCapacity);
     this.assignLocalSlots(selectedPackets);
     this.activeLocalCount = selectedPackets.length;
     this.droppedLocalCount = Math.max(0, localPackets.length - selectedPackets.length);
+    this.physicalShadowLodCount = selectedPackets.filter((packet) => packet.physicalShadowLod === 'non_shadowing_distributed_fire_light').length;
     countSourceKinds(selectedPackets, this.activeSourceKinds);
     this.updateShadowOwners(selectedPackets, renderTime * 1000);
     this.syncShadowSlots(selectedPackets);
@@ -95,7 +104,8 @@ export class ThreePhysicalLightAdapter {
   }
 
   updateShadowOwners(packets, nowMs) {
-    const ordered = packets.filter((packet) => packet.castsShadows !== false)
+    const ordered = packets.filter((packet) => packet.castsShadows !== false
+      && packet.physicalShadowLod !== 'non_shadowing_distributed_fire_light')
       .sort((a, b) => criticality(b) - criticality(a) || Number(b.shadowPriority ?? 0) - Number(a.shadowPriority ?? 0));
     const dynamic = ordered.filter((packet) => packet.illuminationState !== 'nearby_static');
     const candidates = dynamic.length ? ordered.slice(0, 2) : ordered.slice(0, 1);
@@ -136,7 +146,7 @@ export class ThreePhysicalLightAdapter {
     return {
       contract: THREE_PHYSICAL_LIGHT_ADAPTER_CONTRACT,
       shaderBudgetContract: THREE_PHYSICAL_LIGHT_SHADER_BUDGET_CONTRACT,
-      lightCount: this.activeLocalCount + 2,
+      lightCount: this.activeLocalCount + 3,
       localLightCount: this.activeLocalCount,
       physicalLocalCapacity: this.localCapacity,
       unusedPhysicalLocalSlots: this.localCapacity - this.activeLocalCount,
@@ -145,8 +155,11 @@ export class ThreePhysicalLightAdapter {
       qualityState: this.droppedLocalCount > 0 ? 'degraded_visible' : 'native_full',
       activeSourceKinds: this.activeSourceKinds,
       shadowOwners: ['moon', ...this.shadowOwners],
+      stormSkyIntensity: Number(this.stormSky.intensity.toFixed(3)),
       moonFocusCell: this.moonFocusCell,
       localShadowCap: 2,
+      physicalShadowLodCount: this.physicalShadowLodCount,
+      physicalShadowLodPolicy: 'distributed_fire_lights_keep_illumination_without_point_shadow_cubemaps_v1',
       ownershipHysteresisMs: 500
     };
   }
@@ -175,6 +188,7 @@ export class ThreePhysicalLightAdapter {
     this.localSlots.length = 0;
     this.shadowSlots.length = 0;
     this.sky.removeFromParent();
+    this.stormSky.removeFromParent();
     this.moon.removeFromParent();
     this.moon.target.removeFromParent();
   }
@@ -206,6 +220,8 @@ function createShadowSlot(root, index) {
 
 function luminousPower(packet) {
   const strength = Math.max(0, Number(packet.effectiveIntensity ?? packet.intensity ?? 0));
+  const authoredPower = Number(packet.luminousPowerLumens);
+  if (Number.isFinite(authoredPower) && authoredPower > 0) return authoredPower * Math.max(0.08, strength);
   const kind = String(packet.sourceKind ?? packet.id ?? '');
   if (/lightning/i.test(kind)) return 18000 * Math.max(0.25, strength);
   if (/inferno|dragonfire|napalm/i.test(kind)) return 5200 * Math.max(0.25, strength);

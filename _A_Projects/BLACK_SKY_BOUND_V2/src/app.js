@@ -45,12 +45,10 @@ import {
 import {
   createTutorialRuntime,
   requestTutorialCue,
-  resetTutorialRuntimeForGame,
   temporarilyDismissActiveTutorialCue,
   updateTutorialRuntime
 } from './game/tutorialRuntime.js';
 import { TutorialCueId, TUTORIAL_TUNING } from './data/tutorialCues.js';
-import { SMOKE_AWAKENING } from './data/smokeAwakening.js';
 import {
   createOpeningSequenceState,
   isOpeningSequenceBlockingGameplay,
@@ -65,13 +63,12 @@ import {
   isSmokeAwakeningBlockingGameplay,
   updateSmokeAwakening
 } from './game/smokeAwakening.js';
-import { AbilityId } from './constants/abilityIds.js';
 import { AbilityUnlockEventId } from './data/abilityUnlockEvents.js';
 import {
-  applyAbilityUnlockEvent,
-  canUseAbility,
-  captureRunAbilityProgression
+  applyFirstPlaythroughInstinctAvailability,
+  applyAbilityUnlockEvent
 } from './game/playerAbilities.js';
+import { applyLoadedRuntimeMapTransition } from './game/runtimeMapTransition.js';
 import {
   createAuthoredTransitionSequenceState,
   isAuthoredTransitionSequenceBlockingGameplay,
@@ -89,10 +86,22 @@ export function createApp(canvas, options = {}) {
     options.profileStorageKey
   );
   const profileOptions = { reducedMotion: detectReducedMotion() };
-  const playerProfile = options.playerProfile
+  let playerProfile = options.playerProfile
     ? normalizePlayerProfile(options.playerProfile, profileOptions)
     : profileStore.load(profileOptions);
   const game = createInitialGameState(map, { creatureTuning: options.creatureTuning, playerProfile });
+  const initialInstinctAvailability = applyFirstPlaythroughInstinctAvailability(
+    game.world,
+    game.dragonId,
+    map.firstPlaythrough?.availableInstinctIds,
+    {
+      enabled: playerProfile.runs.newGamePlusCount === 0,
+      source: `first_playthrough_region:${map.id}`
+    }
+  );
+  if (initialInstinctAvailability.applied) {
+    playerProfile = profileStore.save(captureAbilityProgressionInProfile(game.world, game.dragonId, playerProfile));
+  }
   const openingDragon = getDragon(game);
   const audioTuning = normalizeAudioTuning(options.audioTuning).tuning;
   const audio = options.audioDirector ?? createAudioDirector({
@@ -201,7 +210,7 @@ export function createApp(canvas, options = {}) {
       updateOpeningSequence({ opening: state.opening, input, realDt: dt });
       applyOpeningPlayerTransform(state);
       wyvernProjectionSystem({ state, game: state.game, dt });
-      syncGameViews(state.game);
+      syncGameViews(state.game, { camera: state.camera, map: state.map, tileSize: CONFIG.tileSize });
       snapCameraToDragon(state);
       state.diagnostics.validation = validateWorldState(state.game.world);
       state.diagnostics.snapshot = createDebugSnapshot(state.game);
@@ -222,7 +231,7 @@ export function createApp(canvas, options = {}) {
         }, persistPlayerProfile);
       }
       wyvernProjectionSystem({ state, game: state.game, dt });
-      syncGameViews(state.game);
+      syncGameViews(state.game, { camera: state.camera, map: state.map, tileSize: CONFIG.tileSize });
       snapCameraToDragon(state);
       state.diagnostics.validation = validateWorldState(state.game.world);
       state.diagnostics.snapshot = createDebugSnapshot(state.game);
@@ -242,7 +251,7 @@ export function createApp(canvas, options = {}) {
       raiderPhysicalMotionSystem({ game: state.game, dt });
       humanoidProjectionSystem({ game: state.game, dt });
       wyvernProjectionSystem({ state, game: state.game, dt });
-      syncGameViews(state.game);
+      syncGameViews(state.game, { camera: state.camera, map: state.map, tileSize: CONFIG.tileSize });
       snapCameraToDragon(state);
       if (sequenceUpdate.handoffNow) {
         state.game.mapTransition = {
@@ -350,7 +359,7 @@ export function createApp(canvas, options = {}) {
       fetchImpl: options.runtimeMapFetchImpl ?? options.fetchImpl,
       hashImpl: options.runtimeMapHashImpl ?? options.hashImpl
     }).then((result) => {
-      applyRuntimeMapTransition(result, request);
+      applyLoadedRuntimeMapTransition({ state, canvas, result, request, persistPlayerProfile, snapCameraToDragon });
     }).catch((error) => {
       state.game.mapTransition = {
         ...request,
@@ -362,52 +371,6 @@ export function createApp(canvas, options = {}) {
     }).finally(() => {
       transitionLoad = null;
     });
-  }
-
-  function applyRuntimeMapTransition(result, request) {
-    const previousLoad = state.runtimeMapLoad;
-    const creatureTuning = state.game.creatureTuning;
-    const runAbilityProgression = captureRunAbilityProgression(state.game.world, state.game.dragonId);
-    state.map = result.map;
-    state.runtimeMapSource = result.load.path;
-    state.runtimeMapLoad = Object.freeze({
-      ...result.load,
-      transition: Object.freeze({
-        reason: request.reason,
-        fromMapId: previousLoad.mapId,
-        fromPath: previousLoad.path,
-        arrivalSequenceId: request.arrivalSequenceId ?? null,
-        label: request.label
-      })
-    });
-    state.camera = createCamera(canvas, result.map);
-    state.game = createInitialGameState(result.map, {
-      creatureTuning,
-      playerProfile: state.playerProfile,
-      runAbilityProgression
-    });
-    state.authoredTransitionSequence = createAuthoredTransitionSequenceState();
-    state.game.message = `Entered ${result.map.title}.`;
-    state.time = 0;
-    state.diagnostics.architecture = state.game.architecture;
-    state.diagnostics.validation = validateWorldState(state.game.world);
-    state.diagnostics.snapshot = createDebugSnapshot(state.game);
-    resetTutorialRuntimeForGame(state.tutorial, state);
-    const dragon = getDragon(state.game);
-    const smokeAwakeningRequested = request.arrivalSequenceId === SMOKE_AWAKENING.arrivalSequenceId;
-    state.smokeAwakening = createSmokeAwakeningState({
-      enabled: smokeAwakeningRequested && !canUseAbility(state.game.world, state.game.dragonId, AbilityId.SMOKE_BURST),
-      startPhase: 'blackout_hold',
-      source: request.arrivalSequenceId ?? 'not_requested',
-      fromMapId: previousLoad.mapId,
-      mapId: result.map.id,
-      worldX: (dragon?.x ?? 0) * CONFIG.tileSize,
-      worldY: (dragon?.y ?? 0) * CONFIG.tileSize,
-      rotation: dragon?.rotation ?? 0
-    });
-    snapCameraToDragon(state);
-    refreshCreatureRigForTuning(state);
-    console.info(`[BSB map] transition ${previousLoad.path} -> ${result.load.path} via escape zone`);
   }
 
   function render(alpha) {

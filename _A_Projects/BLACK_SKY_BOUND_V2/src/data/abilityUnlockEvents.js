@@ -1,4 +1,5 @@
 import { AbilityId } from '../constants/abilityIds.js';
+import { InstinctId } from '../constants/instinctIds.js';
 
 export const AbilityUnlockEventId = Object.freeze({
   INSTINCT_SMOKE_AWAKENED: 'instinct_smoke_awakened',
@@ -8,10 +9,11 @@ export const AbilityUnlockEventId = Object.freeze({
 export const ABILITY_UNLOCK_EVENTS = Object.freeze({
   [AbilityUnlockEventId.INSTINCT_SMOKE_AWAKENED]: Object.freeze({
     id: AbilityUnlockEventId.INSTINCT_SMOKE_AWAKENED,
+    instinctId: InstinctId.SMOKE_VEIL,
     grants: Object.freeze([AbilityId.SMOKE_BURST]),
     trigger: 'level_transition_instinct_scene',
     once: true,
-    persistenceScope: 'run',
+    persistenceScope: 'player_profile',
     presentation: 'smoke_instinct_v1'
   }),
   [AbilityUnlockEventId.INSTINCT_CHARGE_AWAKENED]: Object.freeze({

@@ -1,6 +1,9 @@
 import { AbilityId } from '../constants/abilityIds.js';
 import { DamageType } from '../constants/damageTypes.js';
 import { InputActionId } from './inputActions.js';
+import { metersToTiles } from './worldScale.js';
+
+const POUNCE_DISTANCE_METERS = 1.75;
 
 export const ABILITIES = Object.freeze({
   [AbilityId.MOVE]: Object.freeze({
@@ -72,38 +75,48 @@ export const ABILITIES = Object.freeze({
   }),
   [AbilityId.CHARGE_COUNTER]: Object.freeze({
     id: AbilityId.CHARGE_COUNTER,
-    inputAction: InputActionId.DODGE_FOLLOWUP,
-    displayName: 'DODGE CHARGE',
+    inputAction: InputActionId.POUNCE_COUNTER,
+    displayName: 'POUNCE COUNTER',
     reviewOrder: 60,
     unlockedByDefault: true,
     staminaCost: 36,
     requiredState: 'dodging',
-    bufferWindowMs: 320,
-    maxRedirectDegrees: 40,
-    recoveryMs: 480,
+    bufferWindowMs: 450,
+    recoveryMs: 420,
     unlockEventId: 'instinct_charge_awakened',
     damageType: DamageType.BODY,
     damage: 12,
     panicDuration: 0.62,
     action: Object.freeze({
-      duration: 0.68,
-      activeEndPhase: 0.76,
-      movementDistance: 2.55,
-      movementStartPhase: 0.18,
-      movementEndPhase: 0.62,
-      accelerationExponent: 1.72,
+      duration: 0.82,
+      activeEndPhase: 0.84,
+      movementDistanceMeters: POUNCE_DISTANCE_METERS,
+      movementDistance: metersToTiles(POUNCE_DISTANCE_METERS),
+      movementStartPhase: 0.2,
+      movementEndPhase: 0.68,
+      accelerationExponent: 1.45,
       stopOnBlocked: true
     }),
     contact: Object.freeze({
       contactBodyPart: 'chest_body_front',
-      activePhaseStart: 0.24,
-      activePhaseEnd: 0.66,
+      activePhaseStart: 0.32,
+      activePhaseEnd: 0.74,
       contactShape: 'capsule',
       contactOffset: Object.freeze({ forward: 0.52, right: 0 }),
       contactSize: Object.freeze({ length: 1.18, width: 1.08 }),
       impactDirection: 'forward',
       impactStrength: 7.4,
       staggerStrength: 0.82
+    }),
+    impactTravel: Object.freeze({
+      effectiveMassImpactResistanceWeight: 1,
+      effectiveMassStaggerResistanceWeight: 0.5,
+      travelBrakePerMassRatio: 0.6,
+      minTravelRetention: 0.2,
+      maxTravelRetention: 0.65,
+      heavyStopMassRatio: 1.5,
+      sourceRecoilImpactStrength: 1.2,
+      sourceRecoilStaggerStrength: 0.18
     })
   }),
   [AbilityId.DRAGONFIRE]: {

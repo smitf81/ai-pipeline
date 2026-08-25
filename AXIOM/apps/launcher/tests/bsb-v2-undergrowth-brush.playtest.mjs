@@ -220,7 +220,7 @@ function isExpectedCaptureWarning(issue) {
 function isResourceConsoleIssue(issue) { return issue.type === 'error' && issue.text.startsWith('Failed to load resource:'); }
 function isExpectedBackgroundHttpFailure(failure) {
   if (failure.url === 'http://localhost:1234/v1/models' && failure.error === 'net::ERR_CONNECTION_REFUSED') return true;
-  return failure.url === 'http://localhost:3007/mcp/call'
+  return /\/mcp\/call$/.test(failure.url)
     && failure.status === 500
     && failure.postData?.tool === 'fs_ls'
     && /docs\/skills/i.test(String(failure.postData?.params?.path || ''));

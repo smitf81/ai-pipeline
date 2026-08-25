@@ -1,6 +1,7 @@
 import { ComponentType } from '../constants/componentTypes.js';
 import { getAbilityDefinition, getDefaultUnlockedAbilityIds } from '../data/abilities.js';
 import { getAbilityUnlockEvent } from '../data/abilityUnlockEvents.js';
+import { getInstinctDefinition, getInstinctIdsForAbility } from '../data/instincts.js';
 import { normalizeAudioMix } from '../data/audio/audioTuning.js';
 import { getComponent } from '../ecs/world.js';
 
@@ -14,7 +15,8 @@ export function createDefaultPlayerProfile(options = {}) {
     profileId: options.profileId ?? 'local-player',
     progression: {
       unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
-      consumedUnlockEventIds: []
+      consumedUnlockEventIds: [],
+      discoveredInstinctIds: []
     },
     tutorial: {
       shownCueIds: [],
@@ -42,12 +44,18 @@ export function normalizePlayerProfile(source = null, options = {}) {
   const unlockedAbilityIds = uniqueStrings(source.progression?.unlockedAbilityIds, base.progression.unlockedAbilityIds)
     .filter(isProfilePersistentAbility)
     .filter((abilityId) => abilityHasRequiredReceipt(abilityId, consumedUnlockEventIds));
+  const discoveredInstinctIds = deriveDiscoveredInstinctIds(
+    source.progression?.discoveredInstinctIds,
+    unlockedAbilityIds,
+    consumedUnlockEventIds
+  );
   return {
     schema: PLAYER_PROFILE_SCHEMA,
     profileId: typeof source.profileId === 'string' ? source.profileId : base.profileId,
     progression: {
       unlockedAbilityIds,
-      consumedUnlockEventIds
+      consumedUnlockEventIds,
+      discoveredInstinctIds
     },
     tutorial: {
       shownCueIds: uniqueStrings(source.tutorial?.shownCueIds),
@@ -79,6 +87,23 @@ function isProfilePersistentAbility(abilityId) {
 
 function isProfilePersistentUnlockEventId(eventId) {
   return getAbilityUnlockEvent(eventId)?.persistenceScope !== 'run';
+}
+
+function deriveDiscoveredInstinctIds(values, unlockedAbilityIds, consumedUnlockEventIds) {
+  const discovered = uniqueStrings(values).filter((instinctId) => !!getInstinctDefinition(instinctId));
+  for (const eventId of consumedUnlockEventIds) {
+    const instinctId = getAbilityUnlockEvent(eventId)?.instinctId;
+    if (instinctId && !discovered.includes(instinctId)) discovered.push(instinctId);
+  }
+  for (const abilityId of unlockedAbilityIds) {
+    for (const instinctId of getInstinctIdsForAbility(abilityId)) {
+      if (!discovered.includes(instinctId)) discovered.push(instinctId);
+    }
+  }
+  return discovered.filter((instinctId) => {
+    const definition = getInstinctDefinition(instinctId);
+    return !definition?.unlockEventId || consumedUnlockEventIds.includes(definition.unlockEventId);
+  });
 }
 
 export function createPlayerProfileStore(storage = null, key = PLAYER_PROFILE_STORAGE_KEY) {
@@ -113,6 +138,7 @@ export function hydrateAbilityProgressionFromProfile(world, entity, profile) {
   const normalized = normalizePlayerProfile(profile);
   progression.unlockedAbilities = [...normalized.progression.unlockedAbilityIds];
   progression.consumedUnlockEvents = [...normalized.progression.consumedUnlockEventIds];
+  progression.discoveredInstincts = [...normalized.progression.discoveredInstinctIds];
   return true;
 }
 
@@ -124,6 +150,17 @@ export function captureAbilityProgressionInProfile(world, entity, profile) {
     .filter(isProfilePersistentAbility);
   normalized.progression.consumedUnlockEventIds = uniqueStrings(progression.consumedUnlockEvents)
     .filter(isProfilePersistentUnlockEventId);
+  normalized.progression.discoveredInstinctIds = deriveDiscoveredInstinctIds(
+    [
+      ...normalized.progression.discoveredInstinctIds,
+      ...(progression.discoveredInstincts ?? [])
+    ],
+    normalized.progression.unlockedAbilityIds,
+    normalized.progression.consumedUnlockEventIds
+  ).filter((instinctId) => {
+    const definition = getInstinctDefinition(instinctId);
+    return !definition?.unlockEventId || isProfilePersistentUnlockEventId(definition.unlockEventId);
+  });
   return normalized;
 }
 

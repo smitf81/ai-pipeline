@@ -101,16 +101,16 @@ export function buildWebGLSceneryDepthItems(projection, context) {
     litDetailVisibleCount: 0,
     visibilityHeldCount: 0,
     visibilityFadingCount: 0,
-    treeFireActiveCount: 0,
-    treeFireBurntOutCount: 0,
+    foliageFireActiveCount: 0,
+    foliageFireBurntOutCount: 0,
     ...proceduralTreeStats(),
     ...proceduralUndergrowthStats(),
     ...proceduralGeologyStats()
   };
   for (const object of projection.scenery ?? []) {
     const firePhase = object.material?.state?.firePhase;
-    if (firePhase === 'burnt_out') result.treeFireBurntOutCount += 1;
-    else if (firePhase) result.treeFireActiveCount += 1;
+    if (firePhase === 'burnt_out') result.foliageFireBurntOutCount += 1;
+    else if (firePhase) result.foliageFireActiveCount += 1;
     if (object.worldTileX + object.worldWidth < bounds.left || object.worldTileY + object.worldHeight < bounds.top
       || object.worldTileX > bounds.right || object.worldTileY > bounds.bottom) continue;
     const lightSpaceInfluence = lightSpaceAlphaForWorldCircle(context, object.worldX, object.worldY, object.worldRadius);

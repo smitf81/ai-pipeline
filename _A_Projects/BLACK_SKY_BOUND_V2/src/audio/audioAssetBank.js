@@ -1,3 +1,5 @@
+import { collectSoundAssetFiles } from './soundManifest.js';
+
 export class AudioAssetBank {
   constructor(options = {}) {
     this.context = options.context ?? null;
@@ -10,11 +12,11 @@ export class AudioAssetBank {
 
   preloadCues(cues = {}) {
     const fileCues = Object.values(cues).filter((cue) => cue?.source === 'file');
-    const files = [...new Set(fileCues.flatMap((cue) => [...(cue.files ?? []), ...(cue.environmentFiles ?? [])]))];
+    const files = collectSoundAssetFiles(cues);
     for (const cue of fileCues) {
       if (cue.spatialization === 'point_mono') for (const file of cue.files ?? []) this.pointDirectFiles.add(file);
       if (!cue.required) continue;
-      for (const file of cue.files ?? []) this.requiredFiles.add(file);
+      for (const file of [...(cue.files ?? []), ...(cue.environmentFiles ?? [])]) this.requiredFiles.add(file);
     }
     if (!this.context || !this.fetchImpl) return this.preloadPromise;
     this.preloadPromise = Promise.all(files.map((file) => this.load(file)));

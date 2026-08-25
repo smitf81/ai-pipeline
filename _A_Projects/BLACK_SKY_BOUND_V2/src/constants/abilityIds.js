@@ -5,6 +5,7 @@ export const AbilityId = Object.freeze({
   SMOKE_BURST: 'smoke_burst',
   SMOKE_SPIT: 'smoke_spit',
   DODGE: 'dodge',
+  POUNCE_COUNTER: 'charge_counter',
   CHARGE_COUNTER: 'charge_counter',
   DRAGONFIRE: 'dragonfire'
 });

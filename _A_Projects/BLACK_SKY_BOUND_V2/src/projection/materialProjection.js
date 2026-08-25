@@ -11,7 +11,7 @@ export function buildMaterialProjection(profileId, options = {}) {
     profileId: profile.id,
     family: options.family ?? profile.family,
     shaderVariant: state.firePhase
-      ? `${profile.shaderVariant}+tree_fire_lifecycle_v0`
+      ? `${profile.shaderVariant}+foliage_fire_lifecycle_v1`
       : profile.shaderVariant,
     uniforms: {
       ...profile.uniforms,
@@ -43,7 +43,7 @@ export function buildActorMaterialState(actor, team) {
 }
 
 export function buildSceneObjectMaterialState(object) {
-  const treeFire = object?.materialState?.treeFire ?? null;
+  const foliageFire = object?.materialState?.foliageFire ?? null;
   return normalizeMaterialState({
     burnAmount: object?.materialState?.burnAmount ?? 0,
     wetness: object?.materialState?.wetness ?? 0,
@@ -52,13 +52,14 @@ export function buildSceneObjectMaterialState(object) {
     density: object?.materialState?.density ?? (object?.blocksMovement ? 0.82 : 0.48),
     selectionHighlight: object?.selected ? 1 : 0,
     nightReveal: object?.materialState?.nightReveal ?? (object?.blocksMovement ? 0.54 : 0.46),
-    firePhase: treeFire?.phase ?? null,
-    fireAge: treeFire?.age ?? 0,
-    firePhaseProgress: treeFire?.phaseProgress ?? 0,
-    heatAmount: treeFire?.heatAmount ?? 0,
-    emberAmount: treeFire?.emberAmount ?? 0,
-    smokeAmount: treeFire?.smokeAmount ?? 0,
-    charAmount: treeFire?.charAmount ?? 0
+    fireFamily: foliageFire?.family ?? null,
+    firePhase: foliageFire?.phase ?? null,
+    fireAge: foliageFire?.age ?? 0,
+    firePhaseProgress: foliageFire?.phaseProgress ?? 0,
+    heatAmount: foliageFire?.heatAmount ?? 0,
+    emberAmount: foliageFire?.emberAmount ?? 0,
+    smokeAmount: foliageFire?.smokeAmount ?? 0,
+    charAmount: foliageFire?.charAmount ?? object?.materialState?.charAmount ?? 0
   });
 }
 
@@ -110,6 +111,7 @@ function normalizeMaterialState(state = {}) {
     integrity: clamp01(state.integrity ?? 1),
     selectionHighlight: clamp01(state.selectionHighlight),
     firePhase: typeof state.firePhase === 'string' ? state.firePhase : null,
+    fireFamily: typeof state.fireFamily === 'string' ? state.fireFamily : null,
     fireAge: finiteNonNegative(state.fireAge),
     firePhaseProgress: clamp01(state.firePhaseProgress),
     heatAmount: clamp01(state.heatAmount),

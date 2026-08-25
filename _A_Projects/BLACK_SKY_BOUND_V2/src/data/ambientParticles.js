@@ -5,7 +5,7 @@ export const AmbientParticleKind = Object.freeze({
   SMOKE_TRAIL_MOTE: 'smoke_trail_mote',
   ASH_FLECK: 'ash_fleck',
   MAMA_INFERNO_EMBER: 'mama_inferno_ember',
-  TREE_FIRE_EMBER: 'tree_fire_ember',
+  FOLIAGE_FIRE_EMBER: 'foliage_fire_ember',
   LEAF_DRIFT: 'leaf_drift'
 });
 
@@ -75,11 +75,11 @@ export const AMBIENT_PARTICLE_RECIPES = Object.freeze({
     softness: 0.7,
     renderPriority: 126
   }),
-  [AmbientParticleKind.TREE_FIRE_EMBER]: Object.freeze({
-    id: AmbientParticleKind.TREE_FIRE_EMBER,
+  [AmbientParticleKind.FOLIAGE_FIRE_EMBER]: Object.freeze({
+    id: AmbientParticleKind.FOLIAGE_FIRE_EMBER,
     classification: 'ambient_particle_recipe',
     visualRole: 'hot_ember',
-    sourceAuthority: 'projected runtime tree-fire light nodes',
+    sourceAuthority: 'projected runtime foliage-fire light nodes',
     count: 3,
     cycleSeconds: 1.08,
     radiusPx: 1.18,

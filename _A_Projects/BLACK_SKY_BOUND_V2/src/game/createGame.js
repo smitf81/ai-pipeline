@@ -64,6 +64,11 @@ export function createInitialGameState(map, options = {}) {
   for (const actorId of reservedActorIds) {
     if (!reservedTransitionActorPlacements[actorId]) throw new Error(`reserved_transition_actor_missing:${actorId}`);
   }
+  const renderLayers = createRenderLayerState();
+  renderLayers.atmosphericOverlay = {
+    classification: 'canonical_region_atmosphere_runtime_policy',
+    enabled: map.atmosphere?.rainAndSparksEnabled !== false
+  };
   const game = {
     architecture: 'ecs_foundation_v1',
     scenarioId: scenario.id,
@@ -94,7 +99,7 @@ export function createInitialGameState(map, options = {}) {
     lighting: { enabled: true, profileId: LightingProfileId.EARLY_NIGHT },
     smokeField: { enabled: true, profileId: SmokeFieldProfileId.LOW_NIGHT_SMOKE },
     creatureTuning: normalizeCreatureTuning(options.creatureTuning).tuning,
-    renderLayers: createRenderLayerState(),
+    renderLayers,
     objectives: [{ ...scenario.objective, complete: false }]
   };
   return syncGameViews(game);

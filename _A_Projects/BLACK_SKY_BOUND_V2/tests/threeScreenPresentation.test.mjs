@@ -59,15 +59,24 @@ equal(movement.keys.filter((key) => key.complete).length, 1, 'movement tutorial 
 
 const charge = buildThreeTutorialView({
   id: 'charge_instinct',
-  presentationType: 'dodge_charge_sequence',
-  title: 'DODGE · CHARGE',
-  supportingText: 'DODGE AGAIN TO COUNTER',
-  inputRows: [{ bindings: ['SPACE'] }],
-  progress: { pressedLabels: [], dodgeAccepted: true, chargeAccepted: false }
+  presentationType: 'dodge_pounce_sequence',
+  title: 'DODGE · POUNCE',
+  supportingText: 'SPACE AWAY · LMB TO COUNTER',
+  inputRows: [{ bindings: ['SPACE'] }, { bindings: ['LMB'] }],
+  progress: { pressedLabels: [], dodgeAccepted: true, pounceAccepted: false }
 });
 equal(charge.keys.length, 2, 'charge instinct should render its two-stage input sequence');
+equal(charge.keys[0].label, 'SPACE', 'pounce sequence should begin with the canonical dodge binding');
+equal(charge.keys[1].label, 'LMB', 'pounce sequence should render the contextual mouse binding distinctly');
 equal(charge.keys[0].complete, true, 'charge instinct should show the accepted first dodge');
 equal(charge.keys[1].complete, false, 'charge instinct should keep the follow-up pending');
+const emergencyCharge = buildThreeTutorialView({
+  ...charge,
+  presentationType: 'dodge_pounce_sequence',
+  inputRows: [{ bindings: ['SPACE'] }, { bindings: ['LMB'] }],
+  progress: { pressedLabels: [], dodgeAccepted: true, pounceAccepted: false, pounceAvailable: false }
+});
+equal(emergencyCharge.keys[1].available, false, 'low-stamina tutorial should visibly suppress the unavailable pounce key');
 
 const pause = buildThreePauseView({
   title: 'CONTROLS & INSTINCTS',
@@ -99,6 +108,14 @@ equal(unlock.eyebrow, 'NEW INSTINCT', 'arena instinct presentation should identi
 
 const body = buildThreeBodyStateView({ enabled: true, postProcess: { healthPressure: .6, hitPulse: .8, staminaPressure: .4, breathPulse: .5, desaturation: .3, contrast: .2 } });
 assert(body.active, 'body-pressure presentation should activate from the renderer-neutral body-state projection');
-assert(Number(body.saturation) < 1 && Number(body.contrast) > 1, 'body-pressure presentation should apply bounded desaturation and contrast');
+assert(Number(body.staminaSaturation) < 1 && Number(body.staminaContrast) < 1, 'stamina pressure should apply bounded peripheral desaturation and contrast loss');
+assert(body.healthClearRadiusPct < 82 && body.staminaClearRadiusPct < 76, 'health and stamina pressure should contract their distinct clear peripheral radii');
+assert(Number(body.healthEdgeAlpha) > Number(body.staminaAlpha), 'injury pressure should remain the more aggressive visual language');
+
+const terminalBody = buildThreeBodyStateView({ enabled: true, health: { ratio: .1, dangerPulse: .7 }, stamina: { ratio: .1 }, postProcess: { healthPressure: .78, staminaPressure: .7, breathPulse: .4 } });
+equal(terminalBody.healthBand, 'terminal', 'sub-fifteen-percent health should enter the terminal presentation band');
+equal(terminalBody.staminaBand, 'exhausted', 'sub-sixteen-percent stamina should enter the exhausted presentation band');
+assert(terminalBody.healthClearRadiusPct < body.healthClearRadiusPct, 'terminal pressure should close farther inward than the moderate presentation');
+assert(Number(terminalBody.healthBloodAlpha) > 0, 'terminal pressure should include the irregular blood field');
 
 console.log('threeScreenPresentation.test.mjs passed');

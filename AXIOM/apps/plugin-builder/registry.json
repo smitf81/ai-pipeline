@@ -63,6 +63,52 @@
         "source": "axiom-agent"
       },
       "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\safe-write-project-file-0.1.0.axpkg"
+    },
+    "capability-acquisition-proof-mapforge-report": {
+      "id": "capability-acquisition-proof-mapforge-report",
+      "name": "Map Forge Context Reporter",
+      "version": "0.1.0",
+      "status": "registered",
+      "registered_at": "2026-08-17T17:01:04.732Z",
+      "activated_at": null,
+      "validated": true,
+      "checksum": "46ac76032e0a025200a5b1f4f46888ffed5dc844e6c02b78820bdc50523bd9c6",
+      "capabilities": [
+        "mcp-tool-expose"
+      ],
+      "permissions": {
+        "mcp": {
+          "expose_tools": true
+        }
+      },
+      "author": {
+        "name": "AXIOM Local Model Agent",
+        "source": "axiom-agent"
+      },
+      "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\capability-acquisition-proof-mapforge-report-0.1.0.axpkg"
+    },
+    "acquired-mapforge-browser-proof-context-report": {
+      "id": "acquired-mapforge-browser-proof-context-report",
+      "name": "Acquired mapforge.browser-proof-context-report",
+      "version": "0.1.0",
+      "status": "registered",
+      "registered_at": "2026-08-17T17:22:37.529Z",
+      "activated_at": null,
+      "validated": true,
+      "checksum": "6b082dd776542903abea9a6407e67aca7656bf6438da84b73bc7ec39054808a3",
+      "capabilities": [
+        "mcp-tool-expose"
+      ],
+      "permissions": {
+        "mcp": {
+          "expose_tools": true
+        }
+      },
+      "author": {
+        "name": "AXIOM Local Model Agent",
+        "source": "axiom-agent"
+      },
+      "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\acquired-mapforge-browser-proof-context-report-0.1.0.axpkg"
     }
   },
   "receipts": [
@@ -101,7 +147,332 @@
         "status": "registered"
       },
       "checksum": "ae5d1bb04edcf1d0ff0c15866adc6cee48000914c91b43d9bc42114425158194"
+    },
+    {
+      "receipt_id": "rcpt_d3160c04-d575-4173-90a8-93317e43142a",
+      "plugin_id": "capability-acquisition-proof-mapforge-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T16:50:35.239Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "7c6f7955e367cfecc60108197a2b9a8886cb270d1235baf740e98447646a4703"
+    },
+    {
+      "receipt_id": "rcpt_3e42c337-6fee-4ee3-9bc2-07f009cad244",
+      "plugin_id": "capability-acquisition-proof-mapforge-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T16:52:00.655Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "a5657c0070b1f7109b80e92a4953478866de3442728c3c9baf0f6a1e27ce7fd5"
+    },
+    {
+      "receipt_id": "rcpt_d8428409-3e89-459d-afe8-e07439f89f86",
+      "plugin_id": "capability-acquisition-proof-mapforge-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:00:28.903Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "rejected",
+        "validated": false,
+        "forced": true
+      },
+      "checksum": "659a7fba0c85d3d5cd0ffee847a1b403f7f35dc22d5463d798c29e234ec19dc4"
+    },
+    {
+      "receipt_id": "rcpt_a8fe4695-ae8e-4b0d-880d-e13bfae56665",
+      "plugin_id": "capability-acquisition-proof-mapforge-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:01:04.732Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "d17a1bd3d974ab5243009410441d562c4dcdea13a412f287e205b5edf0fa4dca"
+    },
+    {
+      "receipt_id": "rcpt_bdf11fdf-4f6e-424e-b871-d8ad6fb06d7d",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:11:12.782Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "rejected",
+        "validated": false,
+        "forced": true
+      },
+      "checksum": "374b3d9c7549ce23b7de4fbea390d6292dad4aeb5bdb49d1bad894324126e61b"
+    },
+    {
+      "receipt_id": "rcpt_c75b05bc-62b7-4d94-ad79-d8bcbc2906af",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:11:18.722Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "4764b9df117e7838fe5dc2cfeb1bee8e62100cd0a198422a348532c22baec8b0"
+    },
+    {
+      "receipt_id": "rcpt_b69a4826-3c2b-43c7-8d35-c719ddae3c08",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:14:25.333Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "16292413b51112c7abd1b724de61b286a43f1431664d8758e72df98b272aecd0"
+    },
+    {
+      "receipt_id": "rcpt_d499569a-b1e8-496f-9dc3-6da86cf2da0c",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:14:31.096Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "d36e295cece16537705ea3ebf67e1f50281cdcd25e7f01cb03dbe67fcd175602"
+    },
+    {
+      "receipt_id": "rcpt_3166b503-cea0-41be-8b60-93f0839f08da",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:15:32.410Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "68706542f1e4eba3ef98ae75adc2aa94ab27b9c237ac8868d614e7377a851a2c"
+    },
+    {
+      "receipt_id": "rcpt_98b20009-7e31-4efe-8652-c8a5965fef29",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:15:38.310Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "e0ea438cf202fee2dd23fb23591d7d4c682e054bf286dee0f89443c189fc635b"
+    },
+    {
+      "receipt_id": "rcpt_960ab3ee-fc3b-4d25-b970-5a826c2d86a5",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:16:36.236Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "120c6be7075a066cb69844835375d8e352f9d4c8966766919854980562d52cf2"
+    },
+    {
+      "receipt_id": "rcpt_c2fe30c0-3bfd-447a-9fa2-4b37c38c8e73",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:16:42.069Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "26bedf29e39ae75aefe1aa4078e22be3385842b354b51dcad28f53ba56cc5052"
+    },
+    {
+      "receipt_id": "rcpt_04e82beb-1eaa-4da6-9fe4-e090723b8cd3",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:17:47.863Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "b826eda140a6aec6d1f3e700e6500fd137c4d5fe7a98008403fd4d3a1d55a788"
+    },
+    {
+      "receipt_id": "rcpt_0bcf4609-3585-41fb-973a-bcca71b14553",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:17:53.877Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "a70fb4c9f89a3dae3847763339ea0d99ecfac664ac904240f980b30a26f28a9c"
+    },
+    {
+      "receipt_id": "rcpt_d55b1a09-3506-4efb-ba62-06fce2584f55",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:18:13.267Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "19fc193eac9abdecbd1f1b6e83136bd9c722bb49caef8fd137ee3ca923eb46ff"
+    },
+    {
+      "receipt_id": "rcpt_f53d6d47-3a7d-4fcc-903b-89c564d6a6f1",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:18:19.217Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "2031742b816f14c5c75cbfdedc724bc2d8368c6cd308fd3202bb03b2ab1cacd1"
+    },
+    {
+      "receipt_id": "rcpt_d7cc3d8e-fc6e-4174-a9fe-200d5d661ccc",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:18:37.667Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "f93d2f0ad80a7508ee675a91e2c46548488c9435028520a9279e46bb52b1db56"
+    },
+    {
+      "receipt_id": "rcpt_140c4c44-a5cd-4e16-b915-df997bf0cfcb",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:18:43.429Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "ee907479e1f348d9476bf571c2d7735be5780790112c544927228d1151e8bc27"
+    },
+    {
+      "receipt_id": "rcpt_0cf7e0fe-d2dd-46ce-bc62-5ae78f611da2",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:20:03.323Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "368815d86ac7d6ef7ca351cac772ee8b86ed5d4371d2a53870359acf6f2fedce"
+    },
+    {
+      "receipt_id": "rcpt_c04152c1-bb46-4462-8fc9-45e861ef5da5",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:20:08.410Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "3a71c393dff35da759e0c091f69169df2e859ff2db3523cb9a8d66561d9506ff"
+    },
+    {
+      "receipt_id": "rcpt_8bb88cfb-9d97-4201-b0c0-a2289a244e0c",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:21:34.419Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "61f12c744c5380f0411ec7124d9d153d23dd431bd807ef79e3b95b351378433d"
+    },
+    {
+      "receipt_id": "rcpt_f9f6cdb9-b63b-4c22-92dc-9b570032153b",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:21:40.378Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "7819ed278125c39dae05864ba37615028b35314f00e11d37f07a7070655dbc6d"
+    },
+    {
+      "receipt_id": "rcpt_a11f24cc-7e2d-413e-8ffd-a33447620961",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:21:51.217Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "ab5b58cf0249b3f749d4aef0ceb0886f6e83fb540e2865372146a10ffbd7a1c5"
+    },
+    {
+      "receipt_id": "rcpt_a44cc366-429b-4eef-8a87-d95484c120e3",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:21:57.178Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "a5f041fb4310a72858424f99de759cdcb16fc3fcdc9a943740a1e2abb7952b00"
+    },
+    {
+      "receipt_id": "rcpt_a0c6809d-77cd-4930-be53-4ff21e712909",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "delete",
+      "timestamp": "2026-08-17T17:22:31.527Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "status": "registered",
+        "validated": true,
+        "forced": true
+      },
+      "checksum": "37a14f3897741e5152d92d8597190cbbe480e284c79e17659470ab8fd6bf4f15"
+    },
+    {
+      "receipt_id": "rcpt_0b729a37-4b3d-45f5-841b-7627e1096ed3",
+      "plugin_id": "acquired-mapforge-browser-proof-context-report",
+      "operation": "register",
+      "timestamp": "2026-08-17T17:22:37.529Z",
+      "authorized_by": "axiom-plugin-builder",
+      "metadata": {
+        "activated": false,
+        "status": "registered"
+      },
+      "checksum": "acd043fe65cdf1c019e14728df36eb16e803935eeed4fb036c58cdce34fd6434"
     }
   ],
-  "updated_at": "2026-06-02T00:00:00.000Z"
+  "updated_at": "2026-08-17T17:22:37.530Z"
 }

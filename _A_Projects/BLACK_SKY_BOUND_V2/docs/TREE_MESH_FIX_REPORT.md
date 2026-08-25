@@ -6,7 +6,7 @@ Completed 2026-07-31.
 
 The procedural tree's wood is now one closed, outward-wound manifold surface per tree. Trunk, basal flare, roots and major branches are generated from the existing deterministic skeleton and polygonised together. The former camera-dependent half trunk, capped root tubes, internal root caps and separately intersecting branch spikes are gone.
 
-This is a structural repair, not a bark-texture or canopy-art pass.
+This was a structural repair, not a material pass. The later shared bark and foliage material follow-ups are documented separately in `docs/BARK_PBR_MATERIAL_V1.md` and `docs/FOLIAGE_PBR_MATERIAL_V1.md`.
 
 ## Previous rendering path and failure
 
@@ -45,7 +45,7 @@ The ancient-oak baseline had 744 bark vertices, 1,376 bark triangles and 28 disc
 
 The geometry contract/signature is `implicit-manifold-wood-v3`; bark user data identifies construction as `implicit_manifold_wood_v3`.
 
-No external mesh, texture or generated raster asset was introduced. The implementation uses the project's existing MIT-licensed Three.js dependency and its bundled Marching Cubes and BufferGeometry utilities.
+No external mesh, texture or generated raster asset was introduced by this structural slice. A later, separately documented generated bark set now uses the repaired geometry without changing its topology. The implementation uses the project's existing MIT-licensed Three.js dependency and its bundled Marching Cubes and BufferGeometry utilities.
 
 ## Developer diagnostics
 
@@ -55,7 +55,7 @@ The reference grove accepts these deterministic query controls:
 - `treeView=lit|wireframe|normals`
 - `canopy=0|1`
 - `angle=front|rear|left|right|three-quarter|<degrees>`
-- `framing=gameplay|full|roots`
+- `framing=gameplay|full|roots|bark|foliage`
 - `lighting=moon|torch-a|torch-b|lightning|studio`
 
 The renderer also exposes `setTreeDiagnosticView(mode)` and `setTreeReferenceCanopyVisible(visible)`. Browser diagnostics report bark vertices/triangles plus woody component, boundary and non-manifold counts.
@@ -116,7 +116,7 @@ The production bundle and packaged-browser smoke passed with no console, page, r
 
 ## Known limitations
 
-- This pass does not add bark PBR textures, bark grooves or a higher-fidelity canopy. Lighting and the existing material still carry the surface read.
+- The bark- and canopy-surface limitations were resolved by the shared PBR materials in `docs/BARK_PBR_MATERIAL_V1.md` and `docs/FOLIAGE_PBR_MATERIAL_V1.md` on 2026-08-11. Individual leaf-card geometry, wind and translucency remain deliberate future boundaries.
 - Very fine terminal twigs intentionally fall below the implicit resolution; the canopy supplies their gameplay-distance silhouette. Major branches are nevertheless part of the closed trunk volume, not hidden disconnected spikes.
 - Cold generation is paid once per unique complete tree signature. It is not a per-frame cost, but a future forest-scale pass could pre-bake common signatures if maps use very large numbers of unique seeds.
 - Marching-cubes topology is economical and watertight but not hand-retopologised; wireframe triangle flow is functional rather than artist-authored.

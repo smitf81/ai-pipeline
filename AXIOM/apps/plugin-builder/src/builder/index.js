@@ -115,23 +115,302 @@ function mergeCandidateManifest(base, patch = {}, input = {}) {
     warnings: [],
     checksum: null
   };
+  if (input.acquisition_mode === 'bounded_runtime_tool') {
+    const runtimeContract = input.runtime_contract && typeof input.runtime_contract === 'object'
+      ? input.runtime_contract
+      : {};
+    const offeredRuntimeApis = Array.isArray(runtimeContract.apis)
+      ? runtimeContract.apis.map(api => String(api?.id || '')).filter(Boolean)
+      : [];
+    const requestedRuntimeApis = Array.isArray(patch.implementation?.required_runtime_apis)
+      ? patch.implementation.required_runtime_apis.map(String).filter(Boolean)
+      : Array.isArray(patch.axiom_runtime?.apis)
+        ? patch.axiom_runtime.apis.map(String).filter(Boolean)
+        : [];
+    manifest.capabilities = Array.from(new Set([...(manifest.capabilities || []), 'mcp-tool-expose']));
+    manifest.permissions = {
+      ...(manifest.permissions || {}),
+      mcp: { ...(manifest.permissions?.mcp || {}), expose_tools: true }
+    };
+    manifest.axiom_runtime = {
+      ...(manifest.axiom_runtime || {}),
+      min_version: manifest.axiom_runtime?.min_version || '1.0.0',
+      apis: requestedRuntimeApis
+    };
+    manifest.safety = {
+      ...(manifest.safety || {}),
+      may_modify_core: false,
+      sandboxed: true,
+      timeout_ms: Math.min(Number(manifest.safety?.timeout_ms || 30000), 30000)
+    };
+    manifest.implementation = {
+      ...(manifest.implementation || {}),
+      kind: 'implementation_bearing_plugin_proposal',
+      implementation_kind: 'bounded_runtime_mcp_tool',
+      target_area: input.target_area || 'editor.runtime_plugin',
+      capability_gap: input.capability_gap || manifest.implementation?.capability_gap || '',
+      required_runtime_apis: requestedRuntimeApis,
+      available_runtime_apis: offeredRuntimeApis,
+      runtime_contract: runtimeContract.contract || null,
+      integration_contract_path: 'integration-contract.json',
+      proposal_only: true
+    };
+    manifest.provenance = {
+      ...(manifest.provenance || {}),
+      acquisition_mode: 'bounded_runtime_tool',
+      original_request: String(input.original_request || '').slice(0, 2000)
+    };
+  }
   return manifest;
 }
 
-async function requestLocalModelCandidate(input = {}) {
+function boundedRuntimeToolSpecSchema(input = {}) {
+  const runtimeApis = Array.isArray(input.runtime_contract?.apis)
+    ? input.runtime_contract.apis.map(api => String(api?.id || '')).filter(Boolean)
+    : [];
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['tool'],
+    properties: {
+      tool: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'description', 'input_schema', 'runtime_api', 'call_with', 'result_mode'],
+        properties: {
+          name: { type: 'string' },
+          description: { type: 'string' },
+          input_schema: { type: 'object' },
+          runtime_api: { type: 'string', enum: runtimeApis },
+          call_with: { type: 'string', enum: ['none', 'input'] },
+          result_mode: { type: 'string', enum: ['return_data', 'return_receipt'] }
+        }
+      }
+    }
+  };
+}
+
+function boundedToolName(value = '') {
+  const id = String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  if (!/^[a-z][a-z0-9_]{2,63}$/.test(id)) throw new Error(`MODEL_TOOL_SPEC_INVALID: invalid tool name ${value}`);
+  return id;
+}
+
+function pascalName(value = '') {
+  return String(value || '').split(/[^a-zA-Z0-9]+/).filter(Boolean).map(part => part[0].toUpperCase() + part.slice(1)).join('') || 'AcquiredTool';
+}
+
+function compileBoundedRuntimeToolCandidate(input = {}, specification = {}) {
+  const spec = specification?.tool;
+  if (!spec || typeof spec !== 'object') throw new Error('MODEL_TOOL_SPEC_INVALID: tool object missing');
+  const offered = new Map((input.runtime_contract?.apis || []).map(api => [String(api?.id || ''), api]));
+  const runtimeApi = String(spec.runtime_api || '');
+  const apiContract = offered.get(runtimeApi);
+  if (!apiContract) throw new Error(`MODEL_TOOL_SPEC_INVALID: runtime API not offered: ${runtimeApi}`);
+  const apiParts = runtimeApi.split('.');
+  if (!apiParts.length || apiParts.some(part => !/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(part))) {
+    throw new Error(`MODEL_TOOL_SPEC_INVALID: runtime API path invalid: ${runtimeApi}`);
+  }
+  const name = boundedToolName(spec.name);
+  const description = String(spec.description || '').trim().slice(0, 500);
+  if (description.length < 10) throw new Error('MODEL_TOOL_SPEC_INVALID: tool description too short');
+  const inputSchema = spec.input_schema && typeof spec.input_schema === 'object' && !Array.isArray(spec.input_schema)
+    ? { ...spec.input_schema, type: 'object' }
+    : { type: 'object', properties: {} };
+  const callWith = spec.call_with === 'input' ? 'input' : 'none';
+  const resultMode = spec.result_mode === 'return_receipt' ? 'return_receipt' : 'return_data';
+  const hostAccess = `ctx?.${apiParts.join('?.')}`;
+  const runtimeAccess = `runtimeContext.${apiParts.join('.')}`;
+  const callExpression = `${runtimeAccess}(${callWith === 'input' ? 'args' : ''})`;
+  const functionName = pascalName(name);
+  const mutation = apiContract.mode === 'mutation';
+  const resultField = resultMode === 'return_receipt' ? 'receipt' : 'data';
+  const source = `let runtimeContext = null;
+
+export const tools = [{
+  name: ${JSON.stringify(name)},
+  description: ${JSON.stringify(description)},
+  inputSchema: ${JSON.stringify(inputSchema, null, 2)},
+  async handler(args = {}) {
+    if (!runtimeContext) return { ok: false, applied: false, reason: 'missing_runtime_api' };
+    const result = await ${callExpression};
+    const ok = ${apiContract.mode === 'read'
+      ? 'result !== null && result !== undefined'
+      : 'result !== null && result !== undefined && result?.ok !== false'};
+    const applied = ${mutation ? "result?.applied === true && (result?.verification?.ok === true || result?.ok === true)" : 'false'};
+    return { ok, applied, runtimeApi: ${JSON.stringify(runtimeApi)}, ${resultField}: result };
+  }
+}];
+
+export function install${functionName}(ctx) {
+  if (!ctx || typeof ${hostAccess} !== 'function') return { ok: false, reason: 'missing_runtime_api', api: ${JSON.stringify(runtimeApi)} };
+  runtimeContext = ctx;
+  return { ok: true };
+}
+
+export function uninstall${functionName}() {
+  runtimeContext = null;
+  return { ok: true };
+}
+
+export async function onLoad(ctx) { return install${functionName}(ctx); }
+
+export async function onActivate(ctx) {
+  const installed = install${functionName}(ctx);
+  if (!installed.ok) return installed;
+  for (const tool of tools) ctx.mcp.registerTool(tool);
+  return { ok: true, registered_tools: tools.map(tool => tool.name) };
+}
+
+export async function onDeactivate(ctx) {
+  for (const tool of tools) ctx.mcp.unregisterTool(tool.name);
+  return uninstall${functionName}();
+}
+
+export async function onUnload(ctx) { return onDeactivate(ctx); }
+`;
+  const test = `import assert from 'node:assert/strict';
+import { install${functionName}, tools } from '../src/index.js';
+assert.equal(tools.length, 1);
+assert.equal(tools[0].name, ${JSON.stringify(name)});
+assert.equal(tools[0].inputSchema.type, 'object');
+assert.equal(install${functionName}(null).reason, 'missing_runtime_api');
+console.log(${JSON.stringify(`${name} plugin contract passed`)});
+`;
+  return {
+    manifest: {
+      name: input.name || `Acquired ${name}`,
+      description,
+      version: '0.1.0',
+      entrypoint: 'src/index.js',
+      capabilities: ['mcp-tool-expose'],
+      permissions: { mcp: { expose_tools: true } },
+      mcp_tools: [{ name, description, input_schema: inputSchema }],
+      lifecycle_hooks: { on_load: 'onLoad', on_activate: 'onActivate', on_deactivate: 'onDeactivate', on_unload: 'onUnload' },
+      event_subscriptions: [],
+      ui_surfaces: [],
+      axiom_runtime: { min_version: '1.0.0', apis: [runtimeApi] },
+      safety: { may_modify_core: false, sandboxed: true, timeout_ms: 30000 },
+      compatibility: { os: ['any'], node_version: '>=18' },
+      implementation: { required_runtime_apis: [runtimeApi] }
+    },
+    files: {
+      'src/index.js': source,
+      'tests/plugin.test.js': test,
+      'README.md': `# ${input.name || name}\n\n${description}\n\nGenerated from a bounded local-model tool specification. Runtime API: \`${runtimeApi}\`.\n`
+    },
+    integration_contract: {
+      contract: 'axiom.runtime-plugin-integration.v1',
+      required_runtime_apis: [runtimeApi],
+      activation: 'explicit_runtime_activation_and_callable_tool_verification',
+      source: 'compiled_from_model_tool_spec'
+    },
+    tool_spec: { ...spec, name, description, input_schema: inputSchema, mutation: apiContract.mode === 'mutation' }
+  };
+}
+
+function modelCandidatePrompt(input = {}, repair = null) {
+  const bounded = input.acquisition_mode === 'bounded_runtime_tool';
+  const runtimeContract = input.runtime_contract && typeof input.runtime_contract === 'object'
+    ? input.runtime_contract
+    : null;
+  if (bounded) {
+    const prompt = [
+      'You are AXIOM local capability designer.',
+      'Design one bounded MCP tool as strict JSON only. Do not write JavaScript, manifests, tests, markdown, or prose.',
+      'The governed Plugin Builder compiles your semantic tool specification into the canonical host wrapper.',
+      `Capability gap: ${input.capability_gap || ''}`,
+      `Original user request: ${input.original_request || ''}`,
+      'Choose exactly one runtime_api from the offered runtime contract.',
+      'Use call_with none when the runtime API needs no arguments; otherwise use input.',
+      'Use return_data for reads/projections and return_receipt for mutations.',
+      'Tool name must be lowercase snake_case and describe the reusable ability, not this proof run.',
+      `RUNTIME CONTRACT (${runtimeContract?.contract || 'missing'}):`,
+      JSON.stringify(runtimeContract || {}, null, 2),
+      'Return exactly: {"tool":{"name":"...","description":"...","input_schema":{"type":"object","properties":{}},"runtime_api":"one.offered.api","call_with":"none|input","result_mode":"return_data|return_receipt"}}'
+    ];
+    if (repair) {
+      prompt.push(
+        'This is the one permitted focused repair. Preserve the intended capability and correct the exact failure.',
+        'FAILURE:',
+        String(repair.feedback || ''),
+        'PREVIOUS TOOL SPEC:',
+        JSON.stringify(repair.candidate?.tool_spec || repair.candidate || {}).slice(0, 6000)
+      );
+    }
+    return prompt.join('\n');
+  }
+  const base = [
+    'You are AXIOM local implementation agent.',
+    'Generate one concrete AXIOM plugin candidate as strict JSON only. No prose. No markdown fences.',
+    'All file contents are JSON strings. Do not use JavaScript template literals or raw backtick strings.',
+    `Plugin id: ${input.plugin_id || '(derive from name)'}`,
+    `Name: ${input.name || input.plugin_id || 'AXIOM Plugin'}`,
+    `Capability gap: ${input.capability_gap || ''}`,
+    `Original user request: ${input.original_request || ''}`,
+    `Target area: ${input.target_area || ''}`,
+    'The candidate is a proposal until the host validates, packages, registers, explicitly activates, and behaviorally verifies it.',
+    'Required files: src/index.js, tests/plugin.test.js, README.md.',
+    'Keep src/index.js under 140 lines and tests under 60 lines. Prefer the smallest implementation that proves the one tool works.',
+    'Entrypoint must export onLoad, onActivate, onDeactivate, onUnload.',
+    'Never access window, document, globalThis, fetch, XMLHttpRequest, WebSocket, localStorage, indexedDB, navigator, child_process, eval, Function, or dynamic import.',
+    'Never patch AXIOM core. Use only runtime APIs explicitly offered below.'
+  ];
+  base.push(
+    'The plugin must pass AXIOM PluginValidator.',
+    'Return exactly: {"manifest":{"description":"...","capabilities":["..."],"permissions":{},"mcp_tools":[],"lifecycle_hooks":{"on_load":"onLoad","on_activate":"onActivate","on_deactivate":"onDeactivate","on_unload":"onUnload"},"event_subscriptions":[],"ui_surfaces":[],"axiom_runtime":{"min_version":"1.0.0","apis":[]},"safety":{"may_modify_core":false,"sandboxed":true,"timeout_ms":30000},"compatibility":{"os":["any"],"node_version":">=18"}},"files":{"src/index.js":"...","tests/plugin.test.js":"...","README.md":"..."}}'
+  );
+  if (repair) {
+    base.push(
+      'This is the one permitted focused repair. Preserve the capability and tool identity; correct only the failed contract.',
+      'VALIDATION FEEDBACK:',
+      String(repair.feedback || ''),
+      'PREVIOUS CANDIDATE:',
+      JSON.stringify(repair.candidate || {}).slice(0, 18000)
+    );
+  }
+  return base.join('\n');
+}
+
+async function requestLocalModelCandidate(input = {}, repair = null) {
   if (typeof fetch !== 'function') {
     throw new Error('No fetch implementation is available for local model generation.');
   }
   const host = String(input.host || 'http://127.0.0.1:11434').replace(/\/+$/, '');
-  const model = input.model || 'qwen3.5-9b';
-  const timeoutMs = Math.max(1000, Math.min(Number(input.timeout_ms || input.timeoutMs || 60000), 300000));
+  const model = input.model || 'qwen3.5:9b';
+  const timeoutMs = Math.max(1000, Math.min(Number(input.timeout_ms || input.timeoutMs || 90000), 300000));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const bounded = input.acquisition_mode === 'bounded_runtime_tool';
+  function materializeCandidate(text) {
+    const parsed = parseModelJson(text);
+    if (!bounded) return { candidate: parsed, tool_spec: null };
+    return {
+      candidate: compileBoundedRuntimeToolCandidate(input, parsed),
+      tool_spec: parsed
+    };
+  }
   async function generateText(prompt) {
     const response = await fetch(`${host}/api/generate`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model, prompt, stream: false, format: 'json' }),
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        format: bounded ? boundedRuntimeToolSpecSchema(input) : 'json',
+        think: false,
+        options: {
+          num_ctx: bounded ? 8192 : 24576,
+          num_predict: bounded ? 2048 : 8192,
+          temperature: 0,
+          seed: 42
+        }
+      }),
       signal: controller.signal
     });
     if (!response.ok) throw new Error(`Ollama returned HTTP ${response.status}`);
@@ -139,36 +418,50 @@ async function requestLocalModelCandidate(input = {}) {
     return String(payload?.response || '').trim();
   }
 
-  const prompt = [
-    'You are AXIOM local implementation agent.',
-    'Generate a concrete AXIOM plugin candidate as JSON only. No prose. No markdown fences.',
-    'All file contents must be JSON strings with escaped newlines. Do not use JavaScript template literals or raw backtick strings.',
-    `Plugin id: ${input.plugin_id || '(derive from name)'}`,
-    `Name: ${input.name || input.plugin_id || 'AXIOM Plugin'}`,
-    `Capability gap: ${input.capability_gap || ''}`,
-    `Target area: ${input.target_area || ''}`,
-    'The plugin must be a proposal that can pass AXIOM PluginValidator.',
-    'Required files: src/index.js, tests/plugin.test.js, README.md.',
-    'Entrypoint must export onLoad and onActivate.',
-    'Avoid child_process, eval, Function, fs.rmSync, fs.rmdirSync.',
-    'Return exactly this JSON shape:',
-    '{"manifest":{"description":"...","capabilities":["..."],"permissions":{},"mcp_tools":[],"lifecycle_hooks":{"on_load":"onLoad","on_activate":"onActivate","on_deactivate":"onDeactivate","on_unload":"onUnload"},"event_subscriptions":[],"ui_surfaces":[],"axiom_runtime":{"min_version":"1.0.0","apis":[]},"safety":{"may_modify_core":false,"sandboxed":true,"timeout_ms":30000},"compatibility":{"os":["any"],"node_version":">=18"}},"files":{"src/index.js":"...","tests/plugin.test.js":"...","README.md":"..."}}'
-  ].join('\n');
+  const prompt = modelCandidatePrompt(input, repair);
   try {
-    const text = await generateText(prompt);
+    const generatedText = await generateText(prompt);
     try {
-      return { text, candidate: parseModelJson(text), model, host, repair_attempted: false };
+      return {
+        text: generatedText,
+        ...materializeCandidate(generatedText),
+        model,
+        host,
+        repair_attempted: Boolean(repair),
+        repair_kind: repair ? 'validation' : null
+      };
     } catch (parseError) {
+      if (repair) throw parseError;
       const repairPrompt = [
-        'Repair this AXIOM plugin candidate into strict valid JSON only.',
-        'No markdown fences. No prose. No JavaScript template literals. Escape all newlines inside file strings.',
+        bounded
+          ? 'Repair this AXIOM bounded tool specification into strict valid JSON only.'
+          : 'Repair this AXIOM plugin candidate into strict valid JSON only.',
+        bounded
+          ? 'No markdown fences, prose, JavaScript, manifest, tests, or files.'
+          : 'No markdown fences. No prose. No JavaScript template literals. Escape every newline inside file strings.',
         `JSON parse error: ${parseError.message}`,
-        'Return the same shape: {"manifest": {...}, "files": {"src/index.js": "...", "tests/plugin.test.js": "...", "README.md": "..."}}.',
-        'Broken candidate:',
-        text.slice(0, 12000)
+        bounded
+          ? 'Return exactly the one-tool semantic specification shape requested previously.'
+          : 'Return the exact same candidate shape.',
+        bounded ? 'Broken tool specification:' : 'Broken candidate:',
+        generatedText.slice(0, 16000)
       ].join('\n');
       const repairedText = await generateText(repairPrompt);
-      return { text: repairedText, candidate: parseModelJson(repairedText), model, host, repair_attempted: true, first_parse_error: parseError.message };
+      try {
+        return {
+          text: repairedText,
+          ...materializeCandidate(repairedText),
+          model,
+          host,
+          repair_attempted: true,
+          repair_kind: 'json_parse',
+          first_parse_error: parseError.message
+        };
+      } catch (repairParseError) {
+        repairParseError.first_parse_error = parseError.message;
+        repairParseError.raw_model_response_preview = repairedText.slice(0, 1200);
+        throw repairParseError;
+      }
     }
   } finally {
     clearTimeout(timer);
@@ -520,7 +813,10 @@ export async function axiom_plugin_build_from_candidate(input = {}) {
     target_area,
     candidate,
     register = true,
-    template = 'base'
+    template = 'base',
+    acquisition_mode,
+    runtime_contract,
+    original_request
   } = input;
 
   const plugin_id = requestedPluginId || idFromName(name || capability_gap || `model-plugin-${Date.now()}`);
@@ -583,7 +879,10 @@ export async function axiom_plugin_build_from_candidate(input = {}) {
     name,
     capability_gap,
     target_area,
-    template
+    template,
+    acquisition_mode,
+    runtime_contract,
+    original_request
   });
   if (target_area && manifest.implementation?.kind === 'implementation_bearing_plugin_proposal') {
     manifest.implementation.target_area = target_area;
@@ -688,6 +987,46 @@ export async function axiom_plugin_model_build_slice(input = {}) {
       request_id,
       plugin_id
     });
+    if (built.ok === false
+      && built.status === 'rejected'
+      && built.result?.retry_prompt
+      && generated.repair_attempted !== true) {
+      const repaired = await requestLocalModelCandidate(input, {
+        feedback: built.result.retry_prompt,
+        candidate: generated.tool_spec || generated.candidate
+      });
+      const repairedBuild = await axiom_plugin_build_from_candidate({
+        ...input,
+        candidate: repaired.candidate,
+        request_id,
+        plugin_id
+      });
+      return {
+        ...repairedBuild,
+        tool: 'axiom_plugin_model_build_slice',
+        result: {
+          ...(repairedBuild.result || {}),
+          model: repaired.model,
+          host: repaired.host,
+          repair_attempted: true,
+          repair_kind: 'validation',
+          first_attempt: {
+            status: built.status,
+           errors: built.errors || [],
+           validation: built.validation || null,
+            raw_model_response_preview: generated.text.slice(0, 500),
+            bounded_tool_spec: generated.tool_spec || null
+          },
+          repair_attempt: {
+            status: repairedBuild.status,
+            errors: repairedBuild.errors || [],
+            validation: repairedBuild.validation || null,
+            raw_model_response_preview: repaired.text.slice(0, 500),
+            bounded_tool_spec: repaired.tool_spec || null
+          }
+        }
+      };
+    }
     return {
       ...built,
       tool: 'axiom_plugin_model_build_slice',
@@ -696,8 +1035,10 @@ export async function axiom_plugin_model_build_slice(input = {}) {
         model: generated.model,
         host: generated.host,
         repair_attempted: generated.repair_attempted,
+        repair_kind: generated.repair_kind || null,
         first_parse_error: generated.first_parse_error || null,
-        raw_model_response_preview: generated.text.slice(0, 500)
+        raw_model_response_preview: generated.text.slice(0, 500),
+        bounded_tool_spec: generated.tool_spec || null
       }
     };
   } catch (error) {
@@ -720,7 +1061,9 @@ export async function axiom_plugin_model_build_slice(input = {}) {
           capability_gap: input.capability_gap,
           target_area: input.target_area,
           validation: { errors: [{ code: 'MODEL_GENERATION_FAILED', message: String(error.message || error) }] }
-        })
+        }),
+        first_parse_error: error.first_parse_error || null,
+        raw_model_response_preview: error.raw_model_response_preview || null
       }
     });
   }

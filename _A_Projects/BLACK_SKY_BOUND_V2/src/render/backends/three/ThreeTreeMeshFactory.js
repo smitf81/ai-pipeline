@@ -2,11 +2,15 @@ import * as THREE from 'three';
 import { MarchingCubes } from 'three/addons/objects/MarchingCubes.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { generateProceduralTreeSpatialRecipe } from '../../../world/proceduralTreeSpatialRecipe.js';
+import { createBarkPbrMaterial, createSharedBarkPbrTextures } from './ThreeBarkPbrMaterial.js';
+import { createFoliagePbrMaterial, createSharedFoliagePbrTextures } from './ThreeFoliagePbrMaterial.js';
 
 export class ThreeTreeMeshFactory {
-  constructor() {
+  constructor(options = {}) {
     this.geometryCache = new Map();
     this.materialCache = new Map();
+    this.barkPbrTextures = createSharedBarkPbrTextures(options);
+    this.foliagePbrTextures = createSharedFoliagePbrTextures(options);
     this.createdGroups = 0;
     this.disposed = false;
   }
@@ -25,6 +29,8 @@ export class ThreeTreeMeshFactory {
     group.name = `tree:${definition.species}:${definition.seed}`;
     const bark = new THREE.Mesh(cached.bark, materials.bark);
     bark.name = `${group.name}:wood`;
+    bark.userData.semanticRole = 'foliage_stem';
+    bark.userData.barkPbr = materials.bark.userData.barkPbr;
     bark.castShadow = true;
     bark.receiveShadow = true;
     group.add(bark);
@@ -35,6 +41,9 @@ export class ThreeTreeMeshFactory {
       foliage.castShadow = true;
       foliage.receiveShadow = true;
       foliage.name = `${group.name}:foliage`;
+      foliage.userData.semanticRole = 'foliage_leaf';
+      foliage.userData.semanticBaseInstanceCount = cached.foliageMatrices.length;
+      foliage.userData.foliagePbr = materials.foliage.userData.foliagePbr;
       group.add(foliage);
     }
     group.userData = { recipe, geometrySignature: signature, topology: cached.topology };
@@ -43,22 +52,21 @@ export class ThreeTreeMeshFactory {
   }
 
   getMaterials(recipe) {
-    const key = `${recipe.material.barkColour}:${recipe.material.leafColour}:${recipe.material.roughness}`;
+    const barkTuning = recipe.material.barkMaterial;
+    const foliageTuning = recipe.material.leafMaterial;
+    if (!barkTuning) throw new Error(`tree_bark_material_recipe_missing:${recipe.species}`);
+    if (!foliageTuning) throw new Error(`tree_foliage_material_recipe_missing:${recipe.species}`);
+    const key = [
+      barkTuning.variantId, barkTuning.tint, barkTuning.saturation, barkTuning.brightness,
+      barkTuning.textureWorldMeters, barkTuning.normalStrength, barkTuning.roughnessBias,
+      foliageTuning.variantId, foliageTuning.tint, foliageTuning.saturation, foliageTuning.brightness,
+      foliageTuning.textureWorldMeters, foliageTuning.normalStrength, foliageTuning.roughnessBias
+    ].join(':');
     let cached = this.materialCache.get(key);
     if (!cached) {
       cached = {
-        bark: new THREE.MeshStandardMaterial({
-          color: recipe.material.barkColour,
-          roughness: 0.94,
-          metalness: 0,
-          flatShading: false
-        }),
-        foliage: new THREE.MeshStandardMaterial({
-          color: recipe.material.leafColour,
-          roughness: recipe.material.roughness,
-          metalness: 0,
-          flatShading: true
-        })
+        bark: createBarkPbrMaterial(this.barkPbrTextures, barkTuning),
+        foliage: createFoliagePbrMaterial(this.foliagePbrTextures, foliageTuning)
       };
       this.materialCache.set(key, cached);
     }
@@ -69,6 +77,10 @@ export class ThreeTreeMeshFactory {
     return {
       geometryCacheEntries: this.geometryCache.size,
       materialCacheEntries: this.materialCache.size,
+      barkVariantMaterialCount: this.materialCache.size,
+      foliageVariantMaterialCount: this.materialCache.size,
+      barkPbr: { ...this.barkPbrTextures.state, errors: [...this.barkPbrTextures.state.errors] },
+      foliagePbr: { ...this.foliagePbrTextures.state, errors: [...this.foliagePbrTextures.state.errors] },
       createdGroups: this.createdGroups,
       disposed: this.disposed
     };
@@ -84,6 +96,8 @@ export class ThreeTreeMeshFactory {
       entry.bark.dispose();
       entry.foliage.dispose();
     }
+    this.barkPbrTextures.dispose();
+    this.foliagePbrTextures.dispose();
     this.geometryCache.clear();
     this.materialCache.clear();
     this.disposed = true;

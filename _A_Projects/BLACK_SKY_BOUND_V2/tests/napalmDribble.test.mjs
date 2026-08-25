@@ -48,6 +48,12 @@ dripLayer.update({ projectiles: [fallingDrip], effects: [], particles: [] }, fak
 equal(dripLayer.rects.length, 0, 'napalm droplets should never fall back to the blocky legacy effect rectangle');
 assert(dripLayer.triangles.length >= 3 && dripLayer.radials.length >= 2, 'napalm droplets should render a liquid body, hot core, trail, and contact shadow');
 
+napalmDripSystem({ game, dt: 0.16 });
+const airborneLights = buildLightViews(game, 0.21).filter((light) => light.sourceKind === 'baby_wyvern_droplet_light');
+assert(airborneLights.length >= 1, 'detached falling napalm should contribute restrained warm world lights');
+assert(airborneLights.every((light) => light.sourceAnchor.type === 'world_effect_object' && light.sourceEntity === null), 'droplet lights must belong to world-effect objects rather than the player');
+assert(airborneLights.every((light) => light.castsShadows === false && light.luminousPowerLumens < 700), 'small airborne droplets should remain non-shadowing and bounded below actor-highlight energy');
+
 for (let i = 0; i < 12; i += 1) napalmDripSystem({ game, dt: 0.05 });
 assert(game.renderLayers.napalm.pools.length >= 1, 'landed droplets should become active napalm decal pools');
 assert(game.renderLayers.decals.stamps.some((stamp) => stamp.kind === 'napalm_scorch'), 'landed pools should leave cached scorch decal stamps');
@@ -55,6 +61,7 @@ assert(game.renderLayers.decals.stamps.some((stamp) => stamp.kind === 'napalm_sc
 const poolLights = buildLightViews(game, 3.2).filter((light) => light.sourceKind === 'baby_wyvern_drool_pool_light');
 assert(poolLights.length >= 1, 'active napalm pools should contribute small warm lights through the normal light view seam');
 assert(poolLights.every((light) => light.intensity > 0 && light.intensity <= 1), 'napalm pool light intensity should remain bounded');
+assert(poolLights.every((light) => light.castsShadows === false && light.luminousPowerLumens <= 900), 'pool lights should be restrained non-shadowing residue illumination');
 
 const napalmRecipe = getNapalmDribbleRecipe(NapalmEmitterId.WYVERN_MOUTH_DRIBBLE);
 assert(napalmRecipe.pool.radius < 0.26, 'napalm pools should stay small enough to read as residue, not large orbs');
@@ -64,6 +71,7 @@ equal(napalmRecipe.pool.visualMaterial, 'residual_liquid_napalm_pool_v1', 'napal
 equal(napalmRecipe.pool.poolShape, 'irregular_low_pool', 'napalm recipe should declare an irregular low-pool shape for decal rendering');
 assert(napalmRecipe.light.intensity >= 0.06 && napalmRecipe.light.intensity < 0.16, 'baby drool light should reveal local ground without inheriting Mama-scale energy');
 assert(napalmRecipe.light.radius < 0.6, 'napalm pool light radius should stay local to the residual pool');
+assert(napalmRecipe.droplet.emissionLight.luminousPowerLumens < napalmRecipe.light.luminousPowerLumens, 'airborne droplets should emit less light than landed pools');
 
 const canvas = { clientWidth: 1280, clientHeight: 720 };
 const renderProjection = buildRenderProjection({

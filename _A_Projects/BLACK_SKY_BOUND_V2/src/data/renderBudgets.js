@@ -109,6 +109,15 @@ export const RENDER_BUDGETS = Object.freeze({
     softness: 0.9,
     mergePaddingPx: 24
   }),
+  renderEnvelope3D: Object.freeze({
+    enabled: true,
+    policy: 'fixed_isometric_camera_space_inner_plus_safety_envelope_v1',
+    safetyMarginMeters: 1.5,
+    chunkSizeTiles: 24,
+    queryToggle: 'renderEnvelope',
+    queryMargin: 'renderEnvelopeMargin',
+    queryChunkSize: 'renderEnvelopeChunkTiles'
+  }),
   sceneObjectVisibility: Object.freeze({
     policy: 'sceneobject_black_shadow_lod_hysteresis_hold_fade_v2',
     presencePolicy: 'authored_black_shadow_lod_floor_lit_detail_upgrade',

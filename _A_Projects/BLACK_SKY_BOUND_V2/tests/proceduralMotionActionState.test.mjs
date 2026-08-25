@@ -9,6 +9,7 @@ import { getComponent } from '../src/ecs/world.js';
 import { createDemoMap } from '../src/world/map.js';
 import { createCamera } from '../src/render/camera.js';
 import { buildRenderProjection } from '../src/projection/renderProjection.js';
+import { buildActorProjection3D } from '../src/projection/actorProjection3D.js';
 import { buildWebGLPlayerWyvernSilhouette } from '../src/render/backends/webgl/WebGLWyvernSilhouette.js';
 import { wyvernProjectionSystem } from '../src/systems/wyvernProjectionSystem.js';
 import { proceduralActionSystem, startProceduralAction } from '../src/systems/proceduralActionState.js';
@@ -87,6 +88,12 @@ equal(playerPacket.wyvernProjection.proceduralPose.classification, 'renderer_neu
 equal(playerPacket.wyvernProjection.proceduralPose.actionId, 'claw_swipe_attack', 'projected pose should preserve the legacy action id');
 assert(playerPacket.wyvernProjection.proceduralPose.sockets.mouth.worldX > 0, 'projected pose sockets should include world coordinates');
 assert(playerPacket.wyvernProjection.comboState, 'projected wyvern packet should include combo state for debug visibility');
+equal(playerPacket.wyvernProjection.axialTurn.classification, 'renderer_neutral_wyvern_axial_turn_v1', 'legacy render projection should preserve axial turn diagnostics');
+equal(playerPacket.wyvernProjection.malformedTurnFrameCount, 0, 'legacy render projection should preserve the malformed-frame count');
+const playerPacket3D = buildActorProjection3D(clawHarness.game.actors, CONFIG.tileSize, clawHarness.game.creatureTuning)
+  .find((actor) => actor.id === clawHarness.game.dragonId);
+equal(playerPacket3D.wyvernProjection.axialTurn.classification, 'renderer_neutral_wyvern_axial_turn_v1', 'Three.js actor projection should preserve axial turn diagnostics for F3');
+equal(playerPacket3D.wyvernProjection.malformedTurnFrameCount, 0, 'Three.js actor projection should preserve the malformed-frame count');
 
 const idleMesh = buildWebGLPlayerWyvernSilhouette(projectPlayerPacket(createHarness()));
 const clawMesh = buildWebGLPlayerWyvernSilhouette(playerPacket);

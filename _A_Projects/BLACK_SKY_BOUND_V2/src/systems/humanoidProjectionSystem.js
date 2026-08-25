@@ -40,8 +40,7 @@ export function humanoidProjectionSystem({ game, dt }) {
     const moved = Math.hypot(dx, dy);
     const speed = dt > 0 ? moved / dt : 0;
     const moving = moved > 0.0001;
-    const physicalFacingActive = physicalMotion?.poseEnabled === true && physicalMotion.updateCount > 0 && !guardState && !dodgeState?.active
-      && (!attackState || attackState.profileId === EnemyAttackProfileId.RAIDER_SPEAR_JAB);
+    const physicalFacingActive = physicalMotion?.poseEnabled === true && physicalMotion.updateCount > 0;
     const facing = physicalFacingActive
       ? physicalMotion.attention.chestFacing
       : attackState || guardState || dodgeState?.active
@@ -50,7 +49,7 @@ export function humanoidProjectionSystem({ game, dt }) {
     const reactionState = alive ? buildImpactPoseState(impactResponse, facing) : null;
     transform.rotation = facing;
 
-    const physicalPoseActive = physicalFacingActive && alive && !reactionState;
+    const physicalPoseActive = physicalFacingActive && alive;
     projection.movement01 = physicalPoseActive
       ? physicalMotion.locomotion.speed01
       : (alive ? clamp(speed / profile.gait.maxMovementForFullGait, 0, 1) : 0);
@@ -64,7 +63,17 @@ export function humanoidProjectionSystem({ game, dt }) {
     projection.lastY = transform.y;
 
     const pose = physicalPoseActive
-      ? buildRaiderPhysicalPose({ transform, radius: collider.radius, projection, profile, attackState, intent: physicalMotion })
+      ? buildRaiderPhysicalPose({
+        transform,
+        radius: collider.radius,
+        projection,
+        profile,
+        attackState,
+        reactionState,
+        guardState,
+        dodgeState,
+        intent: physicalMotion
+      })
       : buildHumanoidPose(transform, collider.radius, projection, profile, attackState, reactionState, guardState);
     if (alive) updateMotionTrails(projection, pose.points, attackState, Math.max(0, dt));
     else projection.motionTrails = [];

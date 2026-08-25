@@ -32,6 +32,8 @@ export class ThreePauseScreenLayer {
       active: true,
       compact: view.layout.compact,
       controls: view.controls.length,
+      instincts: view.instincts.length,
+      discoveredInstincts: view.instincts.filter((entry) => entry.discovered).length,
       settings: view.settings.length,
       interactiveLevelRows: view.settings.filter((row) => row.kind === 'level').length,
       selectedSettingIndex: view.selectedSettingIndex
@@ -52,6 +54,13 @@ export function buildThreePauseView(menu) {
     selectedSettingIndex: Number(menu.selectedSettingIndex ?? 0),
     learnedCueIds: [...(menu.learnedCueIds ?? [])],
     controls: (menu.layout.controls ?? []).map((row) => ({ ...row, label: displayText(row.label), bindings: displayText(row.bindings), detail: displayText(row.detail) })),
+    instincts: (menu.instincts ?? []).map((entry) => ({
+      ...entry,
+      displayName: displayText(entry.displayName),
+      inputSummary: displayText(entry.inputSummary),
+      nature: displayText(entry.nature),
+      description: displayText(entry.description)
+    })),
     sections: (menu.layout.sections ?? []).map((section) => ({ ...section, label: displayText(section.label) })),
     settings: (menu.layout.settingsRows ?? []).map((row) => ({ ...row, label: displayText(row.label), value: displayText(row.value) })),
     layout: { ...menu.layout }
@@ -73,11 +82,31 @@ function renderPause(view) {
       ? `<div class="bsb-pause-pointer-hint" style="left:${px(section.x + firstWidth - 150)};top:${px(section.y + 4)};width:150px">${html(view.pointerHint)}</div>`
       : '')).join('');
   const settings = view.settings.map((row) => renderSetting(row, row.index === view.selectedSettingIndex)).join('');
+  const instincts = renderInstincts(view);
   const footerSize = view.layout.footer.scale > 1 ? 12 : 9;
   return '<div class="bsb-pause-rule"></div>'
     + `<div class="bsb-pause-title">${html(view.title)}</div><div class="bsb-pause-state">PAUSED</div>`
-    + controls + sections + settings
+    + controls + instincts + sections + settings
     + `<div class="bsb-pause-footer" style="left:${px(view.layout.footer.x)};top:${px(view.layout.footer.y)};max-width:${px(view.layout.footer.maxWidth)};font-size:${footerSize}px">${html(view.footer)}</div>`;
+}
+
+function renderInstincts(view) {
+  const panel = view.layout.instinctsPanel;
+  if (!panel || !view.instincts.length) return '';
+  const cards = view.instincts.map((entry) => {
+    const stateClass = entry.discovered ? ' is-discovered' : ' is-locked';
+    const detail = entry.discovered
+      ? `<span class="bsb-pause-instinct-input">${html(entry.inputSummary)}</span><span class="bsb-pause-instinct-nature">${html(entry.nature)}</span>`
+      : '<span class="bsb-pause-instinct-nature">MARK NOT YET UNDERSTOOD</span>';
+    return `<article class="bsb-pause-instinct${stateClass}" data-instinct-id="${attribute(entry.instinctId)}" data-discovered="${entry.discovered}">`
+      + `<div class="bsb-pause-stone"><img src="${html(entry.stoneAssetUrl)}" alt="" aria-hidden="true"><span class="bsb-pause-stone-shadow"></span><i>${entry.discovered ? '◆' : '·'}</i></div>`
+      + `<div class="bsb-pause-instinct-copy"><b>${html(entry.displayName)}</b>${detail}</div>`
+      + '</article>';
+  }).join('');
+  return `<section class="bsb-pause-instinct-panel" aria-label="Instincts" style="left:${px(panel.x)};top:${px(panel.y)};width:${px(panel.width)}">`
+    + '<div class="bsb-pause-instinct-heading"><span>INSTINCTS</span><small>MARKED STONES</small></div>'
+    + `<div class="bsb-pause-instinct-grid" style="grid-template-columns:repeat(${panel.columns},minmax(0,1fr))">${cards}</div>`
+    + '</section>';
 }
 
 function renderSetting(row, selected) {
@@ -103,7 +132,7 @@ function renderLevel(row) {
 }
 
 function inactiveStats() {
-  return { contract: THREE_PAUSE_SCREEN_CONTRACT, active: false, compact: false, controls: 0, settings: 0, interactiveLevelRows: 0, selectedSettingIndex: null };
+  return { contract: THREE_PAUSE_SCREEN_CONTRACT, active: false, compact: false, controls: 0, instincts: 0, discoveredInstincts: 0, settings: 0, interactiveLevelRows: 0, selectedSettingIndex: null };
 }
 
 function displayText(value) { return String(value ?? '').replaceAll('Â·', '·'); }

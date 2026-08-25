@@ -32,7 +32,7 @@ export class ThreeGameRenderer {
     this.cameraViewDirection = new THREE.Vector3();
     this.cameraViewRight = new THREE.Vector3();
     this.cameraViewUp = new THREE.Vector3();
-    this.treeFactory = new ThreeTreeMeshFactory();
+    this.treeFactory = new ThreeTreeMeshFactory({ anisotropy: this.renderer.capabilities.getMaxAnisotropy() });
     this.reference = this.referenceId === 'tree-grove' ? new ThreeReferenceGrove(this.scene, this.treeFactory, this.search) : null;
     this.liveWorld = this.reference ? null : new ThreeLiveWorld(this.scene, this.treeFactory, CONFIG.tileSize, {
       anisotropy: this.renderer.capabilities.getMaxAnisotropy(),
@@ -65,6 +65,8 @@ export class ThreeGameRenderer {
     this.sceneCompilePending = true;
     this.sceneWarmupCount = 0;
     this.lastSceneWarmupMs = 0;
+    this.assetWarmupPromise = null;
+    this.assetWarmupStats = { status: 'idle', count: 0, lastMs: 0, error: null };
     this.resourceStats = { geometries: 0, textures: 0, meshes: 0, materials: 0, domNodes: 0 };
     this.status = createStatus(policy);
     this.onContextLost = (event) => {
@@ -91,6 +93,7 @@ export class ThreeGameRenderer {
     this.reference?.update(renderTime);
     if (this.reference) this.renderer.shadowMap.needsUpdate = true;
     const worldStart = readNowMs();
+    this.camera.applyWorldImpulse(projection?.screen?.stormCamera, CONFIG.tileSize);
     const activeCamera = this.camera.camera;
     activeCamera.getWorldDirection(this.cameraViewDirection);
     this.cameraViewRight.set(1, 0, 0).applyQuaternion(activeCamera.quaternion).normalize();
@@ -101,8 +104,11 @@ export class ThreeGameRenderer {
       cameraDirection: this.cameraViewDirection,
       cameraRight: this.cameraViewRight,
       cameraUp: this.cameraViewUp,
+      camera: activeCamera,
       frustumHeight: this.camera.frustumHeight
     });
+    const assetWarmup = this.liveWorld?.takeWarmupBundle();
+    if (assetWarmup) this.startAssetWarmup(assetWarmup);
     const worldUpdateMs = readNowMs() - worldStart;
     if (this.liveWorld?.consumeStaticInvalidation()) {
       this.sceneCompilePending = true;
@@ -154,6 +160,7 @@ export class ThreeGameRenderer {
       },
       screen: this.screenOverlay?.diagnostics?.() ?? null,
       sceneWarmup: { count: this.sceneWarmupCount, lastMs: roundMs(this.lastSceneWarmupMs), pending: this.sceneCompilePending },
+      assetWarmup: { ...this.assetWarmupStats },
       resources: this.resourceStats,
       cache: this.treeFactory.diagnostics()
     };
@@ -164,11 +171,58 @@ export class ThreeGameRenderer {
 
   present() {}
 
+  startAssetWarmup(bundle) {
+    if (this.assetWarmupPromise) {
+      bundle.complete(0, new Error('three_asset_warmup_already_running'));
+      return;
+    }
+    const startedAt = readNowMs();
+    const target = new THREE.WebGLRenderTarget(2, 2, { depthBuffer: false, stencilBuffer: false });
+    target.texture.colorSpace = this.renderer.outputColorSpace;
+    this.assetWarmupStats = { ...this.assetWarmupStats, status: 'compiling', error: null };
+    this.assetWarmupPromise = this.renderer.compileAsync(this.scene, this.camera.camera)
+      .then(() => {
+        const previousTarget = this.renderer.getRenderTarget();
+        this.renderer.setRenderTarget(target);
+        this.renderer.clear();
+        this.renderer.render(bundle.scene, bundle.camera);
+        this.renderer.setRenderTarget(previousTarget);
+        const elapsedMs = readNowMs() - startedAt;
+        this.assetWarmupStats = {
+          status: 'ready',
+          count: this.assetWarmupStats.count + 1,
+          lastMs: roundMs(elapsedMs),
+          error: null
+        };
+        bundle.complete(elapsedMs);
+      })
+      .catch((error) => {
+        const elapsedMs = readNowMs() - startedAt;
+        this.assetWarmupStats = {
+          status: 'failed',
+          count: this.assetWarmupStats.count + 1,
+          lastMs: roundMs(elapsedMs),
+          error: String(error?.message ?? error)
+        };
+        bundle.complete(elapsedMs, error);
+      })
+      .finally(() => {
+        target.dispose();
+        this.assetWarmupPromise = null;
+      });
+  }
+
   setTerrainDebugMode(mode) { return this.liveWorld?.setTerrainDebugMode(mode) ?? null; }
   setGroundDetailEnabled(enabled) { return this.liveWorld?.setGroundDetailEnabled(enabled) ?? false; }
   setTerrainProofCanopyVisible(visible) { return this.liveWorld?.setTerrainProofCanopyVisible(visible) ?? false; }
   setTreeDiagnosticView(mode) { return this.reference?.setDiagnosticView(mode) ?? null; }
   setTreeReferenceCanopyVisible(visible) { return this.reference?.setCanopyVisible(visible) ?? false; }
+
+  resourceAuditTarget() {
+    return queryFlag(this.search, 'resourceAudit')
+      ? { scene: this.scene, renderer: this.renderer }
+      : null;
+  }
 
   setExternalFrameTiming(timing) {
     if (!timing) return;

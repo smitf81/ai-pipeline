@@ -11,20 +11,22 @@ export const ENEMY_STEERING_ANGLES_DEGREES = Object.freeze([0, 25, -25, 50, -50,
 export function movementSystem({ game, map, dt }) {
   for (const entity of query(game.world, [ComponentType.Transform, ComponentType.Motion, ComponentType.PlayerIntent])) {
     if (getComponent(game.world, entity, ComponentType.DodgeState)?.active) continue;
-    const charge = getComponent(game.world, entity, ComponentType.ChargeCounterState);
-    if (charge?.active || charge?.queued) continue;
+    const pounce = getComponent(game.world, entity, ComponentType.PounceCounterState);
+    if (pounce?.active || pounce?.queued) continue;
     const intent = getComponent(game.world, entity, ComponentType.PlayerIntent);
-    moveEntityOnMap(game.world, entity, intent.moveX, intent.moveY, dt, map);
+    moveEntityOnMap(game.world, entity, intent.moveX, intent.moveY, dt, map, {
+      preserveFacing: !!getComponent(game.world, entity, ComponentType.PlayerControlled)
+    });
   }
 }
 
-export function moveEntityOnMap(world, entity, dx, dy, dt, map) {
+export function moveEntityOnMap(world, entity, dx, dy, dt, map, options = {}) {
   const transform = getComponent(world, entity, ComponentType.Transform);
   const motion = getComponent(world, entity, ComponentType.Motion);
   if (!transform || !motion) return false;
   const len = Math.hypot(dx, dy);
   if (!len) return false;
-  transform.rotation = Math.atan2(dy, dx);
+  if (options.preserveFacing !== true) transform.rotation = Math.atan2(dy, dx);
   const terrain = getTerrainDef(getTile(map, Math.floor(transform.x), Math.floor(transform.y)));
   const corpseSlowdown = getCorpseSlowdownMultiplier(world, entity, transform.x, transform.y);
   const traversalSlowdown = getEnvironmentTraversalMultiplier(map, transform.x, transform.y, getComponent(world, entity, ComponentType.Collider)?.radius ?? 0);

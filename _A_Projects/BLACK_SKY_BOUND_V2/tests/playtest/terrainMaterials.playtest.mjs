@@ -33,8 +33,23 @@ try {
     null,
     { timeout: 20_000 }
   );
+  await page.waitForFunction(
+    () => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.terrain?.rockMaterial?.status === 'ready',
+    null,
+    { timeout: 20_000 }
+  );
+  await page.waitForFunction(
+    () => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.terrain?.grassMaterial?.status === 'ready',
+    null,
+    { timeout: 20_000 }
+  );
+  await page.waitForFunction(
+    () => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.terrain?.mudMaterial?.status === 'ready',
+    null,
+    { timeout: 20_000 }
+  );
   const targets = await prepareFixture(page);
-  assert.ok(targets.grass && targets.grassDirt && targets.scorched, 'required terrain proof targets must exist');
+  assert.ok(targets.grass && targets.mud && targets.grassDirt && targets.scorched && targets.rock && targets.water, 'required terrain proof targets must exist');
 
   const captures = {};
   captures.closeGrass = await captureScenario(page, '01-close-grass', targets.grass, 5.1, 'torch-left', false);
@@ -46,11 +61,20 @@ try {
   captures.darkReadability = await captureScenario(page, '07-dark-readability', targets.scorched, 3.2, 'dark', false);
   captures.largeGrass = await captureScenario(page, '08-large-grass-area', targets.largeGrass, 1.35, 'moon', false);
   captures.largeGrassLit = await captureScenario(page, '09-large-grass-area-lit', targets.largeGrass, 1.35, 'torch-left', false);
-  captures.lockedBaselineCloseGrass = await captureScenario(page, '10-locked-baseline-close-grass', lockedBaselineTargets.grass, 5.1, 'baseline-torch-left', true);
-  captures.lockedBaselineGrassDirt = await captureScenario(page, '11-locked-baseline-grass-dirt', lockedBaselineTargets.grassDirt, 4.25, 'baseline-torch-left', true);
-  captures.lockedBaselineScorched = await captureScenario(page, '12-locked-baseline-scorched', lockedBaselineTargets.scorched, 4.25, 'baseline-torch-left', true);
-  captures.lockedBaselineLargeGrass = await captureScenario(page, '13-locked-baseline-large-grass', lockedBaselineTargets.largeGrass, 1.35, 'baseline-moon', true);
+  captures.closeRock = await captureScenario(page, '10-close-rock-pbr', targets.rock, 5.1, 'torch-left', false);
+  captures.gameplayRock = await captureScenario(page, '11-gameplay-rock-pbr', targets.rock, 2.65, 'moon', false);
+  captures.lockedBaselineCloseGrass = await captureScenario(page, '12-locked-baseline-close-grass', lockedBaselineTargets.grass, 5.1, 'baseline-torch-left', true);
+  captures.lockedBaselineGrassDirt = await captureScenario(page, '13-locked-baseline-grass-dirt', lockedBaselineTargets.grassDirt, 4.25, 'baseline-torch-left', true);
+  captures.lockedBaselineScorched = await captureScenario(page, '14-locked-baseline-scorched', lockedBaselineTargets.scorched, 4.25, 'baseline-torch-left', true);
+  captures.lockedBaselineLargeGrass = await captureScenario(page, '15-locked-baseline-large-grass', lockedBaselineTargets.largeGrass, 1.35, 'baseline-moon', true);
+  captures.closeMud = await captureScenario(page, '16-close-trampled-mud', targets.mud, 5.1, 'torch-left', false);
+  captures.gameplayMudPath = await captureScenario(page, '17-gameplay-mud-path', targets.mud, 2.65, 'moon', true);
+  captures.calmReflectiveWater = await captureScenario(page, '18-calm-reflective-water', targets.water, 5.1, 'torch-left', false);
+  captures.rainRippleWater = await captureScenario(page, '19-rain-ripple-water', targets.water, 5.1, 'torch-left', false, true);
+  captures.dryGround = await captureScenario(page, '20-dry-ground-control', targets.grassDirt, 4.25, 'torch-left', false);
+  captures.rainWetGround = await captureScenario(page, '21-rain-wet-ground', targets.grassDirt, 4.25, 'torch-left', false, true);
 
+  await setRainState(page, false);
   await page.evaluate(() => window.BSB_V2_DEMO.renderer.backend.setTerrainProofCanopyVisible(true));
   const performance = {
     detailDisabled: await measurePerformance(page, targets.grassDirt, false),
@@ -58,9 +82,24 @@ try {
     lockedBaselineCameraDetailDisabled: await measurePerformance(page, lockedBaselineTargets.grassDirt, false, 'baseline-torch-left'),
     lockedBaselineCameraDetailEnabled: await measurePerformance(page, lockedBaselineTargets.grassDirt, true, 'baseline-torch-left')
   };
-  const debug = await captureDebugViews(page, targets.grassDirt);
+  const debug = await captureDebugViews(page, targets.grassDirt, targets.rock);
   assert.equal(performance.detailDisabled.terrain?.status, 'ready', 'terrain materials must report ready with detail disabled');
   assert.equal(performance.detailEnabled.terrain?.status, 'ready', 'terrain materials must report ready with detail enabled');
+  assert.equal(performance.detailEnabled.terrain?.rockMaterial?.status, 'ready', 'reference-derived rock PBR textures must be loaded in the live renderer');
+  assert.equal(performance.detailEnabled.terrain?.rockMaterial?.loadedTextureCount, 4, 'all four runtime rock PBR textures must load');
+  assert.equal(performance.detailEnabled.terrain?.rockMaterial?.errors?.length, 0, 'rock PBR material must not report texture errors');
+  assert.equal(performance.detailEnabled.terrain?.grassMaterial?.status, 'ready', 'reference-derived grass PBR textures must be loaded in the live renderer');
+  assert.equal(performance.detailEnabled.terrain?.grassMaterial?.loadedTextureCount, 4, 'all four runtime grass PBR textures must load');
+  assert.equal(performance.detailEnabled.terrain?.grassMaterial?.errors?.length, 0, 'grass PBR material must not report texture errors');
+  assert.equal(performance.detailEnabled.terrain?.mudMaterial?.status, 'ready', 'authored trampled-mud PBR textures must be loaded in the live renderer');
+  assert.equal(performance.detailEnabled.terrain?.mudMaterial?.loadedTextureCount, 4, 'all four runtime mud PBR textures must load');
+  assert.equal(performance.detailEnabled.terrain?.mudMaterial?.textureSetCount, 1, 'the path layer must use one mud texture set');
+  assert.equal(performance.detailEnabled.terrain?.mudMaterial?.errors?.length, 0, 'mud PBR material must not report texture errors');
+  assert.equal(performance.detailEnabled.terrain?.waterMaterial?.status, 'ready', 'reflective water shader must be ready in the live renderer');
+  assert.equal(performance.detailEnabled.terrain?.waterDrawBatches, 1, 'water should remain one instanced draw batch');
+  assert.equal(captures.rainRippleWater.diagnostics.liveWorld?.terrain?.wetness?.rainIntensity, 1, 'rain-water proof should consume full projected rain intensity');
+  assert.equal(captures.rainWetGround.diagnostics.liveWorld?.terrain?.wetness?.rainIntensity, 1, 'wet-ground proof should consume full projected rain intensity');
+  assert.equal(captures.dryGround.diagnostics.liveWorld?.terrain?.wetness?.rainIntensity, 0, 'dry control should explicitly disable projected rain wetness');
   assert.equal(performance.detailDisabled.grassDetail?.visibleCount, 0, 'detail toggle must remove all visible grass instances');
   assert.ok(performance.detailEnabled.grassDetail?.visibleCount > 0, 'detail-enabled proof must contain visible grass instances');
   assert.equal(
@@ -140,9 +179,12 @@ async function prepareFixture(target) {
       const center = { x: sourceMap.width * 0.5, y: sourceMap.height * 0.5 };
       const grass = bestTile('grass', (x, y) => sameNeighbourCount('grass', x, y, 3));
       const largeGrass = bestTile('grass', (x, y) => sameNeighbourCount('grass', x, y, 7));
+      const mud = bestTile('dirt', (x, y) => sameNeighbourCount('dirt', x, y, 3));
       const grassDirt = bestBoundary('grass', 'dirt');
       const scorched = bestBoundary('scorched', 'grass') ?? bestBoundary('scorched', 'dirt') ?? bestTile('scorched', () => 1);
-      return { grass, largeGrass, grassDirt, scorched };
+      const rock = bestTile('rock', (x, y) => sameNeighbourCount('rock', x, y, 2));
+      const water = bestTile('water', (x, y) => sameNeighbourCount('water', x, y, 3));
+      return { grass, largeGrass, mud, grassDirt, scorched, rock, water };
 
       function bestTile(type, scoreTile) {
         let best = null;
@@ -206,7 +248,8 @@ async function prepareFixture(target) {
   });
 }
 
-async function captureScenario(target, name, focus, zoom, lighting, canopyVisible) {
+async function captureScenario(target, name, focus, zoom, lighting, canopyVisible, rainEnabled = false) {
+  await setRainState(target, rainEnabled);
   await target.evaluate((visible) => window.BSB_V2_DEMO.renderer.backend.setTerrainProofCanopyVisible(visible), canopyVisible);
   const state = await renderFrames(target, { focus, zoom, lighting, frames: 28, collectTiming: false });
   const screenshot = path.join(artifactRoot, `${name}.png`);
@@ -214,7 +257,7 @@ async function captureScenario(target, name, focus, zoom, lighting, canopyVisibl
   return { screenshot, camera: state.camera, canopyVisible, diagnostics: compactDiagnostics(state.diagnostics) };
 }
 
-async function captureDebugViews(target, focus) {
+async function captureDebugViews(target, focus, rockFocus) {
   const backendMethods = await target.evaluate(() => ({
     materialId: typeof window.BSB_V2_DEMO.renderer.backend.setTerrainDebugMode === 'function',
     detailToggle: typeof window.BSB_V2_DEMO.renderer.backend.setGroundDetailEnabled === 'function'
@@ -222,13 +265,19 @@ async function captureDebugViews(target, focus) {
   if (!backendMethods.materialId) return { supported: false, captures: [] };
   await target.evaluate(() => window.BSB_V2_DEMO.renderer.backend.setTerrainProofCanopyVisible(false));
   const captures = [];
-  for (const mode of ['material-id', 'normal-only']) {
+  for (const mode of ['material-id', 'normal-only', 'wetness']) {
+    await setRainState(target, mode === 'wetness');
     await target.evaluate((value) => window.BSB_V2_DEMO.renderer.backend.setTerrainDebugMode(value), mode);
     await renderFrames(target, { focus, zoom: 4.25, lighting: 'torch-left', frames: 18, collectTiming: false });
     const screenshot = path.join(artifactRoot, `debug-${mode}.png`);
     await target.locator('canvas').first().screenshot({ path: screenshot });
     captures.push({ mode, screenshot });
+    await renderFrames(target, { focus: rockFocus, zoom: 5.1, lighting: 'torch-left', frames: 18, collectTiming: false });
+    const rockScreenshot = path.join(artifactRoot, `debug-rock-${mode}.png`);
+    await target.locator('canvas').first().screenshot({ path: rockScreenshot });
+    captures.push({ mode, surface: 'rock', screenshot: rockScreenshot });
   }
+  await setRainState(target, false);
   await target.evaluate(() => window.BSB_V2_DEMO.renderer.backend.setTerrainDebugMode('lit'));
   await target.keyboard.press('F3');
   await renderFrames(target, { focus, zoom: 3.2, lighting: 'torch-left', frames: 18, collectTiming: false });
@@ -237,6 +286,19 @@ async function captureDebugViews(target, focus) {
   const overlayText = await target.locator('#bsb-three-diagnostics').textContent();
   await target.keyboard.press('F3');
   return { supported: true, detailToggle: backendMethods.detailToggle, captures, boundsScreenshot, overlayText };
+}
+
+async function setRainState(target, enabled) {
+  await target.evaluate((rainEnabled) => {
+    const layer = window.BSB_V2_DEMO.state.game.renderLayers.atmosphericOverlay ?? {};
+    window.BSB_V2_DEMO.state.game.renderLayers.atmosphericOverlay = {
+      ...layer,
+      enabled: rainEnabled,
+      rainEnabled,
+      rainDensity: rainEnabled ? 1 : 0,
+      sparkEnabled: false
+    };
+  }, enabled);
 }
 
 async function measurePerformance(target, focus, detailEnabled, lighting = 'torch-left') {

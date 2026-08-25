@@ -6,7 +6,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const artifactRoot = path.join(projectRoot, 'artifacts', 'webgl3d-opening-wyvern-v1');
+const embodiment = 'surface-v2-production';
+const expectedContract = 'black-sky-bound.procedural-wyvern-mesh-recipe.v2';
+const query = '';
+const artifactRoot = path.join(projectRoot, 'artifacts', `webgl3d-opening-wyvern-${embodiment}`);
 await mkdir(artifactRoot, { recursive: true });
 const server = await startRuntime();
 const browser = await launchBrowser();
@@ -17,9 +20,9 @@ page.on('pageerror', (error) => issues.pageErrors.push(error.message));
 page.on('requestfailed', (request) => issues.requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`));
 
 try {
-  await page.goto(`${server.url}?renderer=webgl3d&debug3d=1&gpuTiming=1`, { waitUntil: 'networkidle' });
+  await page.goto(`${server.url}?renderer=webgl3d&debug3d=1&gpuTiming=1${query}`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dActive === true);
-  await page.waitForFunction(() => (window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.actors?.wyvernMeshCount ?? 0) >= 35);
+  await page.waitForFunction((contract) => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.actors?.wyvernContract === contract, expectedContract);
   await page.evaluate(() => window.BSB_V2_DEMO.stop());
   const phases = [
     ['inside', { phase: 'inside_egg', crackStage: 0, openingProgress: 0, emergenceProgress: 0, settleProgress: 0, egressProgress: 0, released: false }],
@@ -52,7 +55,8 @@ try {
   const emerging = captures.find((capture) => capture.name === 'emerging');
   if (!captures[0].runtime.screenActive || !captures[1].runtime.screenActive) throw new Error('opening_interior_not_visible');
   if ((halfOpen.runtime.opening?.shellPieces ?? 0) < 8) throw new Error(`opening_shell_pieces_missing:${JSON.stringify(halfOpen.runtime.opening)}`);
-  if ((emerging.runtime.actors?.wyvernMeshCount ?? 0) < 35
+  if ((emerging.runtime.actors?.wyvernMeshCount ?? Infinity) > 10
+    || emerging.runtime.actors?.wyvernContract !== expectedContract
     || (emerging.runtime.actors?.membraneCount ?? 0) !== 2
     || (emerging.runtime.actors?.wyvernPoseUpdateCount ?? 0) < 1) {
     throw new Error(`procedural_wyvern_missing:${JSON.stringify(emerging.runtime.actors)}`);
@@ -95,7 +99,7 @@ try {
   const actualFlowScreenshot = path.join(artifactRoot, '06-actual-flow-released.png');
   await page.screenshot({ path: actualFlowScreenshot, fullPage: true });
   if (issues.consoleErrors.length || issues.pageErrors.length || issues.requestFailures.length) throw new Error(`browser_issues:${JSON.stringify(issues)}`);
-  const report = { contract: 'black-sky-bound.webgl3d-opening-wyvern.browser-proof.v1', url: server.url, captures, actualFlow: { acceptedStages, ...actualFlow, screenshot: actualFlowScreenshot }, issues };
+  const report = { contract: 'black-sky-bound.webgl3d-opening-wyvern.browser-proof.v1', embodiment, rendererContract: expectedContract, url: server.url, captures, actualFlow: { acceptedStages, ...actualFlow, screenshot: actualFlowScreenshot }, issues };
   await writeFile(path.join(artifactRoot, 'report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   console.log(JSON.stringify({ status: 'passed', artifactRoot, captures: captures.map(({ name, runtime, screenshot }) => ({ name, runtime, screenshot })), issues }, null, 2));
 } finally {

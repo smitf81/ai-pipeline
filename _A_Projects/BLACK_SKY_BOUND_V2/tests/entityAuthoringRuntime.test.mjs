@@ -59,7 +59,7 @@ equal(wyvern.providerId, raider.providerId, 'wyvern and humanoid tuning should s
 equal(husk.writeStatus, 'ready', 'husk should reuse the real humanoid field manifest');
 equal(werewolf.writeStatus, 'manifest_missing', 'werewolf should fail visibly until a predator tuning manifest exists');
 equal(werewolf.fields.length, 0, 'missing manifests must not produce guessed controls');
-assert(raider.capabilities.some((capability) => capability.id === 'motion' && capability.status === 'shadow_only'), 'raider should expose the physical-motion promotion hold');
+assert(raider.capabilities.some((capability) => capability.id === 'motion' && capability.status === 'runtime_projected'), 'raider should expose the production physical-motion path');
 assert(raider.capabilities.some((capability) => capability.id === 'camera_focus' && capability.status === 'ready'), 'animated providers should expose the real camera-focus capability');
 const focusField = raider.fields.find((entry) => entry.path === 'visibilityFocus.radiusMeters');
 assert(focusField, 'Entity Studio should receive provider-owned camera focus controls');

@@ -105,7 +105,7 @@ function positionForAmbientKind(kind) {
   if (kind === AmbientParticleKind.TORCH_SPARK
     || kind === AmbientParticleKind.RAID_FLAME_SPARK
     || kind === AmbientParticleKind.MAMA_INFERNO_EMBER
-    || kind === AmbientParticleKind.TREE_FIRE_EMBER) return torchSparkPosition;
+    || kind === AmbientParticleKind.FOLIAGE_FIRE_EMBER) return torchSparkPosition;
   if (kind === AmbientParticleKind.NAPALM_EMBER) return emberPosition;
   if (kind === AmbientParticleKind.SMOKE_TRAIL_MOTE) return smokeTrailPosition;
   if (kind === AmbientParticleKind.ASH_FLECK) return ashPosition;

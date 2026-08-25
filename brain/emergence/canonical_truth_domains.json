@@ -32,6 +32,32 @@
       "notes": "Single read-only active workspace aggregate used by Project Preview, BSB Map Forge, workspace identity chrome, and agent/tool context. UI consumers may not guess project identity, roots, source paths, or bake owners independently."
     },
     {
+      "domainId": "bsb_region_authoring",
+      "label": "Black Sky Bound Region Authoring",
+      "classificationDefault": "canonical",
+      "systemOfRecord": "AXIOM/apps/launcher/data/bsb-v2/maps/*.authoring.json for editable region content + _A_Projects/BLACK_SKY_BOUND_V2/data/maps/manifest.json for stable catalogue identity, publication paths, titles, and order",
+      "canonicalOwner": "AXIOM/apps/launcher/public/bsb-v2-map-authoring.js::validateBsbV2AuthoringDocument + resolveBsbV2MapLibrary",
+      "mutationAuthority": "BsbV2MapAuthoring save/region lifecycle through governed safe_write_project_file; runtime maps remain explicit derived bakes",
+      "allowedProjections": [
+        "axiom_workspace_context",
+        "runtime"
+      ],
+      "notes": "Human Map Forge and level-design agents must share registration, rename, order, marker, transition, save, and bake contracts. Browser-local labels and runtime bake files are not authoring truth."
+    },
+    {
+      "domainId": "bsb_player_progression",
+      "label": "Black Sky Bound Player Progression",
+      "classificationDefault": "canonical",
+      "systemOfRecord": "browser player profile black-sky-bound.player-profile.v1 normalized by _A_Projects/BLACK_SKY_BOUND_V2/src/game/playerProfile.js; stable instinct catalogue and unlock-event mappings in _A_Projects/BLACK_SKY_BOUND_V2/src/data/instincts.js and abilityUnlockEvents.js",
+      "canonicalOwner": "_A_Projects/BLACK_SKY_BOUND_V2/src/game/playerProfile.js::normalizePlayerProfile + captureAbilityProgressionInProfile",
+      "mutationAuthority": "runtime ability unlock events and explicit first-playthrough region availability application; pause and AXIOM surfaces are projections/adapters only",
+      "allowedProjections": [
+        "runtime",
+        "axiom_workspace_context"
+      ],
+      "notes": "Discovered instinct receipts persist at player-profile scope. Region-authored first-playthrough availability is an entry baseline, not a competing save store; NG+ policy remains outside this slice."
+    },
+    {
       "domainId": "truth_kernel",
       "label": "Truth Kernel",
       "classificationDefault": "projection",

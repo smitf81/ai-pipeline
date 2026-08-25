@@ -34,6 +34,53 @@ equal(overflow.droppedLocalCount, 1, 'overflow must be explicit rather than sile
 assert(overflow.overflowActive, 'overflow should enter a visible degraded state');
 equal(overflow.qualityState, 'degraded_visible', 'overflow should be surfaced as visible degradation');
 
+adapter.update([{
+  id: 'storm:viewport-proof',
+  sourceKind: 'lightning_scene_flash',
+  worldX: 120,
+  worldY: 160,
+  effectiveIntensity: 0.92,
+  overheadIlluminationIntensity: 1.75,
+  luminousPowerLumens: 45000,
+  enabled: true,
+  castsShadows: true,
+  illuminationState: 'critical',
+  shadowPriority: 1000,
+  colour: 'rgba(180,205,255,1)'
+}], 2.1);
+assert(adapter.diagnostics().stormSkyIntensity > 1.5, 'lightning should add broad overhead illumination across the rendered scene');
+
+adapter.update([{
+  id: 'inferno:distributed-node',
+  sourceKind: 'mama_wyvern_inferno_wall',
+  worldX: 32,
+  worldY: 48,
+  effectiveIntensity: 0.9,
+  luminousPowerLumens: 12000,
+  enabled: true,
+  castsShadows: true,
+  physicalShadowLod: 'non_shadowing_distributed_fire_light',
+  illuminationState: 'critical',
+  shadowPriority: 1000,
+  colour: 'rgba(255,110,40,1)'
+}, {
+  id: 'actor:shadow-owner',
+  sourceKind: 'actor_torch',
+  worldX: 36,
+  worldY: 48,
+  effectiveIntensity: 0.7,
+  luminousPowerLumens: 900,
+  enabled: true,
+  castsShadows: true,
+  illuminationState: 'active_dynamic',
+  shadowPriority: 100,
+  colour: 'rgba(255,170,90,1)'
+}], 2.2);
+const distributedFireLod = adapter.diagnostics();
+equal(distributedFireLod.physicalShadowLodCount, 1, 'distributed fire nodes should remain lit while declaring their physical point-shadow LoD');
+assert(!distributedFireLod.shadowOwners.includes('inferno:distributed-node'), 'distributed fire nodes should not allocate a six-face physical point-shadow cubemap');
+assert(distributedFireLod.shadowOwners.includes('actor:shadow-owner'), 'an eligible dynamic light should retain physical shadow ownership');
+
 const originalDocument = globalThis.document;
 const originalAddEventListener = globalThis.addEventListener;
 const originalRemoveEventListener = globalThis.removeEventListener;
@@ -41,11 +88,18 @@ const overlayElement = { style: {}, textContent: '', remove() {} };
 globalThis.document = { createElement: () => overlayElement, body: { appendChild() {} } };
 globalThis.addEventListener = () => {};
 globalThis.removeEventListener = () => {};
-const overlay = new ThreeDiagnosticsOverlay({ enabled: false });
+const debugVisibilityChanges = [];
+const overlay = new ThreeDiagnosticsOverlay({ enabled: false, onChange: (enabled) => debugVisibilityChanges.push(enabled) });
 overlay.update({ liveWorld: { lights: overflow } });
-assert(overlay.enabled, 'physical light overflow should automatically reveal F3 diagnostics');
-equal(overlayElement.style.display, 'block', 'overflow diagnostics should become visibly rendered');
+equal(overlay.enabled, false, 'physical light overflow must not impersonate an explicit F3 debug request');
+equal(debugVisibilityChanges.join(','), 'false', 'overflow reporting must not enable world debug geometry through the diagnostics callback');
+equal(overlayElement.style.display, 'block', 'overflow warning should remain visibly rendered');
 assert(overlayElement.textContent.includes('degraded_visible'), 'visible diagnostics should name the lighting degradation state');
+assert(overlayElement.textContent.includes('1 local light(s) dropped'), 'compact overflow warning should state the dropped-light count');
+overlay.update({ liveWorld: { lights: { ...overflow, overflowActive: false, droppedLocalCount: 0 } } });
+equal(overlayElement.style.display, 'none', 'automatic warning should clear when overflow clears');
+overlay.setEnabled(true);
+equal(debugVisibilityChanges.join(','), 'false,true', 'only explicit diagnostics enablement should request world debug geometry');
 overlay.dispose();
 globalThis.document = originalDocument;
 globalThis.addEventListener = originalAddEventListener;

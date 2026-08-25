@@ -8,9 +8,15 @@ import { fileURLToPath } from 'node:url';
 import { RENDER_BUDGETS } from '../../src/data/renderBudgets.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const artifacts = path.join(root, 'artifacts', 'webgl3d-performance-v2');
+const embodiment = 'surface-v2-production';
+const expectedContract = 'black-sky-bound.procedural-wyvern-mesh-recipe.v2';
+const query = '';
+const artifacts = path.join(root, 'artifacts', `webgl3d-performance-${embodiment}`);
 const machineDpr = Math.max(1, Number(process.env.BSB_MACHINE_DPR ?? 1.5));
-const profiles = [{ id: 'locked-1x', dpr: 1 }, { id: 'machine-dpr', dpr: machineDpr }];
+const requestedProfile = process.env.BSB_PERF_PROFILE ?? null;
+const profiles = [{ id: 'locked-1x', dpr: 1 }, { id: 'machine-dpr', dpr: machineDpr }]
+  .filter((profile) => !requestedProfile || profile.id === requestedProfile);
+if (!profiles.length) throw new Error(`performance_profile_unknown:${requestedProfile}`);
 await mkdir(artifacts, { recursive: true });
 const runtime = await startRuntime();
 const browser = await launchBrowser();
@@ -23,6 +29,8 @@ try {
     generatedAt: new Date().toISOString(),
     viewport: { width: 1440, height: 900 },
     machineDprSource: process.env.BSB_MACHINE_DPR ? 'environment' : 'windows_applied_dpi_144_default',
+    embodiment,
+    rendererContract: expectedContract,
     results
   };
   const reportFile = path.join(artifacts, 'report.json');
@@ -41,12 +49,15 @@ async function runProfile(browser, baseUrl, profile) {
   page.on('pageerror', (error) => issues.pageErrors.push(error.message));
   page.on('requestfailed', (request) => issues.requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`));
   try {
-    await page.goto(`${baseUrl}?skipHatch=1&mamaAuto=0&renderer=webgl3d&gpuTiming=1`, { waitUntil: 'networkidle', timeout: 20_000 });
+    await page.goto(`${baseUrl}?skipHatch=1&mamaAuto=0&renderer=webgl3d&gpuTiming=1${query}`, { waitUntil: 'networkidle', timeout: 20_000 });
     await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.frameTiming?.warmedUp === true, null, { timeout: 15_000 });
+    await page.waitForFunction((contract) => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.actors?.wyvernContract === contract, expectedContract);
     await page.evaluate(() => {
       const app = window.BSB_V2_DEMO;
       app.worldEvents.setAutoEnabled(false);
       app.worldEvents.inferno({ lightningSync: true });
+      app.state.game.unitSpawners = [];
+      app.state.game.unitSpawnerFixtures = [];
       app.state.game.renderLayers.atmosphericOverlay = {
         ...(app.state.game.renderLayers.atmosphericOverlay ?? {}),
         enabled: true, rainEnabled: true, rainDensity: 1, overlayOpacity: 0.9,
@@ -83,8 +94,17 @@ async function runProfile(browser, baseUrl, profile) {
     });
     const screenshot = path.join(artifacts, `${profile.id}.png`);
     await page.screenshot({ path: screenshot });
+    const sampledResult = { ...profile, actualDevicePixelRatio: await page.evaluate(() => devicePixelRatio), renderSurface, baseline, final, samples, screenshot, issues };
+    await writeFile(path.join(artifacts, `${profile.id}-sample.json`), `${JSON.stringify({
+      contract: 'black-sky-bound.webgl3d-full-frame-performance-sample.v1',
+      status: final.timing.p95.renderPathMs < 16.7 && final.timing.p95.frameIntervalMs <= 17.2 && (!final.gpu.supported || final.timing.p95.gpuMs < 16.7) ? 'passed' : 'failed',
+      embodiment,
+      rendererContract: expectedContract,
+      result: sampledResult
+    }, null, 2)}\n`, 'utf8');
 
     assert.equal(final.projection.legacy2DProjectionActive, false, `${profile.id}: legacy 2D projection must remain retired`);
+    assert.equal(final.actors.wyvernContract, expectedContract, `${profile.id}: requested wyvern embodiment contract must remain live`);
     assert.ok(final.timing.p95.renderPathMs < 16.7, `${profile.id}: full CPU render-path p95 ${final.timing.p95.renderPathMs}ms exceeds 16.7ms`);
     assert.ok(final.timing.p95.frameIntervalMs <= 17.2, `${profile.id}: frame-interval p95 ${final.timing.p95.frameIntervalMs}ms misses stable 60 FPS:${JSON.stringify({ timing: final.timing.p95, gpu: final.gpu, calls: final.calls, triangles: final.triangles, effects: final.effects })}`);
     assert.ok(final.timing.p95.projectionMs < 3, `${profile.id}: projection p95 ${final.timing.p95.projectionMs}ms exceeds 3ms`);
@@ -104,7 +124,7 @@ async function runProfile(browser, baseUrl, profile) {
     assert.deepEqual(issues.consoleErrors, [], `${profile.id}: console errors`);
     assert.deepEqual(issues.pageErrors, [], `${profile.id}: page errors`);
     assert.deepEqual(issues.requestFailures, [], `${profile.id}: request failures`);
-    return { ...profile, actualDevicePixelRatio: await page.evaluate(() => devicePixelRatio), renderSurface, baseline, final, samples, screenshot, issues };
+    return sampledResult;
   } finally {
     await context.close();
   }
@@ -124,7 +144,8 @@ function snapshot(page) {
       calls: diagnostics.calls,
       triangles: diagnostics.triangles,
       shadows: diagnostics.liveWorld.lights.shadowOwners,
-      dynamicCounts: diagnostics.projection.dynamicCounts
+      dynamicCounts: diagnostics.projection.dynamicCounts,
+      actors: diagnostics.liveWorld.actors
     };
   });
 }

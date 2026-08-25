@@ -36,8 +36,7 @@ export function buildCameraVisibilityFocusProjection(state, actors = []) {
     radiusMeters: profile.radiusMeters,
     featherMeters: profile.featherMeters,
     minimumOccluderOpacity: profile.minimumOccluderOpacity,
-    readabilityLightPower: profile.readabilityLightPower,
-    readabilityLightDistanceMeters: Number((profile.radiusMeters + profile.featherMeters + 1.5).toFixed(3))
+    illuminationPolicy: 'occluder_fade_only_no_actor_tracking_light_v2'
   });
 }
 

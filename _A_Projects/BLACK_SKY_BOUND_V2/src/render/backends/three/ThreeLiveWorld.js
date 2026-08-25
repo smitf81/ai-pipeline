@@ -7,6 +7,9 @@ import { ThreeEffectsLayer } from './ThreeEffectsLayer.js';
 import { ThreeOpeningWorldLayer } from './ThreeOpeningWorldLayer.js';
 import { ThreeTerrainMaterialSystem } from './ThreeTerrainMaterialSystem.js';
 import { ThreeCameraVisibilityFocus } from './ThreeCameraVisibilityFocus.js';
+import { ThreeUndergrowthLayer } from './ThreeUndergrowthLayer.js';
+import { RENDER_BUDGETS } from '../../../data/renderBudgets.js';
+import { ThreeFixedIsometricRenderEnvelope } from './ThreeFixedIsometricRenderEnvelope.js';
 
 export const THREE_LIVE_WORLD_CONTRACT = 'black-sky-bound.three-live-world.v1';
 
@@ -23,8 +26,16 @@ export class ThreeLiveWorld {
     this.root.add(this.staticRoot, this.dynamicRoot);
     scene.add(this.root);
     this.sceneryFactory = new ThreeSceneryFactory(treeFactory, tileSize);
+    this.renderEnvelope = new ThreeFixedIsometricRenderEnvelope({
+      ...RENDER_BUDGETS.renderEnvelope3D,
+      search: options.search
+    });
+    this.undergrowth = new ThreeUndergrowthLayer(this.staticRoot, tileSize, {
+      chunkSizeTiles: this.renderEnvelope.options.chunkSizeTiles
+    });
     this.terrainSystem = new ThreeTerrainMaterialSystem(this.staticRoot, {
       tileMeters: WORLD_SCALE.tileMeters,
+      chunkSizeTiles: this.renderEnvelope.options.chunkSizeTiles,
       anisotropy: options.anisotropy,
       search: options.search
     });
@@ -38,6 +49,7 @@ export class ThreeLiveWorld {
     this.sceneryObjects = new Map();
     this.shadowSelectionCell = '';
     this.staticInvalidated = true;
+    this.sceneryMaterialStats = emptySceneryMaterialStats();
     this.stats = { terrainTiles: 0, cliffTiles: 0, sceneryCount: 0, tree: { count: 0, branches: 0, foliage: 0 } };
   }
 
@@ -54,25 +66,38 @@ export class ThreeLiveWorld {
     const player = dynamicWorld.actors?.find((actor) => actor.team === 'player' && actor.alive) ?? dynamicWorld.actors?.[0] ?? null;
     this.lights.update(dynamicWorld.lights, dynamicWorld.renderTime ?? projection.source?.renderTime ?? 0, (projection.screen ?? projection).opening, player);
     this.cameraVisibilityFocus.update(dynamicWorld.cameraVisibilityFocus, view);
-    this.actors.update(dynamicWorld.actors);
-    this.effects.update(dynamicWorld, projection.screen ?? projection);
+    this.actors.update(dynamicWorld.actors, view);
+    this.effects.update(dynamicWorld, projection.screen ?? projection, view);
     this.opening.update((projection.screen ?? projection).opening);
+    this.terrainSystem.updateWeather(dynamicWorld.atmosphericOverlay, dynamicWorld.renderTime ?? projection.source?.renderTime ?? 0);
     this.terrainSystem.updateView(view);
     this.updateShadowCasters(dynamicWorld.actors);
+    if (this.renderEnvelope.update(view.camera) > 0) this.lights.requestShadowRefresh();
   }
 
   rebuildStatic(projection) {
     this.clearStatic();
     this.buildTerrain(projection.terrain, projection.scenery);
+    for (const entry of this.terrainSystem.renderEnvelopeObjects()) this.renderEnvelope.register(entry.object, entry);
     for (const entry of this.terrainSystem.cameraOcclusionObjects()) {
       this.cameraVisibilityFocus.registerObject(entry.object, { id: entry.object.name, role: entry.role });
     }
     const tree = { count: 0, branches: 0, foliage: 0 };
+    this.sceneryMaterialStats = emptySceneryMaterialStats();
+    const undergrowthPackets = (projection.scenery ?? []).filter((packet) => packet.render?.kind === 'procedural_undergrowth');
+    this.undergrowth.rebuild(undergrowthPackets);
+    for (const entry of this.undergrowth.renderEnvelopeObjects()) this.renderEnvelope.register(entry.object, entry);
     for (const packet of projection.scenery ?? []) {
+      if (packet.render?.kind === 'procedural_undergrowth') continue;
       const object = this.sceneryFactory.create(packet);
+      const prepared = prepareSceneryMaterialTargets(object);
+      this.sceneryMaterialStats.preparedTargets += prepared.targetCount;
+      this.sceneryMaterialStats.sharedFireBindings += prepared.sharedFireBindings;
+      this.sceneryMaterialStats.fallbackTargets += prepared.fallbackTargets;
       this.staticRoot.add(object);
       this.cameraVisibilityFocus.registerObject(object, { id: packet.id, role: packet.renderKind ?? packet.type ?? 'scenery' });
       this.sceneryObjects.set(packet.id, object);
+      this.renderEnvelope.register(object, { id: packet.id, kind: sceneryRenderEnvelopeKind(packet) });
       if (hasShadowCaster(object)) this.shadowCandidates.push(object);
       const recipe = object.userData.recipe;
       if (recipe) {
@@ -83,6 +108,7 @@ export class ThreeLiveWorld {
     }
     this.stats.sceneryCount = projection.scenery?.length ?? 0;
     this.stats.tree = tree;
+    this.stats.undergrowth = this.undergrowth.diagnostics();
   }
 
   setDebugVisible(enabled) {
@@ -94,9 +120,10 @@ export class ThreeLiveWorld {
   cycleTerrainDebugMode() { return this.terrainSystem.cycleDebugMode(); }
   setGroundDetailEnabled(enabled) { return this.terrainSystem.setGroundDetailEnabled(enabled); }
   toggleGroundDetail() { return this.terrainSystem.toggleGroundDetail(); }
+  takeWarmupBundle() { return this.effects.takeWarmupBundle(); }
   setTerrainProofCanopyVisible(visible) {
     for (const object of this.sceneryObjects.values()) {
-      if (/tree|procedural_tree/.test(String(object.userData.renderKind ?? ''))) object.visible = !!visible;
+      if (/tree|procedural_tree/.test(String(object.userData.renderKind ?? ''))) this.renderEnvelope.setOwnerVisible(object, visible);
     }
     return !!visible;
   }
@@ -115,8 +142,10 @@ export class ThreeLiveWorld {
   }
 
   clearStatic() {
+    this.renderEnvelope.clear();
     this.cameraVisibilityFocus.clearOccluders();
     for (const object of this.sceneryObjects.values()) disposeDynamicSceneryMaterials(object);
+    this.undergrowth.clear();
     this.staticRoot.clear();
     this.shadowCandidates.length = 0;
     this.sceneryObjects.clear();
@@ -147,27 +176,45 @@ export class ThreeLiveWorld {
   }
 
   applySceneryMaterialUpdates(updates = []) {
+    this.undergrowth.applyMaterialUpdates(updates);
     for (const update of updates ?? []) {
       const object = this.sceneryObjects.get(update.id);
       const state = update.material?.state;
       if (!object || !state) continue;
-      object.traverse((child) => {
-        if (!child.isMesh || !child.material?.isMaterial) return;
-        if (!child.userData.dynamicSceneryMaterial) {
-          const clone = child.material.clone();
-          child.material = clone;
-          this.cameraVisibilityFocus.registerMaterial(clone);
-          child.userData.dynamicSceneryMaterial = clone;
-          child.userData.dynamicSceneryBaseColour = clone.color?.clone();
-        }
-        const material = child.material;
-        const base = child.userData.dynamicSceneryBaseColour;
-        if (base && material.color) material.color.copy(base).multiplyScalar(Math.max(0.22, 1 - Number(state.charAmount ?? state.burnAmount ?? 0) * 0.72));
-        if (material.emissive) {
-          material.emissive.set(0xff4a13);
-          material.emissiveIntensity = Number(state.heatAmount ?? 0) * 2.8 + Number(state.emberAmount ?? 0) * 0.8;
-        }
-      });
+      this.sceneryMaterialStats.updatePackets += 1;
+      const targets = object.userData.sceneryMaterialTargets ?? prepareSceneryMaterialTargets(object).targets;
+      for (const target of targets) this.applySceneryMaterialTarget(target, state);
+    }
+  }
+
+  applySceneryMaterialTarget(target, state) {
+    const child = target.child;
+    const char = clamp01(state.charAmount ?? state.burnAmount);
+    const heat = clamp01(state.heatAmount);
+    const ember = clamp01(state.emberAmount);
+    if (target.sceneryState) {
+      target.sceneryState.charAmount = char;
+      target.sceneryState.heatAmount = heat;
+      target.sceneryState.emberAmount = ember;
+      this.sceneryMaterialStats.sharedStateUpdates += 1;
+    } else {
+      if (!target.dynamicMaterial) {
+        target.dynamicMaterial = cloneSceneryMaterial(child.material);
+        child.material = target.dynamicMaterial;
+        child.userData.dynamicSceneryMaterial = target.dynamicMaterial;
+        this.cameraVisibilityFocus.registerMaterial(target.dynamicMaterial);
+        this.sceneryMaterialStats.fallbackMaterialAllocations += 1;
+      }
+      const material = target.dynamicMaterial;
+      const charScale = target.role === 'foliage_leaf' ? 0.88 : 0.72;
+      if (target.baseColour && material.color) material.color.copy(target.baseColour).multiplyScalar(Math.max(target.role === 'foliage_leaf' ? 0.08 : 0.22, 1 - char * charScale));
+      if (material.emissive) {
+        material.emissive.set(0xff4a13);
+        material.emissiveIntensity = heat * 2.8 + ember * 0.8;
+      }
+    }
+    if (child.isInstancedMesh && target.role === 'foliage_leaf') {
+      child.count = state.firePhase === 'burnt_out' ? 0 : Math.max(0, Math.round(target.baseInstanceCount * (1 - char * 0.86)));
     }
   }
 
@@ -177,8 +224,11 @@ export class ThreeLiveWorld {
       contract: THREE_LIVE_WORLD_CONTRACT,
       ...this.stats,
       scenery: this.sceneryFactory.diagnostics(),
+      undergrowth: this.undergrowth.diagnostics(),
       lights: this.lights.diagnostics(),
       cameraVisibilityFocus: this.cameraVisibilityFocus.diagnostics(),
+      renderEnvelope: this.renderEnvelope.diagnostics(),
+      sceneryMaterials: { ...this.sceneryMaterialStats },
       actors: this.actors.diagnostics(),
       effects: this.effects.diagnostics(),
       opening: this.opening.diagnostics(),
@@ -189,6 +239,7 @@ export class ThreeLiveWorld {
 
   dispose() {
     this.clearStatic();
+    this.undergrowth.dispose();
     this.sceneryFactory.dispose();
     this.lights.dispose();
     this.cameraVisibilityFocus.dispose();
@@ -211,4 +262,84 @@ function disposeDynamicSceneryMaterials(object) {
     child.userData?.dynamicSceneryMaterial?.dispose?.();
     if (child.userData) delete child.userData.dynamicSceneryMaterial;
   });
+}
+
+function prepareSceneryMaterialTargets(object) {
+  const targets = [];
+  let sharedFireBindings = 0;
+  let fallbackTargets = 0;
+  object.traverse((child) => {
+    if (!child.isMesh || !child.material?.isMaterial) return;
+    const uniforms = sceneryStateUniforms(child.material);
+    const sceneryState = uniforms ? installSceneryStateBinding(child, uniforms) : null;
+    if (sceneryState) sharedFireBindings += 1;
+    else fallbackTargets += 1;
+    targets.push({
+      child,
+      role: child.userData.semanticRole,
+      baseColour: child.material.color?.clone() ?? null,
+      baseInstanceCount: child.isInstancedMesh
+        ? child.userData.semanticBaseInstanceCount ?? child.instanceMatrix.count
+        : 0,
+      sceneryState,
+      dynamicMaterial: null
+    });
+  });
+  object.userData.sceneryMaterialTargets = targets;
+  return { targets, targetCount: targets.length, sharedFireBindings, fallbackTargets };
+}
+
+function installSceneryStateBinding(child, uniforms) {
+  if (child.userData.sceneryMaterialState) return child.userData.sceneryMaterialState;
+  const state = { charAmount: 0, heatAmount: 0, emberAmount: 0 };
+  const previous = child.onBeforeRender;
+  child.onBeforeRender = function (...args) {
+    previous?.apply(this, args);
+    uniforms.uSceneryCharAmount.value = state.charAmount;
+    uniforms.uSceneryHeatAmount.value = state.heatAmount;
+    uniforms.uSceneryEmberAmount.value = state.emberAmount;
+  };
+  child.userData.sceneryMaterialState = state;
+  return state;
+}
+
+function sceneryStateUniforms(material) {
+  return material.userData?.barkPbr?.sceneryStateUniforms
+    ?? material.userData?.foliagePbr?.sceneryStateUniforms
+    ?? null;
+}
+
+function cloneSceneryMaterial(source) {
+  const userData = source.userData;
+  let clone;
+  source.userData = {};
+  try {
+    clone = source.clone();
+  } finally {
+    source.userData = userData;
+  }
+  clone.userData = { dynamicSceneryClone: true };
+  clone.onBeforeCompile = source.onBeforeCompile;
+  clone.customProgramCacheKey = source.customProgramCacheKey;
+  return clone;
+}
+
+function emptySceneryMaterialStats() {
+  return {
+    policy: 'shared_tree_fire_uniforms_with_prepared_render_targets_v1',
+    preparedTargets: 0,
+    sharedFireBindings: 0,
+    fallbackTargets: 0,
+    updatePackets: 0,
+    sharedStateUpdates: 0,
+    fallbackMaterialAllocations: 0
+  };
+}
+
+function clamp01(value) { return Math.max(0, Math.min(1, Number(value) || 0)); }
+
+function sceneryRenderEnvelopeKind(packet) {
+  return /tree|foliage|fern|shrub|bramble/.test(`${packet.render?.kind ?? ''}:${packet.type ?? ''}`)
+    ? 'foliage'
+    : 'scenery';
 }

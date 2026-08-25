@@ -100,7 +100,7 @@ export function resolveProceduralUndergrowthSceneProfile(value) {
     }),
     render: Object.freeze({
       kind: 'procedural_undergrowth',
-      geometryContract: 'black-sky-bound.procedural-undergrowth-spline-geometry.v1',
+      geometryContract: 'black-sky-bound.procedural-undergrowth-spline-geometry.v2',
       scaleRead: `${definition.species}_undergrowth_dna_v1`,
       stemColour: definition.stemColour,
       leafColour: definition.leafColour,

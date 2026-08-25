@@ -6,7 +6,20 @@ export function buildPauseMenuLayout(menu, viewport = {}) {
   const compact = viewportW < 820 || viewportH < 620;
   const rowGap = compact ? 35 : 43;
   const startY = compact ? 94 : 116;
-  const settingsX = compact ? 48 : Math.max(620, viewportW * 0.62);
+  const instinctsX = compact ? 48 : Math.max(350, viewportW * 0.3);
+  const instinctsWidth = compact ? viewportW - 96 : Math.min(430, viewportW * 0.34);
+  const instinctsColumns = compact ? 5 : 2;
+  const instinctsRows = Math.ceil((menu?.instincts?.length ?? 0) / instinctsColumns);
+  const instinctCardHeight = compact ? 72 : 112;
+  const instinctsPanel = {
+    x: instinctsX,
+    y: startY - 8,
+    width: instinctsWidth,
+    columns: instinctsColumns,
+    cardHeight: instinctCardHeight,
+    height: 28 + instinctsRows * instinctCardHeight
+  };
+  const settingsX = compact ? 48 : Math.max(instinctsX + instinctsWidth + 34, viewportW * 0.72);
   const settingsWidth = Math.max(210, viewportW - settingsX - 50);
   const controls = (menu?.controls ?? []).map((control, index) => ({
     ...control,
@@ -17,7 +30,9 @@ export function buildPauseMenuLayout(menu, viewport = {}) {
   }));
   const sections = [];
   const settingsRows = [];
-  let settingsY = compact ? startY + controls.length * rowGap + 12 : 118;
+  let settingsY = compact
+    ? Math.max(startY + controls.length * rowGap + 12, instinctsPanel.y + instinctsPanel.height + 14)
+    : 118;
   let section = null;
 
   for (const [index, setting] of (menu?.settings ?? []).entries()) {
@@ -47,6 +62,7 @@ export function buildPauseMenuLayout(menu, viewport = {}) {
     viewportH,
     compact,
     controls,
+    instinctsPanel,
     sections,
     settingsRows,
     footer: { x: 48, y: viewportH - 42, scale: compact ? 1 : 2, maxWidth: viewportW - 96 }
@@ -100,4 +116,3 @@ function dimension(value, fallback) {
 function clamp01(value) {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
-

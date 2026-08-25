@@ -8,12 +8,16 @@ import {
   listProfileOverridePaths,
   normalizeCreatureTuning,
   resolveCreatureProfile,
-  setCreatureTuningValue
+  setCreatureTuningValue,
+  WYVERN_TUNING_FIELDS
 } from '../src/data/creatures/creatureTuning.js';
 import { GroundedWyvernProportionProfileId } from '../src/data/creatures/groundedWyvernProportions.js';
 import { readCreatureTuningFile, writeCreatureTuningFile } from '../tools/tuningApi.mjs';
 
 const profileId = GroundedWyvernProportionProfileId.HATCHLING_SKELETAL_GAIT_V0;
+assert(WYVERN_TUNING_FIELDS.some((entry) => entry.group === 'Stance' && entry.path === 'stance.headHeight'), 'optional overlay should expose compact stance controls');
+assert(WYVERN_TUNING_FIELDS.some((entry) => entry.group === 'Body volume' && entry.path === 'surface.chestDepth'), 'optional overlay should expose compact body-volume controls');
+assert(WYVERN_TUNING_FIELDS.some((entry) => entry.group === 'Turning' && entry.path === 'turning.maxRateDegreesPerSecond'), 'optional overlay should expose compact feral-turn controls');
 let tuning = createEmptyCreatureTuning();
 const cacheFixture = { id: profileId, visual: { scale: 1 } };
 const cachedProfile = resolveCreatureProfile(cacheFixture, tuning);

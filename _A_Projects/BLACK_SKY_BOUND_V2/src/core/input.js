@@ -1,7 +1,7 @@
 export function createInput(canvas) {
   const keys = new Set();
   const justPressed = new Set();
-  const pointer = { x: 0, y: 0, deltaX: 0, deltaY: 0, down: false, clicked: false, button: -1, wheel: 0 };
+  const pointer = { x: 0, y: 0, deltaX: 0, deltaY: 0, down: false, clicked: false, button: -1, wheel: 0, hasPosition: false, inside: false };
   const clickedButtons = new Set();
   const pressedButtons = new Set();
 
@@ -20,6 +20,8 @@ export function createInput(canvas) {
     pointer.deltaY += nextY - pointer.y;
     pointer.x = nextX;
     pointer.y = nextY;
+    pointer.hasPosition = true;
+    pointer.inside = true;
   };
   const onDown = (event) => {
     pointer.down = true;
@@ -32,12 +34,14 @@ export function createInput(canvas) {
   };
   const onUp = () => { pointer.down = false; pointer.button = -1; };
   const onWheel = (event) => { onMove(event); pointer.wheel += Math.sign(event.deltaY); event.preventDefault(); };
+  const onLeave = () => { pointer.inside = false; };
   const onContextMenu = (event) => event.preventDefault();
 
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseleave', onLeave);
     canvas.addEventListener('mousedown', onDown);
     canvas.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('mouseup', onUp);
@@ -77,6 +81,7 @@ export function createInput(canvas) {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       canvas.removeEventListener('mousemove', onMove);
+      canvas.removeEventListener('mouseleave', onLeave);
       canvas.removeEventListener('mousedown', onDown);
       canvas.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('mouseup', onUp);

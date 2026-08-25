@@ -1,4 +1,5 @@
 import { ABILITIES } from '../data/abilities.js';
+import { INSTINCTS } from '../data/instincts.js';
 import {
   formatInputActionBindings,
   getInputAction,
@@ -60,13 +61,14 @@ export function buildPauseMenuProjection(state, player = findPlayer(state.game),
       bindings: formatInputActionBindings(ability.inputAction),
       detail: ability.id === 'move' ? 'ARROW KEYS ALSO'
         : ability.id === 'bite_claw' ? comboLabels.join(' · ')
-        : ability.id === 'charge_counter' ? 'DODGE AGAIN TO COUNTER'
+        : ability.id === 'charge_counter' ? 'DODGE · THEN LMB TO POUNCE'
           : null
     }));
   const settings = state.playerProfile?.settings ?? {};
   const menu = {
     title: 'CONTROLS & INSTINCTS',
     controls,
+    instincts: buildInstincts(state, player),
     learnedCueIds: [...(state.playerProfile?.tutorial?.reviewableCueIds ?? [])],
     selectedSettingIndex: state.pauseMenu?.selectedSettingIndex ?? 0,
     settings: [
@@ -84,6 +86,26 @@ export function buildPauseMenuProjection(state, player = findPlayer(state.game),
     viewportH: state.camera?.viewportH
   });
   return menu;
+}
+
+function buildInstincts(state, player) {
+  const discovered = new Set([
+    ...(state.playerProfile?.progression?.discoveredInstinctIds ?? []),
+    ...(player?.abilityProgression?.discoveredInstincts ?? [])
+  ]);
+  return INSTINCTS.map((instinct, index) => {
+    const isDiscovered = discovered.has(instinct.id);
+    return {
+      instinctId: instinct.id,
+      order: index + 1,
+      discovered: isDiscovered,
+      displayName: isDiscovered ? instinct.displayName : 'UNDISCOVERED',
+      inputSummary: isDiscovered ? instinct.inputSummary : null,
+      nature: isDiscovered ? instinct.nature : null,
+      description: isDiscovered ? instinct.description : null,
+      stoneAssetUrl: instinct.stoneAssetUrl
+    };
+  });
 }
 
 function levelSetting(id, label, value = 1) {

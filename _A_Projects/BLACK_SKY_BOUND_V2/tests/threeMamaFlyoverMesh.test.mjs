@@ -8,7 +8,7 @@ import {
 } from '../src/render/backends/three/ThreeMamaFlyoverMesh.js';
 import { MAMA_WYVERN_WORLD_EVENT } from '../src/data/mamaWyvernWorldEvents.js';
 
-const assetUrl = new URL('../assets/models/mama/dragon_main_march_v5_flyover.glb', import.meta.url);
+const assetUrl = new URL('../assets/models/mama/dragon_main_march_v5_flyover_lod1.glb', import.meta.url);
 const bytes = await readFile(assetUrl);
 const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 const gltf = await new GLTFLoader().parseAsync(arrayBuffer, '');
@@ -28,6 +28,8 @@ equal(diagnostics.status, 'ready', 'the exported Mama GLB should parse and insta
 equal(diagnostics.assetId, MAMA_FLYOVER_MESH_PROFILE.id, 'the runtime should identify the V5 Blender source asset');
 equal(diagnostics.meshCount, MAMA_FLYOVER_MESH_PROFILE.expectedMeshCount, 'the selected Blender export should remain one mesh');
 equal(diagnostics.triangleCount, MAMA_FLYOVER_MESH_PROFILE.expectedTriangleCount, 'the evaluated Blender silhouette triangle count drifted');
+assert(diagnostics.triangleCount < diagnostics.sourceTriangleCount * 0.15, 'runtime flyover LOD should remove at least eighty-five percent of source triangles');
+equal(diagnostics.lodPolicy, MAMA_FLYOVER_MESH_PROFILE.lodPolicy, 'runtime flyover LOD policy should stay inspectable');
 assert(diagnostics.effectiveDimensionsMeters.x > 4.5, 'canonical Mama scale should produce a greater-than-four-metre wingspan');
 assert(diagnostics.effectiveDimensionsMeters.z > 3.6, 'canonical Mama scale should preserve the authored long body and tail');
 assert(diagnostics.altitudeMeters > 8, 'Mama should clear the authored mature-tree height during the flyover');
@@ -35,5 +37,8 @@ assert(diagnostics.screenAnchorOffsetMeters.x > 5, 'the elevated mesh should com
 equal(diagnostics.screenAnchorPolicy, MAMA_FLYOVER_MESH_PROFILE.screenAnchorPolicy, 'the screen-aligned high flyover policy should stay inspectable');
 equal(flyover.material.type, 'MeshBasicMaterial', 'Mama shadow should use the current unlit Three silhouette material');
 equal(flyover.material.color.getHex(), 0x010102, 'Mama silhouette should remain near-black');
-equal(flyover.model.children[0].material, flyover.material, 'the stale Blender material path must not own the runtime silhouette');
+equal(flyover.material.forceSinglePass, true, 'transparent Mama silhouette should render in one pass');
+let installedMesh = null;
+flyover.model.traverse((object) => { if (object.isMesh) installedMesh = object; });
+equal(installedMesh?.material, flyover.material, 'the stale Blender material path must not own the runtime silhouette');
 flyover.dispose();

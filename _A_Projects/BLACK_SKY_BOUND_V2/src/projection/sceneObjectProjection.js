@@ -65,9 +65,12 @@ export function buildSceneryMaterialProjection(object) {
   }) : null;
 }
 
-export function buildTreeFireSceneryProjection(sceneObjects, tileSize) {
+export function buildFoliageFireSceneryProjection(sceneObjects, tileSize) {
   return sceneObjects.map((object) => ({
     id: object.id,
+    type: object.type,
+    authoredType: object.authoredType ?? object.type,
+    physical: cloneProjectionData(object.physical) ?? {},
     material: buildSceneryMaterialProjection(object),
     worldX: object.visualX * tileSize,
     worldY: object.visualY * tileSize,

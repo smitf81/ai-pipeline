@@ -3,13 +3,14 @@ import { ComponentType } from '../src/constants/componentTypes.js';
 import { EntityKind } from '../src/constants/entityKinds.js';
 import { ACTORS } from '../src/data/actors.js';
 import { setCreatureTuningValue } from '../src/data/creatures/creatureTuning.js';
-import { HumanoidProjectionId, getHumanoidProjectionProfile } from '../src/data/humanoids/raiderHumanoid.js';
+import { HumanoidEmbodimentId, HumanoidProjectionId, getHumanoidProjectionProfile } from '../src/data/humanoids/raiderHumanoid.js';
 import { getComponent } from '../src/ecs/world.js';
 import { createInitialGameState } from '../src/game/createGame.js';
 import { syncGameViews } from '../src/game/selectors.js';
 import { spawnActor } from '../src/game/spawn.js';
 import { buildRenderProjection } from '../src/projection/renderProjection.js';
 import { CONFIG } from '../src/config.js';
+import { buildActorProjection3D } from '../src/projection/actorProjection3D.js';
 import { createCamera } from '../src/render/camera.js';
 import { buildWebGLRaiderHumanoidSilhouette } from '../src/render/backends/webgl/WebGLHumanoidSilhouette.js';
 import { humanoidProjectionSystem } from '../src/systems/humanoidProjectionSystem.js';
@@ -19,6 +20,7 @@ import { createDemoMap } from '../src/world/map.js';
 equal(ACTORS[EntityKind.HUSK].silhouette, 'humanoid', 'husk should now use the shared humanoid silhouette family');
 equal(ACTORS[EntityKind.HUSK].humanoidProjection, HumanoidProjectionId.HUSK_TOP_DOWN_SHAMBLER, 'husk should use the shambler humanoid profile');
 equal(ACTORS[EntityKind.HUSK].lightEmitter, undefined, 'husk should remain unlit and torchless');
+equal(getHumanoidProjectionProfile(HumanoidProjectionId.HUSK_TOP_DOWN_SHAMBLER).embodimentId, HumanoidEmbodimentId.INK_STICK, 'husk profile should own the shared bold stick embodiment');
 
 const map = createDemoMap();
 const game = createInitialGameState(map);
@@ -54,6 +56,9 @@ equal(actorPacket.humanoidProjection.classification, 'renderer_neutral_humanoid_
 equal(actorPacket.humanoidProjection.profileId, HumanoidProjectionId.HUSK_TOP_DOWN_SHAMBLER, 'husk packet should preserve the shambler profile id');
 equal(actorPacket.humanoidProjection.motionState, 'shamble', 'husk packet should preserve the shamble motion state');
 equal(actorPacket.humanoidProjection.sockets.torchHand, undefined, 'husk packet should not invent torch sockets');
+
+const actorPacket3D = buildActorProjection3D(game.actors, CONFIG.tileSize, game.creatureTuning).find((actor) => actor.id === huskId);
+equal(actorPacket3D.humanoidProjection.embodimentId, HumanoidEmbodimentId.INK_STICK, '3D husk packet should route the shared stick embodiment without a creature recipe');
 
 const silhouette = buildWebGLRaiderHumanoidSilhouette(actorPacket);
 assert(silhouette?.triangles.length > 18, 'husk humanoid silhouette should build visible mesh triangles');

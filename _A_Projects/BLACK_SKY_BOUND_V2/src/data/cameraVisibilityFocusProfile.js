@@ -5,15 +5,13 @@ export const DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE = Object.freeze({
   enabled: true,
   radiusMeters: 1.15,
   featherMeters: 0.3,
-  minimumOccluderOpacity: 0.04,
-  readabilityLightPower: 650
+  minimumOccluderOpacity: 0.04
 });
 
 export const CAMERA_VISIBILITY_FOCUS_TUNING_FIELDS = Object.freeze([
   field('visibilityFocus.radiusMeters', 'Sightline cut radius', 0.45, 2.5, 0.05, 'm'),
   field('visibilityFocus.featherMeters', 'Cut edge softness', 0.1, 1.25, 0.05, 'm'),
-  field('visibilityFocus.minimumOccluderOpacity', 'Blocker opacity', 0.02, 0.55, 0.01, 'ratio'),
-  field('visibilityFocus.readabilityLightPower', 'Readability light', 0, 1200, 25, 'lm')
+  field('visibilityFocus.minimumOccluderOpacity', 'Blocker opacity', 0.02, 0.55, 0.01, 'ratio')
 ]);
 
 export function normalizeCameraVisibilityFocusProfile(value) {
@@ -23,8 +21,7 @@ export function normalizeCameraVisibilityFocusProfile(value) {
     enabled: source.enabled !== false,
     radiusMeters: clamp(source.radiusMeters, 0.45, 2.5, DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE.radiusMeters),
     featherMeters: clamp(source.featherMeters, 0.1, 1.25, DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE.featherMeters),
-    minimumOccluderOpacity: clamp(source.minimumOccluderOpacity, 0.02, 0.55, DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE.minimumOccluderOpacity),
-    readabilityLightPower: clamp(source.readabilityLightPower, 0, 1200, DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE.readabilityLightPower)
+    minimumOccluderOpacity: clamp(source.minimumOccluderOpacity, 0.02, 0.55, DEFAULT_CAMERA_VISIBILITY_FOCUS_PROFILE.minimumOccluderOpacity)
   });
 }
 

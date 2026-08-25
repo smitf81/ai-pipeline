@@ -11,8 +11,17 @@ const artifactDir = path.join(projectRoot, 'artifacts', 'mama-wyvern-flyover-smo
 const relativeArtifactDir = 'artifacts/mama-wyvern-flyover-smoke';
 const files = {
   before: path.join(artifactDir, '01-before.png'),
+  routeDetail: path.join(artifactDir, '01b-opening-route-detail.png'),
+  smoulderingBrambleDetail: path.join(artifactDir, '01c-smouldering-bramble-detail.png'),
   during: path.join(artifactDir, '02-during.png'),
-  after: path.join(artifactDir, '03-after.png'),
+  after: path.join(artifactDir, '03-ablaze.png'),
+  firewallDetail: path.join(artifactDir, '03b-firewall-detail.png'),
+  smoulder: path.join(artifactDir, '04-smoulder.png'),
+  smoulderDetail: path.join(artifactDir, '04b-smoulder-undergrowth-detail.png'),
+  firewallSustainDetail: path.join(artifactDir, '04c-firewall-sustain-detail.png'),
+  decay: path.join(artifactDir, '05-firewall-decay.png'),
+  burnt: path.join(artifactDir, '05-burnt-out.png'),
+  burntDetail: path.join(artifactDir, '05b-burnt-undergrowth-detail.png'),
   states: path.join(artifactDir, 'runtime-states.json'),
   browserIssues: path.join(artifactDir, 'browser-issues.json'),
   reportJson: path.join(artifactDir, 'report.json'),
@@ -29,6 +38,9 @@ const evidence = {
   before: null,
   during: null,
   after: null,
+  smoulder: null,
+  decay: null,
+  burnt: null,
   postGameplay: null
 };
 const report = {
@@ -40,13 +52,22 @@ const report = {
   server: null,
   runtime: null,
   trigger: {
-    expression: 'app.worldEvents.flyover()',
+    expression: 'app.worldEvents.flyover({ angle: 0, centerX: 40, centerY: 51 })',
     receipt: null
   },
   captures: {
     before: `${relativeArtifactDir}/01-before.png`,
+    routeDetail: `${relativeArtifactDir}/01b-opening-route-detail.png`,
+    smoulderingBrambleDetail: `${relativeArtifactDir}/01c-smouldering-bramble-detail.png`,
     during: `${relativeArtifactDir}/02-during.png`,
-    after: `${relativeArtifactDir}/03-after.png`
+    after: `${relativeArtifactDir}/03-ablaze.png`,
+    firewallDetail: `${relativeArtifactDir}/03b-firewall-detail.png`,
+    smoulder: `${relativeArtifactDir}/04-smoulder.png`,
+    smoulderDetail: `${relativeArtifactDir}/04b-smoulder-undergrowth-detail.png`,
+    firewallSustainDetail: `${relativeArtifactDir}/04c-firewall-sustain-detail.png`,
+    decay: `${relativeArtifactDir}/05-firewall-decay.png`,
+    burnt: `${relativeArtifactDir}/05-burnt-out.png`,
+    burntDetail: `${relativeArtifactDir}/05b-burnt-undergrowth-detail.png`
   },
   browserIssues: null,
   gameplayContinues: null,
@@ -77,7 +98,7 @@ try {
   const page = await context.newPage();
   attachBrowserIssueRecording(page);
 
-  await page.goto(report.url, { waitUntil: 'networkidle', timeout: 20_000 });
+  await page.goto(report.url, { waitUntil: 'networkidle', timeout: 60_000 });
   await page.waitForFunction(
     () => window.BSB_V2_DEMO && window.render_game_to_text && window.advanceTime,
     null,
@@ -123,26 +144,47 @@ try {
     'playable runtime is not using the requested renderer'
   );
   assert.equal(evidence.before.runtime.worldEvents.activeEvent, null, 'flyover was already active before the trigger');
+  assert.equal(evidence.before.runtime.sceneObjects.length, 314, 'opening route should load all 314 baked scene objects');
+  assert.equal(evidence.before.runtime.sceneObjects.filter((object) => object.type === 'forest_shrub').length, 9, 'opening route should expose nine normal shrubs');
   assert.equal(evidence.before.direct.threeEffects?.mamaFlyoverAsset?.status, 'ready', 'the V5 Blender Mama mesh was not ready before the flyover');
-  assert.equal(evidence.before.direct.threeEffects?.mamaFlyoverAsset?.triangleCount, 62848, 'the live flyover did not load the evaluated Blender silhouette');
+  assert.equal(evidence.before.direct.threeEffects?.mamaFlyoverAsset?.triangleCount, 7661, 'the live flyover did not load the baked LOD1 Blender silhouette');
+  assert.equal(evidence.before.direct.threeLiveWorld?.undergrowth?.objectCount, 144, 'Three.js should consume all authored undergrowth through the global batch');
+  const undergrowth = evidence.before.direct.threeLiveWorld?.undergrowth ?? {};
+  assert.ok((undergrowth.drawCalls ?? Infinity) <= (undergrowth.chunkCount ?? 0) * 4, 'Three.js undergrowth exceeded four bounded batches per render-envelope chunk');
+  assert.deepEqual(evidence.before.direct.threeLiveWorld?.scenery?.unsupportedKinds ?? [], [], 'Three.js reported unsupported scenery kinds');
   await capture(page, files.before);
+  await captureOpeningRouteDetail(page, files.routeDetail);
+  const smoulderingBrambleProof = await captureSmoulderingBrambleDetail(page, files.smoulderingBrambleDetail);
+  assert.equal(smoulderingBrambleProof.type, 'smouldering_bramble', 'the static emitter proof did not frame an authored smouldering bramble');
+  assert.ok((smoulderingBrambleProof.foliageFire?.smokeWisps ?? 0) >= 3, 'the smouldering bramble did not render its dedicated crossed-ribbon wisps');
+  assert.equal(smoulderingBrambleProof.foliageFire?.primitiveFallbacks, 0, 'the authored smouldering bramble revived the grey icosahedron fallback');
 
   report.trigger.receipt = await page.evaluate(() => {
     const app = window.BSB_V2_DEMO;
-    return app.worldEvents.flyover();
+    return app.worldEvents.flyover({ angle: 0, centerX: 40, centerY: 51 });
   });
-  assert.equal(report.trigger.receipt.kind, 'mama_wyvern_flyover', 'flyover trigger returned the wrong event kind');
+  assert.equal(report.trigger.receipt.kind, 'mama_wyvern_inferno', 'flyover compatibility trigger did not resolve to inferno');
+  assert.equal(report.trigger.receipt.requestedKind, 'flyover', 'flyover compatibility trigger lost its requested kind');
+  assert.equal(report.trigger.receipt.resolvedKind, 'inferno', 'flyover compatibility trigger did not publish its resolved kind');
 
   await advanceToFlyoverMidpoint(page);
   evidence.during = await collectEvidence(page);
   const duringLayer = evidence.during.runtime.renderLayerStats?.rendererLayerStats?.worldEvents ?? {};
-  assert.equal(evidence.during.runtime.worldEvents.activeEvent?.kind, 'mama_wyvern_flyover', 'flyover was not active during the capture');
+  assert.equal(evidence.during.runtime.worldEvents.activeEvent?.kind, 'mama_wyvern_inferno', 'inferno flyover was not active during the capture');
+  assert.equal(evidence.during.runtime.worldEvents.activeEvent?.requestedKind, 'flyover', 'runtime text lost the compatibility request kind');
+  assert.equal(evidence.during.runtime.worldEvents.activeEvent?.resolvedKind, 'inferno', 'runtime text lost the resolved inferno kind');
   assert.equal(evidence.during.runtime.worldEvents.activeEvent?.phase, 'shadow_flyover', 'during capture missed the flyover phase');
   if (evidence.during.runtime.renderLayerStats?.rendererActiveBackend === 'webgl3d') {
     assert.ok((evidence.during.direct.threeEffects?.flyovers ?? 0) > 0, 'flyover produced no Three.js scene object');
     assert.equal(evidence.during.direct.threeEffects?.mamaFlyoverAsset?.visible, true, 'the imported Mama mesh was not visible during the crossing');
     assert.ok((evidence.during.direct.threeEffects?.mamaFlyoverAsset?.effectiveDimensionsMeters?.x ?? 0) > 4.5, 'the imported Mama wingspan was underscaled');
     assert.equal(evidence.during.direct.threeEffects?.mamaFlyoverAsset?.altitudeMeters, 9.2, 'the imported Mama mesh did not clear the mature-tree canopy');
+    assert.ok((evidence.during.direct.threeEffects?.dragonfire ?? 0) > 0, 'the active breath projection produced no visible Three.js dragonfire');
+    assert.equal(evidence.during.direct.threeEffects?.dragonfireStream?.segmentCount, 9, 'dragonfire should use the pooled nine-segment pressurised stream');
+    assert.equal(evidence.during.direct.threeEffects?.dragonfireStream?.impactLashCount, 5, 'dragonfire should break into five liquid impact lashes at ground contact');
+    assert.equal(evidence.during.direct.threeEffects?.dragonfireStream?.emberCount, 18, 'dragonfire should include its bounded ember spray');
+    assert.equal(evidence.during.direct.threeEffects?.dragonfireStream?.layeredCore, true, 'dragonfire should separate its hot pressure core from its orange edge');
+    assert.equal(evidence.during.direct.threeEffects?.dragonfireStream?.drawCalls, 3, 'dragonfire should retain delivery, core and embers in three instanced draw calls');
   } else {
     assert.equal(duringLayer.flyoverViewportIntersecting, true, 'flyover did not intersect the active viewport');
     assert.ok((duringLayer.flyoverViewportTriangleCount ?? 0) > 0, 'flyover produced no visible viewport triangles');
@@ -158,8 +200,56 @@ try {
     evidence.before.direct.completedCount + 1,
     'flyover completion count did not advance exactly once'
   );
-  assert.equal(evidence.after.runtime.worldEvents.fireWalls.length, 0, 'plain flyover unexpectedly created an inferno wall');
+  assert.equal(evidence.after.runtime.worldEvents.fireWalls.length, 1, 'every Mama crossing should deposit exactly one inferno wall');
+  assert.ok(evidence.after.direct.foliageFireStates.some((fire) => fire.family === 'tree' && fire.phase === 'ablaze'), 'the inferno should visibly ignite a tree');
+  assert.ok(evidence.after.direct.foliageFireStates.some((fire) => fire.family !== 'tree' && fire.phase === 'ablaze'), 'the inferno should visibly ignite undergrowth');
+  if (evidence.after.runtime.renderLayerStats?.rendererActiveBackend === 'webgl3d') {
+    const firewall = evidence.after.direct.threeEffects?.mamaNapalmFirewall ?? {};
+    assert.equal(firewall.activeWalls, 1, 'the canonical wall should activate one dedicated layered Three.js firewall');
+    assert.equal(firewall.phaseCounts?.ground_ignition, 1, 'the first post-impact frame should visibly remain in uneven ground ignition');
+    assert.equal(firewall.fuelPools, 13, 'the wall should spread through connected fuel pools instead of one box');
+    assert.ok((firewall.flameClusters ?? 0) > 0, 'ignited fuel produced no curved rolling flame masses');
+    assert.ok((firewall.smokeMasses ?? 0) > 0, 'ignited fuel produced no soft smoke masses');
+    assert.ok((firewall.embers ?? 0) > 0, 'ignited fuel produced no lifted embers');
+    assert.ok((firewall.drawCalls ?? Infinity) <= 5, 'the layered wall exceeded its bounded global draw-family budget');
+    assert.equal(firewall.primitiveFallbacks, 0, 'the firewall revived the obsolete lit-box fallback');
+    assert.equal(firewall.sharpTriangleSilhouetteFallbacks, 0, 'the firewall revived the rejected fitted-triangle silhouette');
+    assert.ok(String(firewall.geometryPolicy ?? '').includes('rolling_sdf_metaball'), 'the active Three.js wall is not using the curved macro-mass renderer');
+    assert.ok((evidence.after.direct.threeEffects?.foliageFire?.flameTufts ?? 0) > 0, 'burning foliage produced no dedicated tapered flame tufts');
+    assert.ok((evidence.after.direct.threeEffects?.foliageFire?.smokeWisps ?? 0) > 0, 'burning foliage produced no dedicated rising smoke wisps');
+    assert.equal(evidence.after.direct.threeEffects?.foliageFire?.primitiveFallbacks, 0, 'burning foliage revived an obsolete primitive fallback');
+  }
   await capture(page, files.after);
+  await captureFirewallDetail(page, files.firewallDetail);
+
+  await page.evaluate(() => window.advanceTime(7000));
+  evidence.smoulder = await collectEvidence(page);
+  assert.ok(evidence.smoulder.direct.foliageFireStates.some((fire) => fire.phase === 'smoulder_high' || fire.phase === 'smoulder_low'), 'foliage did not enter a visible smouldering phase');
+  if (evidence.smoulder.runtime.renderLayerStats?.rendererActiveBackend === 'webgl3d') {
+    assert.ok((evidence.smoulder.direct.threeEffects?.foliageFire?.smokeWisps ?? 0) > 0, 'smouldering foliage lost its dedicated rising smoke wisps');
+    assert.equal(evidence.smoulder.direct.threeEffects?.foliageFire?.primitiveFallbacks, 0, 'smouldering foliage revived the grey icosahedron fallback');
+  }
+  await capture(page, files.smoulder);
+  await captureFoliagePhaseDetail(page, files.smoulderDetail);
+  await captureFirewallDetail(page, files.firewallSustainDetail);
+
+  await page.evaluate(() => window.advanceTime(7000));
+  evidence.decay = await collectEvidence(page);
+  if (evidence.decay.runtime.renderLayerStats?.rendererActiveBackend === 'webgl3d') {
+    const firewall = evidence.decay.direct.threeEffects?.mamaNapalmFirewall ?? {};
+    assert.equal(firewall.phaseCounts?.decay_aftermath, 1, 'late fuel did not enter the readable decay/aftermath phase');
+    assert.ok((firewall.flameClusters ?? 0) > 0, 'decay popped the flame barrier off before its canonical lifetime ended');
+    assert.ok((firewall.smokeMasses ?? 0) > 0, 'decay lost its dedicated soft smoke aftermath');
+  }
+  await capture(page, files.decay);
+
+  await page.evaluate(() => window.advanceTime(5000));
+  evidence.burnt = await collectEvidence(page);
+  assert.ok(evidence.burnt.direct.foliageFireStates.some((fire) => fire.family === 'tree' && fire.phase === 'burnt_out'), 'tree burnt-out state did not persist');
+  assert.ok(evidence.burnt.direct.foliageFireStates.some((fire) => fire.family !== 'tree' && fire.phase === 'burnt_out'), 'undergrowth burnt-out state did not persist');
+  assert.equal(evidence.burnt.runtime.worldEvents.fireWalls.length, 0, 'inferno wall should expire after its existing 18-second lifetime');
+  await capture(page, files.burnt);
+  await captureFoliagePhaseDetail(page, files.burntDetail);
 
   report.gameplayContinues = await proveGameplayContinues(page, evidence.after);
   evidence.postGameplay = await collectEvidence(page);
@@ -240,7 +330,16 @@ async function collectEvidence(page) {
         loopRunning: app.loop.isRunning(),
         completedCount: app.state.game.worldEvents.completedCount,
         pendingManualEvents: app.state.game.worldEvents.manualQueue.length,
-        threeEffects: app.state.game.renderLayers.renderer.webgl3dDiagnostics?.liveWorld?.effects ?? null
+        threeEffects: app.state.game.renderLayers.renderer.webgl3dDiagnostics?.liveWorld?.effects ?? null,
+        threeLiveWorld: app.state.game.renderLayers.renderer.webgl3dDiagnostics?.liveWorld ?? null,
+        foliageFireStates: app.state.game.sceneObjects.filter((object) => object.materialState?.foliageFire).map((object) => ({
+          id: object.id,
+          type: object.type,
+          family: object.materialState.foliageFire.family,
+          phase: object.materialState.foliageFire.phase,
+          age: object.materialState.foliageFire.age,
+          charAmount: object.materialState.foliageFire.charAmount
+        }))
       }
     };
   });
@@ -257,6 +356,116 @@ async function capture(page, targetPath) {
     document.getElementById('game').getContext('webgl2')?.finish();
   });
   await page.screenshot({ path: targetPath, fullPage: true });
+}
+
+async function captureOpeningRouteDetail(page, targetPath) {
+  await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+    Object.assign(transform, { x: 48.2, y: 46.4 });
+    app.renderer.backend.setTerrainProofCanopyVisible(false);
+    window.advanceTime(120);
+    app.renderer.render(app.state, 0);
+    document.getElementById('game').getContext('webgl2')?.finish();
+  });
+  await page.screenshot({ path: targetPath, fullPage: true });
+  await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+    Object.assign(transform, { x: 40.5, y: 53.5 });
+    app.renderer.backend.setTerrainProofCanopyVisible(true);
+    window.advanceTime(120);
+    app.renderer.render(app.state, 0);
+  });
+}
+
+async function captureSmoulderingBrambleDetail(page, targetPath) {
+  const proof = await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const target = app.state.game.sceneObjects.find((object) => object.type === 'smouldering_bramble');
+    if (!target) throw new Error('smouldering_bramble_fixture_not_found');
+    const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+    app.state.__smoulderingBrambleProofPlayer = { x: transform.x, y: transform.y };
+    Object.assign(transform, { x: target.x + 1.4, y: target.y + 1.4 });
+    app.renderer.backend.setTerrainProofCanopyVisible(false);
+    const diagnostics = document.getElementById('bsb-three-diagnostics');
+    if (diagnostics) diagnostics.style.display = 'none';
+    window.advanceTime(120);
+    app.renderer.render(app.state, 0);
+    document.getElementById('game').getContext('webgl2')?.finish();
+    return {
+      id: target.id,
+      type: target.type,
+      foliageFire: app.state.game.renderLayers.renderer.webgl3dDiagnostics?.liveWorld?.effects?.foliageFire ?? null
+    };
+  });
+  await page.screenshot({ path: targetPath, fullPage: true });
+  await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+    Object.assign(transform, app.state.__smoulderingBrambleProofPlayer ?? { x: 40.5, y: 53.5 });
+    delete app.state.__smoulderingBrambleProofPlayer;
+    app.renderer.backend.setTerrainProofCanopyVisible(true);
+    const diagnostics = document.getElementById('bsb-three-diagnostics');
+    if (diagnostics) diagnostics.style.removeProperty('display');
+    window.advanceTime(120);
+    app.renderer.render(app.state, 0);
+  });
+  return proof;
+}
+
+async function captureFoliagePhaseDetail(page, targetPath) {
+  await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+    app.state.__foliageProofPlayer = { x: transform.x, y: transform.y };
+    Object.assign(transform, { x: 48.2, y: 51.2 });
+    app.renderer.backend.setTerrainProofCanopyVisible(false);
+    window.advanceTime(120);
+    app.renderer.render(app.state, 0);
+    const diagnostics = document.getElementById('bsb-three-diagnostics');
+    if (diagnostics) diagnostics.style.display = 'none';
+    document.getElementById('game').getContext('webgl2')?.finish();
+  });
+  await page.screenshot({ path: targetPath, fullPage: true });
+  await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+    Object.assign(transform, app.state.__foliageProofPlayer ?? { x: 40.5, y: 53.5 });
+    delete app.state.__foliageProofPlayer;
+    app.renderer.backend.setTerrainProofCanopyVisible(true);
+    window.advanceTime(120);
+    const diagnostics = document.getElementById('bsb-three-diagnostics');
+    if (diagnostics) diagnostics.style.removeProperty('display');
+    app.renderer.render(app.state, 0);
+  });
+}
+
+async function captureFirewallDetail(page, targetPath) {
+  await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const wall = app.state.game.worldEvents.fireWalls[0];
+    if (!wall) throw new Error('firewall_detail_wall_not_found');
+    const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+    app.state.__firewallProofPlayer = { x: transform.x, y: transform.y };
+    Object.assign(transform, { x: (wall.ax + wall.bx) * 0.5, y: (wall.ay + wall.by) * 0.5 + 3.2 });
+    app.renderer.backend.setTerrainProofCanopyVisible(false);
+    const diagnostics = document.getElementById('bsb-three-diagnostics');
+    if (diagnostics) diagnostics.style.display = 'none';
+    app.renderer.render(app.state, 0);
+    document.getElementById('game').getContext('webgl2')?.finish();
+  });
+  await page.screenshot({ path: targetPath, fullPage: true });
+  await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+    Object.assign(transform, app.state.__firewallProofPlayer ?? { x: 40.5, y: 53.5 });
+    delete app.state.__firewallProofPlayer;
+    app.renderer.backend.setTerrainProofCanopyVisible(true);
+    const diagnostics = document.getElementById('bsb-three-diagnostics');
+    if (diagnostics) diagnostics.style.removeProperty('display');
+    app.renderer.render(app.state, 0);
+  });
 }
 
 async function advanceToFlyoverMidpoint(page) {
@@ -365,8 +574,17 @@ function buildMarkdownReport() {
     '## Screenshots',
     '',
     '- `01-before.png`',
+    '- `01b-opening-route-detail.png`',
+    '- `01c-smouldering-bramble-detail.png`',
     '- `02-during.png`',
-    '- `03-after.png`',
+    '- `03-ablaze.png`',
+    '- `03b-firewall-detail.png`',
+    '- `04-smoulder.png`',
+    '- `04b-smoulder-undergrowth-detail.png`',
+    '- `04c-firewall-sustain-detail.png`',
+    '- `05-firewall-decay.png`',
+    '- `05-burnt-out.png`',
+    '- `05b-burnt-undergrowth-detail.png`',
     '',
     report.failure ? `Failure: \`${report.failure.message}\`` : 'The live browser proof loaded and rendered the V5 Blender Mama mesh without a fallback path.',
     ''

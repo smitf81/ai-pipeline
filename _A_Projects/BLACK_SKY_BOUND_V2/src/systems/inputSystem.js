@@ -21,7 +21,7 @@ export function inputSystem({ state, input }) {
   for (const entity of query(state.game.world, [ComponentType.PlayerControlled, ComponentType.PlayerIntent])) {
     const intent = getComponent(state.game.world, entity, ComponentType.PlayerIntent);
     if (!isPlayerInteractiveLifecycle(getComponent(state.game.world, entity, ComponentType.PlayerLifecycle))) {
-      Object.assign(intent, { moveX: 0, moveY: 0, sprint: false, dodge: false, dodgeFollowup: false, melee: false, bite: false, lunge: false, smoke: false, smokeAbilityId: null });
+      Object.assign(intent, { moveX: 0, moveY: 0, aimActive: false, sprint: false, dodge: false, dodgeChain: false, pounceCounter: false, melee: false, bite: false, lunge: false, smoke: false, smokeAbilityId: null });
       continue;
     }
     const rawMovement = resolveMovementInput(input);
@@ -38,20 +38,49 @@ export function inputSystem({ state, input }) {
     const canMove = canUseAbility(state.game.world, entity, AbilityId.MOVE);
     intent.moveX = canMove ? movement.x : 0;
     intent.moveY = canMove ? movement.y : 0;
-    intent.aimX = pointerWorld.x / CONFIG.tileSize;
-    intent.aimY = pointerWorld.y / CONFIG.tileSize;
+    const pointerValid = Number.isFinite(input.pointer?.x)
+      && Number.isFinite(input.pointer?.y)
+      && input.pointer?.hasPosition !== false
+      && input.pointer?.inside !== false;
+    intent.aimActive = pointerValid;
+    if (pointerValid) {
+      intent.aimX = pointerWorld.x / CONFIG.tileSize;
+      intent.aimY = pointerWorld.y / CONFIG.tileSize;
+    }
     intent.sprint = canMove && isInputActionDown(input, InputActionId.SPRINT);
     const spacePressed = wasInputActionPressed(input, InputActionId.DODGE);
     const dodge = getComponent(state.game.world, entity, ComponentType.DodgeState);
-    const charge = getComponent(state.game.world, entity, ComponentType.ChargeCounterState);
-    const inFollowupWindow = dodge?.active || dodge?.recovering || charge?.followupWindowRemaining > 0;
-    intent.dodgeFollowup = spacePressed
-      && inFollowupWindow
-      && canUseAbility(state.game.world, entity, AbilityId.CHARGE_COUNTER);
-    intent.dodge = spacePressed
-      && !inFollowupWindow
+    const pounce = getComponent(state.game.world, entity, ComponentType.PounceCounterState);
+    const dodgeVisualActive = dodge?.active || dodge?.recovering;
+    const emergencyDodgeVisual = dodgeVisualActive && dodge?.followupsEnabled === false;
+    const followupWindowOpen = (dodgeVisualActive && dodge?.followupsEnabled !== false)
+      || pounce?.followupWindowRemaining > 0;
+    const branchCommitted = dodge?.committedBranch !== null || pounce?.queued || pounce?.active;
+    if (spacePressed && dodgeVisualActive && branchCommitted && dodge) dodge.lastDeniedReason = 'followup_committed';
+    intent.dodgeChain = spacePressed
+      && dodgeVisualActive
+      && dodge?.followupsEnabled !== false
+      && !branchCommitted
       && canUseAbility(state.game.world, entity, AbilityId.DODGE);
-    const meleePressed = consumeInputActionPressed(input, InputActionId.MELEE);
+    intent.dodge = spacePressed
+      && !dodgeVisualActive
+      && canUseAbility(state.game.world, entity, AbilityId.DODGE);
+    const contextualLmbPressed = !spacePressed
+      && (followupWindowOpen || emergencyDodgeVisual)
+      && consumeInputActionPressed(input, InputActionId.POUNCE_COUNTER);
+    if (contextualLmbPressed && emergencyDodgeVisual) {
+      dodge.lastDeniedReason = 'emergency_dodge_no_followup';
+      if (pounce) pounce.lastDeniedReason = 'emergency_dodge_no_followup';
+    }
+    if (contextualLmbPressed && branchCommitted) {
+      if (dodge) dodge.lastDeniedReason = 'followup_committed';
+      if (pounce) pounce.lastDeniedReason = 'followup_committed';
+    }
+    const pounceAvailable = canUseAbility(state.game.world, entity, AbilityId.POUNCE_COUNTER);
+    if (contextualLmbPressed && !branchCommitted && !pounceAvailable && pounce) pounce.lastDeniedReason = 'pounce_locked';
+    const pouncePressed = contextualLmbPressed && !emergencyDodgeVisual && !branchCommitted && pounceAvailable;
+    intent.pounceCounter = pouncePressed;
+    const meleePressed = !contextualLmbPressed && consumeInputActionPressed(input, InputActionId.MELEE);
     intent.melee = meleePressed && canUseAbility(state.game.world, entity, AbilityId.BITE_CLAW);
     intent.bite = intent.melee;
     const smokePressed = consumeInputActionPressed(input, InputActionId.SMOKE);

@@ -21,6 +21,7 @@ equal(projection.targetEntityId, game.dragonId, 'normal gameplay should focus th
 equal(projection.sourceProfileId, 'grounded_wyvern_hatchling_skeletal_gait_v0', 'focus values should resolve from the selected entity profile');
 equal(projection.radiusMeters, 1.15, 'the default traced sightline radius should project into rendering');
 equal(projection.mode, 'occlusion_aware_orthographic_sightline_corridor', 'the projection must declare line-of-sight rather than target-sphere semantics');
+equal(Object.hasOwn(projection, 'readabilityLightPower'), false, 'camera focus projection must not publish a synthetic readability-light control');
 
 const raider = game.actors.find((actor) => actor.humanoidProjection?.profileId);
 assert(raider, 'camera focus test requires a real humanoid target');
@@ -44,7 +45,7 @@ const focus = new ThreeCameraVisibilityFocus(root, CONFIG.tileSize);
 let focusOwnedMeshCount = 0;
 root.traverse((child) => { if (child.isMesh) focusOwnedMeshCount += 1; });
 equal(focusOwnedMeshCount, 0, 'camera focus must not add meshes to the live-world resource budget');
-assert(focus.light.isPointLight && focus.light.castShadow === false, 'camera focus readability should use one fixed non-shadowing light');
+equal(root.children.length, 0, 'camera focus must not add a synthetic actor-following light');
 const material = new THREE.MeshStandardMaterial({ color: 0x234528 });
 const object = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.36, 0.5), material);
 object.position.set(5.78, 0.58, 15);
@@ -76,9 +77,7 @@ focus.update({
   focusHeightMeters: 0.58,
   radiusMeters: 1.15,
   featherMeters: 0.3,
-  minimumOccluderOpacity: 0.04,
-  readabilityLightPower: 525,
-  readabilityLightDistanceMeters: 6.5
+  minimumOccluderOpacity: 0.04
 }, {
   cameraPosition: new THREE.Vector3(5, 0.58, 20),
   cameraDirection: new THREE.Vector3(0, 0, -1),
@@ -96,7 +95,8 @@ equal(diagnostics.activeMaterialCount, 2, 'only materials belonging to traced bl
 equal(diagnostics.patchedMaterialCount, 5, 'renderer diagnostics should expose every eligible patched material');
 equal(diagnostics.center.x, 5, 'focus X should use the canonical 3D world transform');
 equal(diagnostics.center.z, 10, 'focus Z should use the canonical 3D world transform');
-equal(diagnostics.readabilityLightPower, 525, 'the fixed readability light should consume the projected profile power');
+equal(diagnostics.syntheticLightCount, 0, 'camera focus must remain an occluder treatment and never create actor illumination');
+equal(diagnostics.illuminationPolicy, 'occluder_fade_only_no_actor_tracking_light_v2', 'camera focus should declare the no-synthetic-light policy');
 
 const shader = {
   uniforms: {},
@@ -116,10 +116,9 @@ behindMaterial.onBeforeCompile(behindShader, {});
 equal(behindShader.uniforms.uCameraVisibilityFocusActive.value, 0, 'a surface behind the target must remain fully opaque');
 
 focus.update({ active: false, reason: 'test_disabled', targetEntityId: 'player' });
-equal(focus.diagnostics().active, false, 'inactive projection should disable both fade and readability light');
-equal(focus.light.visible, false, 'inactive focus should remove the readability light contribution');
+equal(focus.diagnostics().active, false, 'inactive projection should disable the occluder fade');
 focus.dispose();
-equal(root.children.length, 0, 'disposing camera focus should remove its fixed light slot');
+equal(root.children.length, 0, 'disposing camera focus should leave no owned scene objects');
 object.geometry.dispose();
 material.dispose();
 clone.dispose();

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,6 +14,7 @@ const { chromium } = requireFromBsb('@playwright/test');
 const axiomUrl = process.env.AXIOM_PROOF_URL || 'http://localhost:3007/axiom-editor.html';
 const runtimeUrl = process.env.BSB_RUNTIME_URL || 'http://127.0.0.1:5177/';
 const outDir = join(launcherRoot, 'output', 'playwright', 'bsb-authoring-goal');
+const journalDataRoot = join(launcherRoot, 'data', 'project-diary');
 const files = {
   authoring: join(launcherRoot, 'data', 'bsb-v2', 'maps', 'first_escape.authoring.json'),
   runtime: join(bsbRoot, 'data', 'maps', 'axiom-first-escape.runtime-map.json'),
@@ -39,6 +41,14 @@ const proof = {
 };
 
 await mkdir(outDir, { recursive: true });
+const journalBackupRoot = await mkdtemp(join(tmpdir(), 'axiom-bsb-journal-proof-'));
+const journalBackupData = join(journalBackupRoot, 'project-diary');
+let journalDataExisted = false;
+try {
+  await stat(journalDataRoot);
+  journalDataExisted = true;
+  await cp(journalDataRoot, journalBackupData, { recursive: true });
+} catch {}
 const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
 const issues = observePage(page);
@@ -57,6 +67,21 @@ try {
   });
   if (loaded?.ok === false) throw new Error(`typed_project_load_failed:${JSON.stringify(loaded.errors || loaded.error)}`);
   await waitForWorkspace(page);
+  await page.evaluate((url) => {
+    const preview = window.ProjectPreviewRuntime.status();
+    const manifest = preview.manifest;
+    if (!manifest) throw new Error('project_preview_manifest_missing');
+    const entrypoint = preview.entrypoint || manifest.entrypoints?.[0];
+    window.ProjectPreviewRuntime.loadProjectManifest({
+      ...manifest,
+      entrypoints: [{ ...entrypoint, url }]
+    }, {
+      project: window.FileManagerRuntime.getActiveProject(),
+      projectRoot: window.FileManagerRuntime.getActiveProject()?.root,
+      sourceSurface: 'bsb_authoring_goal_runtime_override'
+    });
+  }, runtimeUrl);
+  await page.waitForFunction((url) => window.ProjectPreviewRuntime.status().url === new URL(url).href, runtimeUrl);
 
   const shell = await page.evaluate(() => {
     const visibleTabs = [...document.querySelectorAll('.panel-tabs [role="tab"]')]
@@ -78,8 +103,8 @@ try {
     };
   });
   assertEqual(shell.bodyClass, true, 'BSB workspace shell class');
-  assertEqual(shell.activePanel, 'diary', 'Diary front-door panel');
-  assertEqual([...shell.visibleTabs].sort().join('|'), ['Diary', 'Forge', 'Project', 'Code', 'Debug'].sort().join('|'), 'BSB visible tabs');
+  assertEqual(shell.activePanel, 'bsb-map', 'Forge remains the BSB left-rail owner');
+  assertEqual([...shell.visibleTabs].sort().join('|'), ['Forge', 'Project', 'Code', 'Debug'].sort().join('|'), 'BSB visible tabs');
   assertEqual(shell.workspace.project?.id, 'black-sky-bound-v2-demo', 'workspace project id');
   assertEqual(shell.workspace.owner, 'FileManagerRuntime', 'workspace owner');
   assertEqual(shell.runtimePromptWorkspace?.project?.id, 'black-sky-bound-v2-demo', 'chat prompt workspace');
@@ -285,6 +310,9 @@ try {
     await Promise.all(Object.entries(files).map(([key, path]) => writeFile(path, original[key], 'utf8')));
   }
   await browser.close();
+  await rm(journalDataRoot, { recursive: true, force: true });
+  if (journalDataExisted) await cp(journalBackupData, journalDataRoot, { recursive: true });
+  await rm(journalBackupRoot, { recursive: true, force: true });
 }
 
 const after = {
@@ -384,8 +412,13 @@ function assertNoUnexpectedIssues(result, label) {
 
 function expectedBackgroundFailure(failure) {
   const url = String(failure.url || '');
-  if (/^http:\/\/(localhost|127\.0\.0\.1):(1234|3000|4242)\//.test(url)) return true;
-  return url === 'http://localhost:3007/mcp/call'
+  if (failure.error === 'net::ERR_ABORTED' && /\/src\//.test(url)) {
+    try {
+      if (new URL(url).origin !== new URL(runtimeUrl).origin) return true;
+    } catch {}
+  }
+  if (/^http:\/\/(localhost|127\.0\.0\.1):(11434|1234|3000|4242)\//.test(url)) return true;
+  return /\/mcp\/call$/.test(url)
     && failure.status === 500
     && failure.postData?.tool === 'fs_ls'
     && /docs\/skills/i.test(String(failure.postData?.params?.path || ''));

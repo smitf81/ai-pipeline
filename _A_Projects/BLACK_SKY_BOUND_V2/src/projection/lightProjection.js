@@ -10,7 +10,7 @@ export function buildVisibleLightProjection(lights, camera, tileSize, options = 
   const candidates = [];
   let dormantCount = 0;
   for (const input of inputs) {
-    const light = anchorTransientSceneLight(input, camera, tileSize);
+    const light = input;
     if (!lightInputActive(light) || !lightIntersectsCamera(light, camera, tileSize, options.cullPaddingTiles ?? 0)) {
       dormantCount += 1;
       continue;
@@ -81,6 +81,8 @@ export function buildLightProjection(lights, tileSize) {
       baseCoreRadius,
       coreStrength,
       intensity: contribution.glowStrength,
+      luminousPowerLumens: finite(light.luminousPowerLumens, null),
+      overheadIlluminationIntensity: finite(light.overheadIlluminationIntensity, null),
       effectiveIntensity,
       colour: light.colour ?? 'rgba(255,154,72,0.85)',
       innerColour: light.innerColour ?? 'rgba(255,226,170,1)',
@@ -103,6 +105,7 @@ export function buildLightProjection(lights, tileSize) {
       illuminationState: light.illuminationState ?? IlluminationState.ACTIVE_DYNAMIC,
       shadowPriority: finite(light.shadowPriority, 0),
       castsShadows: light.castsShadows !== false,
+      physicalShadowLod: light.physicalShadowLod ?? null,
       direction: normalizeDirection(light.direction),
       shadow: buildShadowProjection(light),
       cloudOcclusion: buildCloudOcclusionProjection(light, tileSize),
@@ -113,26 +116,9 @@ export function buildLightProjection(lights, tileSize) {
       afterimageIntensity: clamp01(light.afterimageIntensity ?? 0),
       influenceAlphaScale: clampRange(light.influenceAlphaScale ?? 1, 0, 2),
       stormEvent: cloneData(light.stormEvent),
-      scheduledOrigin: cloneData(light.scheduledOrigin),
       visualAnchorPolicy: light.visualAnchorPolicy ?? null
     };
   });
-}
-
-function anchorTransientSceneLight(light, camera, tileSize) {
-  if (!camera || !/lightning/i.test(String(light?.sourceKind ?? light?.id ?? ''))) return light;
-  const eventIndex = finite(light.stormEvent?.eventIndex, 0);
-  const flashIndex = finite(light.stormEvent?.flashIndex, 0);
-  const phase = hash01(eventIndex * 17 + flashIndex * 31 + 7);
-  const distanceTiles = 3.5 + hash01(eventIndex * 23 + flashIndex * 11 + 19) * 3.5;
-  const angle = phase * Math.PI * 2;
-  return {
-    ...light,
-    x: Number(camera.x) / tileSize + Math.cos(angle) * distanceTiles,
-    y: Number(camera.y) / tileSize + Math.sin(angle) * distanceTiles,
-    scheduledOrigin: { x: light.x, y: light.y },
-    visualAnchorPolicy: 'camera_local_high_cloud_strike_v1'
-  };
 }
 
 function lightInputActive(light) {
@@ -167,7 +153,7 @@ function resolveIlluminationState(light, criticalEntityId) {
   const sourceKind = String(light?.sourceKind ?? '');
   const anchorType = String(light?.sourceAnchor?.type ?? '');
   const critical = light?.critical === true || (criticalEntityId != null && light?.sourceEntity === criticalEntityId)
-    || anchorType === 'world_event' || /moonlight|lightning|inferno|burning_tree_fire/.test(sourceKind);
+    || anchorType === 'world_event' || /moonlight|lightning|inferno|burning_foliage_fire/.test(sourceKind);
   if (critical) return IlluminationState.CRITICAL;
   const dynamic = anchorType === 'world_entity' || (Number(light?.flickerAmount) || 0) > 0
     || /napalm|dropped|projectile/.test(sourceKind);

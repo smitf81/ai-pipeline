@@ -78,7 +78,7 @@ try {
 }
 await page.waitForFunction(() => {
   const status = window.BsbV2MapAuthoring.status();
-  return status.mapLibrary?.maps?.length === 3 && status.activeCatalogueMapId === 'first_flightless_night';
+  return status.mapLibrary?.maps?.length === 4 && status.activeCatalogueMapId === 'first_flightless_night';
 });
 
 await page.locator('.bsb-v2-tool[onclick*="terrain:water"]').click();
@@ -143,7 +143,8 @@ await page.screenshot({ path: runtimeScreenshot, fullPage: true });
 const firstAuthoringState = await page.evaluate(() => window.BsbV2MapAuthoring.status());
 
 await page.evaluate(() => window.BsbV2MapAuthoring.setView('author'));
-await page.locator('#bsb-v2-region-select').selectOption('ash_road_threshold');
+await page.locator('#bsb-v2-region-menu > summary').click();
+await page.locator('[data-region-id="ash_road_threshold"] button').click();
 await page.waitForFunction(() => {
   const status = window.BsbV2MapAuthoring.status();
   return status.activeCatalogueMapId === 'ash_road_threshold'
@@ -246,7 +247,7 @@ await writeFile(stateFile, `${JSON.stringify(proof, null, 2)}\n`);
 }
 
 if (proof.authoring.contract !== 'axiom.bsb-map-authoring.v0') throw new Error('authoring_contract_missing');
-if (proof.authoring.mapLibraryCount !== 3) throw new Error('map_library_not_loaded');
+if (proof.authoring.mapLibraryCount !== 4) throw new Error('map_library_not_loaded');
 if (proof.authoring.activeCatalogueMapId !== 'first_flightless_night') throw new Error('first_region_not_active_initially');
 if (proof.authoring.authoringPath !== 'data/bsb-v2/maps/first_escape.authoring.json') throw new Error('first_region_authoring_path_wrong');
 if (proof.authoring.transition?.nextMapPath !== '/data/maps/axiom-second-approach.runtime-map.json') throw new Error('first_region_transition_missing');
@@ -275,6 +276,7 @@ if (proof.secondRuntime.runtimeMap?.source !== '/data/maps/axiom-second-approach
 if (proof.secondRuntime.runtimeMap?.id !== 'axiom_second_approach') throw new Error('second_baked_runtime_id_wrong');
 if (!proof.secondRuntime.boulderAt1517) throw new Error('second_baked_scene_object_not_visible_to_runtime');
 if (proof.secondRuntime.rendererActiveBackend !== 'webgl3d') throw new Error('second_bsb_webgl3d_runtime_not_active');
+if (proof.previewRuntimeQuery?.skipHatch !== '1') throw new Error('second_region_preview_should_skip_default_hatch');
 if (proof.browserProof.appConsoleIssues.length || proof.browserProof.pageErrors.length || proof.browserProof.unclassifiedHttpFailures.length) {
   throw new Error('browser_runtime_issues_detected');
 }
@@ -350,7 +352,7 @@ function isExpectedBackgroundHttpFailure(failure) {
   if (failure.url === 'http://127.0.0.1:4242/call' && failure.error === 'net::ERR_CONNECTION_REFUSED') return true;
   return failure.url === 'http://localhost:3007/mcp/call'
     && failure.status === 500
-    && failure.postData?.tool === 'fs_ls'
+    && ['fs_ls', 'fs_find'].includes(failure.postData?.tool)
     && /docs\/skills/i.test(String(failure.postData?.params?.path || ''));
 }
 

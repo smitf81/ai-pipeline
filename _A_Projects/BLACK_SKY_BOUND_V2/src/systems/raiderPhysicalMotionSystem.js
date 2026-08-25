@@ -113,6 +113,7 @@ function updateMotionIntent(world, entity, transform, motion, ai, intent, dt) {
 
   updateLocomotionState(intent, transform, motion, dt);
   updateAttention(world, ai, intent, transform, dt);
+  updateLocomotionBlend(intent);
   updateWeaponPrediction(world, entity, ai, intent);
   updateAttackWeight(intent, ai, dt);
   updateFootContacts(intent, transform, ai, dt);
@@ -130,6 +131,7 @@ function updateLocomotionState(intent, transform, motion, dt) {
   else if (!wasMoving) intent.locomotion.travelFacing = transform.rotation ?? intent.locomotion.travelFacing;
   intent.locomotion.speed = filteredSpeed;
   intent.locomotion.speed01 = clamp(filteredSpeed / maxSpeed, 0, 1);
+  intent.locomotion.maxSpeed = maxSpeed;
   intent.locomotion.moving = moving;
   intent.locomotion.starting01 = approach(intent.locomotion.starting01, measuredSpeed > 0.08 ? 1 : 0, dt, 8);
   intent.locomotion.stopping01 = approach(intent.locomotion.stopping01, measuredSpeed <= 0.035 && filteredSpeed > 0.05 ? 1 : 0, dt, 7);
@@ -137,6 +139,26 @@ function updateLocomotionState(intent, transform, motion, dt) {
   intent.attention.travelFacing = intent.locomotion.travelFacing;
   if (!wasMoving && moving) beginSwing(intent, transform);
   if (wasMoving && !moving) plantBothFeet(intent);
+}
+
+function updateLocomotionBlend(intent) {
+  const chestForward = axis(intent.attention.chestFacing);
+  const chestRight = { x: -chestForward.y, y: chestForward.x };
+  const maxSpeed = Math.max(0.1, Number(intent.locomotion.maxSpeed) || 3.1);
+  intent.locomotion.forward = clamp(
+    (intent.pelvis.velocityX * chestForward.x + intent.pelvis.velocityY * chestForward.y) / maxSpeed,
+    -1,
+    1
+  );
+  intent.locomotion.lateral = clamp(
+    (intent.pelvis.velocityX * chestRight.x + intent.pelvis.velocityY * chestRight.y) / maxSpeed,
+    -1,
+    1
+  );
+  const movingWeight = smoothstep(0.04, 0.12, intent.locomotion.speed01);
+  intent.locomotion.runWeight = movingWeight * smoothstep(0.55, 0.8, intent.locomotion.speed01);
+  intent.locomotion.walkWeight = movingWeight - intent.locomotion.runWeight;
+  intent.locomotion.idleWeight = 1 - movingWeight;
 }
 
 function updateAttention(world, ai, intent, transform, dt) {
@@ -366,6 +388,11 @@ function settleDefeatedIntent(intent) {
   intent.locomotion.moving = false;
   intent.locomotion.speed = 0;
   intent.locomotion.speed01 = 0;
+  intent.locomotion.forward = 0;
+  intent.locomotion.lateral = 0;
+  intent.locomotion.idleWeight = 1;
+  intent.locomotion.walkWeight = 0;
+  intent.locomotion.runWeight = 0;
   intent.weapon.phase = EnemyAttackPhase.IDLE;
   intent.weapon.committed = false;
   plantBothFeet(intent);
@@ -383,6 +410,7 @@ function approach(value, target, dt, rate) { return lerp(value, target, dt > 0 ?
 function axis(angle) { return { x: Math.cos(angle), y: Math.sin(angle) }; }
 function lerp(a, b, t) { return a + (b - a) * t; }
 function smooth(value) { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t); }
+function smoothstep(edge0, edge1, value) { return smooth((value - edge0) / Math.max(0.0001, edge1 - edge0)); }
 function shortestAngle(value) { return ((value + Math.PI) % TAU + TAU) % TAU - Math.PI; }
 function rotateToward(current, target, amount) { return current + clamp(shortestAngle(target - current), -amount, amount); }
 function normalise(x, y, fallback) { const length = Math.hypot(x, y); return length > 0.0001 ? { x: x / length, y: y / length } : { ...fallback }; }

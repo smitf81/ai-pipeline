@@ -2,7 +2,7 @@ import { RENDER_BUDGETS } from '../data/renderBudgets.js';
 import { getSmokeSourceRecipe, SmokeSourceKind } from '../data/smokeSources.js';
 import { resolveNapalmDropletVisualState } from './napalmLayerState.js';
 import { buildMamaWorldEventSmokeSourceViews } from '../data/mamaWyvernWorldEvents.js';
-import { buildTreeFireSmokeSourceViews } from '../data/treeFireStates.js';
+import { buildFoliageFireSmokeSourceViews } from '../data/foliageFireStates.js';
 
 export function buildSmokeSourceViews(game) {
   const sources = [
@@ -10,7 +10,7 @@ export function buildSmokeSourceViews(game) {
     ...buildNapalmDropletWispSourceViews(game),
     ...buildNapalmSmoulderSourceViews(game),
     ...buildLightDrivenSmokeSourceViews(game),
-    ...buildTreeFireSmokeSourceViews(game.sceneObjects),
+    ...buildFoliageFireSmokeSourceViews(game.sceneObjects),
     ...buildMamaWorldEventSmokeSourceViews(game.worldEvents)
   ];
   sources.sort((a, b) => (b.renderPriority ?? 0) - (a.renderPriority ?? 0));

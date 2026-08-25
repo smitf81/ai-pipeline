@@ -92,10 +92,14 @@ try {
   await resetDrool(page);
   await step(page, 50);
   captures.push(await capture(page, 'mouth-formation', 5.2, captures.length, artifacts));
+  assert.equal(captures.at(-1).state.cameraVisibilityFocus.syntheticLightCount, 0, 'mouth formation must not reactivate a player-following readability light');
+  assert.equal(captures.at(-1).state.lights.activeSourceKinds.baby_wyvern_droplet_light ?? 0, 0, 'mouth-attached dribble should remain visual-only');
   await step(page, 100);
   captures.push(await capture(page, 'hanging-stretch', 5.2, captures.length, artifacts));
   await step(page, 170);
   captures.push(await capture(page, 'airborne-trail', 5.2, captures.length, artifacts));
+  assert.ok((captures.at(-1).state.lights.activeSourceKinds.baby_wyvern_droplet_light ?? 0) > 0, 'detached droplets should become warm world-light sources');
+  assert.ok(!captures.at(-1).state.lights.shadowOwners.some((id) => String(id).includes('airborne_light')), 'small droplet lights must not consume shadow ownership');
   await step(page, 284);
   await setDroolEmitterEnabled(page, false);
   await moveActorClearOfDeposit(page);
@@ -103,6 +107,7 @@ try {
   captures.push(await capture(page, 'ground-impact', 5.2, captures.length, artifacts, 'deposit'));
   await step(page, 360);
   captures.push(await capture(page, 'deposit-flame-smoke', 5.2, captures.length, artifacts, 'deposit'));
+  assert.ok((captures.at(-1).state.lights.activeSourceKinds.baby_wyvern_drool_pool_light ?? 0) > 0, 'landed napalm should retain local warm pool illumination');
   await step(page, 4400);
   captures.push(await capture(page, 'cooling-aftermath', 5.2, captures.length, artifacts, 'deposit'));
 
@@ -215,6 +220,7 @@ async function capture(page, name, zoom, index, artifacts, focus = 'player') {
       const player = target.state.game.actors.find((entry) => entry.team === 'player');
       return {
         camera: structuredClone(diagnostics.camera),
+        cameraVisibilityFocus: structuredClone(diagnostics.liveWorld.cameraVisibilityFocus),
         mouthSocket: structuredClone(player?.wyvernProjection?.proceduralPose?.sockets?.mouth ?? null),
         droplets: structuredClone(target.state.game.renderLayers.napalm.droplets),
         pools: structuredClone(target.state.game.renderLayers.napalm.pools),

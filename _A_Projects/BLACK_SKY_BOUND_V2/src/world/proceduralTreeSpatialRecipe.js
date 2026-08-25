@@ -35,7 +35,9 @@ export function generateProceduralTreeSpatialRecipe(definition) {
     traversalModifiers: Object.freeze(traversalModifiers),
     material: Object.freeze({
       barkColour: definition.barkColour,
+      barkMaterial: definition.barkMaterial,
       leafColour: seasonalLeafColour(definition),
+      leafMaterial: seasonalLeafMaterial(definition),
       roughness: definition.form === 'conifer' ? 0.92 : 0.84,
       moss: definition.moss
     }),
@@ -222,6 +224,13 @@ function seasonalLeafColour(definition) {
   if (definition.season === 'winter') return '#493f31';
   if (definition.season === 'spring') return '#7da34b';
   return definition.leafColour;
+}
+
+function seasonalLeafMaterial(definition) {
+  const seasonalTint = definition.evergreen || definition.season === 'summer'
+    ? definition.leafMaterial.tint
+    : seasonalLeafColour(definition);
+  return Object.freeze({ ...definition.leafMaterial, tint: seasonalTint });
 }
 
 function seededRandom(seed) {

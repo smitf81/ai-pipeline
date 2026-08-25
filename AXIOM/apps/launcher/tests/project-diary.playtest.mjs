@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,6 +13,7 @@ const requireFromBsb = createRequire(join(bsbRoot, 'package.json'));
 const { chromium } = requireFromBsb('@playwright/test');
 const axiomUrl = process.env.AXIOM_PROOF_URL || 'http://localhost:3007/axiom-editor.html';
 const outDir = join(launcherRoot, 'output', 'playwright', 'project-diary');
+const journalDataRoot = join(launcherRoot, 'data', 'project-diary');
 const sourceText = 'Raiders still look unclear when blocking. Their elbows probably need articulating, spear reach should read earlier, and I do not want outlines.';
 const files = {
   authoring: join(launcherRoot, 'data', 'bsb-v2', 'maps', 'first_escape.authoring.json'),
@@ -20,6 +22,14 @@ const files = {
 };
 
 await mkdir(outDir, { recursive: true });
+const journalBackupRoot = await mkdtemp(join(tmpdir(), 'axiom-project-journal-proof-'));
+const journalBackupData = join(journalBackupRoot, 'project-diary');
+let journalDataExisted = false;
+try {
+  await stat(journalDataRoot);
+  journalDataExisted = true;
+  await cp(journalDataRoot, journalBackupData, { recursive: true });
+} catch {}
 const original = Object.fromEntries(await Promise.all(Object.entries(files).map(async ([key, file]) => [key, await readFile(file, 'utf8')])));
 const beforeHashes = hashRecord(original);
 const browser = await launchBrowser();
@@ -47,31 +57,42 @@ try {
   if (loaded?.ok === false) throw new Error(`bsb_project_load_failed:${loaded.error || 'unknown'}`);
   await waitForDiaryWorkspace(page);
 
-  const prePin = await page.evaluate(() => ({
+  const preAnnotation = await page.evaluate(() => ({
     revision: window.BsbV2MapAuthoring.status().document.revision,
     dirty: window.BsbV2MapAuthoring.status().dirty,
     inputOwner: window.BsbV2MapAuthoring.status().inputOwner,
-    panel: window.AxiomUXRuntime.getState().activeLeftPanel
+    panel: window.AxiomUXRuntime.getState().activeLeftPanel,
+    journalView: window.ProjectDiaryRuntime.status().activeView
   }));
-  assertEqual(prePin.inputOwner, 'diary', 'Diary owns initial map input');
-  assertEqual(prePin.panel, 'diary', 'Diary is the BSB front door');
+  assertEqual(preAnnotation.inputOwner, 'forge', 'Forge retains map mutation ownership beside the Journal');
+  assertEqual(preAnnotation.panel, 'bsb-map', 'Forge remains the BSB left-rail owner');
+  assertEqual(preAnnotation.journalView, 'journal', 'Journal is presented in the co-pilot rail');
+  if (await page.locator('.ptab[data-panel-id="diary"]').count()) throw new Error('legacy_left_diary_tab_still_visible');
 
   const canvas = page.locator('#bsb-v2-map-canvas');
   const canvasBounds = await canvas.boundingBox();
   if (!canvasBounds || canvasBounds.width < 400 || canvasBounds.height < 300) throw new Error('project_diary_map_canvas_not_visible');
-  await page.mouse.click(canvasBounds.x + canvasBounds.width * 0.46, canvasBounds.y + canvasBounds.height * 0.52);
-  await page.waitForFunction(() => !!window.BsbV2MapAuthoring.getDiaryAnchor?.());
-  const postPin = await page.evaluate(() => ({
+  await page.locator('#mode-annotate').click();
+  await page.locator('[data-annotation-tool="circle"]').click();
+  await page.mouse.move(canvasBounds.x + canvasBounds.width * 0.42, canvasBounds.y + canvasBounds.height * 0.48);
+  await page.mouse.down();
+  await page.mouse.move(canvasBounds.x + canvasBounds.width * 0.49, canvasBounds.y + canvasBounds.height * 0.56, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForFunction(() => window.InteractionModeRuntime.status().annotationCount === 1);
+  const postAnnotation = await page.evaluate(() => ({
     revision: window.BsbV2MapAuthoring.status().document.revision,
     dirty: window.BsbV2MapAuthoring.status().dirty,
-    anchor: window.BsbV2MapAuthoring.getDiaryAnchor(),
+    annotation: window.InteractionModeRuntime.status().annotations[0],
+    journal: window.ProjectDiaryRuntime.status(),
     contextText: document.getElementById('project-diary-context')?.innerText || ''
   }));
-  assertEqual(postPin.revision, prePin.revision, 'Diary pin does not change authoring revision');
-  assertEqual(postPin.dirty, prePin.dirty, 'Diary pin does not dirty authoring');
-  if (!postPin.anchor?.tile || !/Diary pin — map is read-only/i.test(postPin.contextText)) throw new Error('diary_spatial_context_not_visible');
+  assertEqual(postAnnotation.revision, preAnnotation.revision, 'Annotating does not change authoring revision');
+  assertEqual(postAnnotation.dirty, preAnnotation.dirty, 'Annotating does not dirty authoring');
+  assertEqual(postAnnotation.annotation.kind, 'circle', 'Circle tool produces a circle annotation');
+  assertEqual(postAnnotation.annotation.surface.classification, 'canonical_authoring_anchor', 'Author mark resolves to canonical authoring coordinates');
+  if (!postAnnotation.annotation.surface.tile || !/Original first, interpretation second/i.test(postAnnotation.contextText)) throw new Error('journal_annotation_context_not_visible');
 
-  await page.locator('#project-diary-input').fill(sourceText);
+  await page.locator('#chat-input').fill(sourceText);
   await page.locator('#project-diary-capture-button').click();
   await page.waitForFunction(text => window.ProjectDiaryRuntime.entries().some(entry => entry.source?.text === text), sourceText, { timeout: 30000 });
   await page.waitForFunction(() => !document.getElementById('project-diary-capture-button')?.disabled, null, { timeout: 100000 });
@@ -83,14 +104,17 @@ try {
       interpretation,
       browser: window.ProjectDiaryRuntime.status(),
       model: window.EDITOR.model.status(),
-      panelText: document.getElementById('panel-diary')?.innerText || ''
+      panelText: document.getElementById('project-diary-view')?.innerText || ''
     };
   }, sourceText);
   assertEqual(capture.entry.source.text, sourceText, 'original source preserved in live Diary');
   assertEqual(capture.entry.source.preserved, true, 'source preservation marker');
   assertEqual(capture.entry.context.project.id, 'black-sky-bound-v2-demo', 'entry project binding');
-  assertEqual(capture.entry.context.spatialAnchor.tile.x, postPin.anchor.tile.x, 'entry retains viewport x pin');
-  assertEqual(capture.entry.context.spatialAnchor.tile.y, postPin.anchor.tile.y, 'entry retains viewport y pin');
+  assertEqual(capture.entry.context.spatialAnchor.tile.x, postAnnotation.annotation.surface.tile.x, 'entry retains annotated viewport x anchor');
+  assertEqual(capture.entry.context.spatialAnchor.tile.y, postAnnotation.annotation.surface.tile.y, 'entry retains annotated viewport y anchor');
+  assertEqual(capture.entry.source.annotations.length, 1, 'entry persists the annotation geometry');
+  assertEqual(capture.entry.source.annotations[0].kind, 'circle', 'entry preserves the annotation tool');
+  if (!capture.entry.source.attachments.some(item => item.name === 'annotation-preview.png' && item.classification === 'user_attachment_preserved')) throw new Error('annotation_preview_not_preserved');
   if (!capture.entry.derived.evidence.ownerCandidates.some(item => /actorLightReadabilityProfiles|raiderGuardState/.test(item.path))) throw new Error('real_bsb_owner_not_grounded');
   if (!capture.entry.derived.evidence.knowledgeLinks.some(item => ['accepted_constraint', 'accepted_decision'].includes(item.classification))) throw new Error('real_bsb_decision_or_constraint_not_linked');
   if (!/preserved source/i.test(capture.panelText) || !/What AXIOM understood/i.test(capture.panelText)) throw new Error('source_interpretation_separation_not_visible');
@@ -104,14 +128,14 @@ try {
     interpretation: capture.interpretation,
     evidence: capture.entry.derived.evidence,
     model: capture.model,
-    revisionBeforePin: prePin.revision,
-    revisionAfterPin: postPin.revision,
-    dirtyBeforePin: prePin.dirty,
-    dirtyAfterPin: postPin.dirty
+    revisionBeforePin: preAnnotation.revision,
+    revisionAfterPin: postAnnotation.revision,
+    dirtyBeforePin: preAnnotation.dirty,
+    dirtyAfterPin: postAnnotation.dirty
   };
 
   const draftText = 'Follow-up thought remains here while I inspect the Forge.';
-  await page.locator('#project-diary-input').fill(draftText);
+  await page.locator('#chat-input').fill(draftText);
   const entrySelector = `.project-diary-entry[data-entry-id="${capture.entry.id}"]`;
   await page.locator(`${entrySelector} [data-diary-action="forge"]`).click();
   await page.waitForFunction(() => window.AxiomUXRuntime.getState().activeLeftPanel === 'bsb-map' && window.BsbV2MapAuthoring.status().inputOwner === 'forge');
@@ -125,16 +149,17 @@ try {
   }));
   assertEqual(forgeState.panel, 'bsb-map', 'Open in Forge activates Forge panel');
   assertEqual(forgeState.inputOwner, 'forge', 'Forge owns map input after handoff');
-  assertEqual(forgeState.anchor.tile.x, postPin.anchor.tile.x, 'Forge receives Diary x pin');
+  assertEqual(forgeState.anchor.tile.x, postAnnotation.annotation.surface.tile.x, 'Forge receives Journal x anchor');
   if (!forgeState.diaryReturnVisible || !/Input: Forge/i.test(forgeState.stageText)) throw new Error('forge_return_or_input_owner_not_visible');
   const forgeScreenshot = join(outDir, 'axiom-project-diary-forge-handoff.png');
   await page.screenshot({ path: forgeScreenshot, fullPage: false });
   proof.screenshots.push(forgeScreenshot);
 
+  await page.locator('[data-copilot-surface="chat"]').click();
   await page.locator('#bsb-v2-stage-diary-return').click();
-  await page.waitForFunction(() => window.AxiomUXRuntime.getState().activeLeftPanel === 'diary' && window.BsbV2MapAuthoring.status().inputOwner === 'diary');
-  assertEqual(await page.locator('#project-diary-input').inputValue(), draftText, 'unfinished Diary draft survives Forge round trip');
-  proof.handoff = { prePin, postPin, forgeState, draftPreserved: true };
+  await page.waitForFunction(() => window.ProjectDiaryRuntime.status().activeView === 'journal' && window.AxiomUXRuntime.getState().activeLeftPanel === 'bsb-map');
+  assertEqual(await page.locator('#chat-input').inputValue(), draftText, 'unfinished Journal draft survives Forge round trip');
+  proof.handoff = { preAnnotation, postAnnotation, forgeState, draftPreserved: true };
 
   await page.locator(`${entrySelector} [data-diary-action="handover"]`).click();
   await page.waitForFunction(() => document.getElementById('project-diary-dialog')?.open && document.getElementById('project-diary-handover-text')?.innerText.includes('Original user material'));
@@ -195,7 +220,7 @@ try {
   const reverseProposalId = findDeepValue(reverseProposal, 'proposalId');
   const reversed = await page.evaluate(id => window.EDITOR.chat.send(`apply edit proposal ${id}`), reverseProposalId);
   assertResultOk(reversed, 'documentation reverse apply');
-  assertEqual(await readFile(files.documentationFixture, 'utf8'), original.documentationFixture, 'documentation fixture restored through governed reverse');
+  assertEqual(normalizeLineEndings(await readFile(files.documentationFixture, 'utf8')), normalizeLineEndings(original.documentationFixture), 'documentation fixture restored semantically through governed reverse');
   proof.governedDocumentationEdit = {
     proposalId,
     applyReceipt: findDeepValue(applied, 'receiptId'),
@@ -213,6 +238,9 @@ try {
     }
   } catch {}
   await browser.close();
+  await rm(journalDataRoot, { recursive: true, force: true });
+  if (journalDataExisted) await cp(journalBackupData, journalDataRoot, { recursive: true });
+  await rm(journalBackupRoot, { recursive: true, force: true });
 }
 
 const after = Object.fromEntries(await Promise.all(Object.entries(files).map(async ([key, file]) => [key, await readFile(file, 'utf8')])));
@@ -225,7 +253,7 @@ console.log(JSON.stringify({
   proofPath,
   screenshots: proof.screenshots,
   sourcePreserved: proof.capture.source.preserved,
-  diaryPinDidNotMutate: proof.capture.revisionBeforePin === proof.capture.revisionAfterPin && proof.capture.dirtyBeforePin === proof.capture.dirtyAfterPin,
+  annotationDidNotMutate: proof.capture.revisionBeforePin === proof.capture.revisionAfterPin && proof.capture.dirtyBeforePin === proof.capture.dirtyAfterPin,
   forgeRoundTripPreservedDraft: proof.handoff.draftPreserved,
   stewardIdleModelCalls: proof.steward.debounce.status.idleModelCalls,
   exactRestoration: JSON.stringify(proof.afterHashes) === JSON.stringify(beforeHashes)
@@ -240,10 +268,12 @@ async function waitForDiaryWorkspace(targetPage) {
       && context.authoring?.active
       && authoring?.active
       && authoring?.document
-      && diary?.activePanel === 'diary'
-      && authoring.inputOwner === 'diary'
+      && diary?.activePanel === 'journal'
+      && diary?.activeView === 'journal'
+      && authoring.inputOwner === 'forge'
+      && window.AxiomUXRuntime?.getState?.()?.activeLeftPanel === 'bsb-map'
       && document.body.classList.contains('bsb-workspace-active')
-      && !document.querySelector('.ptab[data-panel-id="diary"]')?.hidden;
+      && !document.querySelector('.ptab[data-panel-id="diary"]');
   }, null, { timeout: 30000 });
 }
 
@@ -280,7 +310,7 @@ function assertNoUnexpectedIssues(result, label) {
 function expectedBackgroundFailure(failure) {
   const url = String(failure.url || '');
   if (/^http:\/\/(localhost|127\.0\.0\.1):(11434|1234|3000|4242)\//.test(url)) return true;
-  return url === 'http://localhost:3007/mcp/call'
+  return /\/mcp\/call$/.test(url)
     && failure.status === 500
     && failure.postData?.tool === 'fs_ls'
     && /docs\/skills/i.test(String(failure.postData?.params?.path || ''));
@@ -303,6 +333,10 @@ function findDeepValue(value, key, seen = new Set()) {
 
 function hashRecord(record) {
   return Object.fromEntries(Object.entries(record).map(([key, value]) => [key, createHash('sha256').update(value).digest('hex')]));
+}
+
+function normalizeLineEndings(value) {
+  return String(value || '').replace(/\r\n/g, '\n');
 }
 
 function assertEqual(actual, expected, label) {

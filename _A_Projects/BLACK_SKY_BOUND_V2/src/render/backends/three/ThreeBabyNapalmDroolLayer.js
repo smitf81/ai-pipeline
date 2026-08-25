@@ -354,7 +354,9 @@ function material(colour, options = {}) {
     emissiveIntensity: options.emissiveIntensity ?? 0,
     flatShading: true
   });
-  return new Type(parameters);
+  const ownedMaterial = new Type(parameters);
+  ownedMaterial.forceSinglePass = ownedMaterial.transparent && ownedMaterial.side === THREE.DoubleSide;
+  return ownedMaterial;
 }
 
 function emptyStats() {

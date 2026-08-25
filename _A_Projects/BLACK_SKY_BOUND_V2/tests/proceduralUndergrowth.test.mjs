@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import * as THREE from 'three';
 import { assert, equal } from './assert.mjs';
 import {
   PROCEDURAL_UNDERGROWTH_DEFINITION_CONTRACT,
@@ -12,6 +13,7 @@ import {
 import { createSceneObject } from '../src/world/sceneObjects.js';
 import { buildSceneryProjection } from '../src/projection/sceneObjectProjection.js';
 import { buildWebGLSceneryDepthItems } from '../src/render/backends/webgl/layers/WebGLSceneryLayer.js';
+import { ThreeUndergrowthLayer } from '../src/render/backends/three/ThreeUndergrowthLayer.js';
 
 const authored = {
   contract: UNDERGROWTH_DNA_CONTRACT,
@@ -46,6 +48,7 @@ equal(first.contract, PROCEDURAL_UNDERGROWTH_SKELETON_CONTRACT, 'generator shoul
 assert(JSON.stringify(first) === JSON.stringify(second), 'the same undergrowth seed should reproduce the same spline skeleton');
 assert(first.stems.length >= 6, 'healthy fern DNA should generate multiple frond splines');
 assert(first.stems.every((stem) => stem.points.length >= 4), 'undergrowth stems should be sampled splines rather than fixed triangles');
+assert(first.units === 'metres_y_up' && first.stems.every((stem) => stem.points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z))), 'v2 undergrowth skeleton points should be renderer-neutral metre-space xyz data');
 assert(first.leaves.length >= 8, 'healthy summer undergrowth should generate bounded leaf clusters');
 
 const damaged = generateProceduralUndergrowthSkeleton(resolveProceduralUndergrowthDefinition({ ...authored, health: .18 }, { id: 'fern:damaged', type: 'fern_patch' }));
@@ -74,7 +77,29 @@ assert(built.proceduralUndergrowthSplineCount >= 12, 'WebGL diagnostics should e
 assert(built.proceduralUndergrowthLeafClusterCount >= 8, 'WebGL diagnostics should expose generated leaf clusters');
 assert(built.items.every((item) => item.proceduralUndergrowth?.generatedTriangleCount > 0), 'procedural undergrowth should triangulate only at the renderer boundary');
 
+const batchRoot = new THREE.Group();
+const batch = new ThreeUndergrowthLayer(batchRoot, 16);
+batch.rebuild(projection.scenery);
+const batchDiagnostics = batch.diagnostics();
+equal(batchDiagnostics.objectCount, 3, 'Three.js should batch every undergrowth object through one layer');
+assert(batchDiagnostics.drawCalls <= batchDiagnostics.chunkCount * 4, 'Three.js undergrowth should retain four or fewer material batches per cullable chunk');
+equal(batch.renderEnvelopeObjects().length, batchDiagnostics.chunkCount, 'every undergrowth chunk should expose one foliage render-envelope candidate');
+equal(batchDiagnostics.objectIdRangeCount, 3, 'Three.js undergrowth should retain object-ID ranges for targeted fire updates');
+assert(batchDiagnostics.leafCount > 0 && batchDiagnostics.groundClusterCount > 0, 'Three.js batch should carry recipe leaves and ground clusters rather than stand-ins');
+const shrubRange = batch.objectRanges.get('shrub:dna').leaves;
+const baseScale = new THREE.Vector3();
+shrubRange.baseMatrices[shrubRange.start].decompose(new THREE.Vector3(), new THREE.Quaternion(), baseScale);
+batch.applyMaterialUpdates([{ id: 'shrub:dna', material: { state: { firePhase: 'burnt_out', charAmount: 1, heatAmount: 0, emberAmount: 0 } } }]);
+const burntMatrix = new THREE.Matrix4();
+const burntScale = new THREE.Vector3();
+shrubRange.mesh.getMatrixAt(shrubRange.start, burntMatrix);
+burntMatrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), burntScale);
+assert(burntScale.length() < baseScale.length() * 0.1, 'targeted burnt-out updates should deplete foliage instances without rebuilding the batch');
+batch.dispose();
+
 const scenerySource = readFileSync(new URL('../src/render/backends/webgl/layers/WebGLSceneryLayer.js', import.meta.url), 'utf8');
 for (const divergentBuilder of ['buildFernPatch', 'buildForestShrub', 'buildSmoulderingFern', 'buildSmoulderingBramble']) {
   assert(!scenerySource.includes(divergentBuilder), `${divergentBuilder} should be deleted after procedural migration`);
 }
+const threeFactorySource = readFileSync(new URL('../src/render/backends/three/ThreeSceneryFactory.js', import.meta.url), 'utf8');
+assert(!threeFactorySource.includes('createFern') && !threeFactorySource.includes('createShrub'), 'Three.js fixed primitive undergrowth branches should be deleted');

@@ -7,7 +7,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const artifacts = path.join(root, 'artifacts', 'webgl3d-wyvern-poses-v1');
+const embodiment = 'surface-v2-production';
+const expectedContract = 'black-sky-bound.procedural-wyvern-mesh-recipe.v2';
+const query = '';
+const artifacts = path.join(root, 'artifacts', `webgl3d-wyvern-poses-${embodiment}`);
 await mkdir(artifacts, { recursive: true });
 const runtime = await startRuntime();
 const browser = await launchBrowser();
@@ -18,10 +21,20 @@ page.on('pageerror', (error) => issues.pageErrors.push(error.message));
 page.on('requestfailed', (request) => issues.requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`));
 
 try {
-  await page.goto(`${runtime.url}?skipHatch=1&mamaAuto=0&renderer=webgl3d&gpuTiming=1`, { waitUntil: 'networkidle' });
+  await page.goto(`${runtime.url}?skipHatch=1&mamaAuto=0&renderer=webgl3d&gpuTiming=1${query}`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dActive === true);
-  await page.waitForFunction(() => (window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.actors?.wyvernMeshCount ?? 0) >= 35);
+  await page.waitForFunction((contract) => window.BSB_V2_DEMO?.state?.game?.renderLayers?.renderer?.webgl3dDiagnostics?.liveWorld?.actors?.wyvernContract === contract, expectedContract);
   await page.waitForTimeout(900);
+  await page.evaluate(() => {
+    const app = window.BSB_V2_DEMO;
+    const health = app.state.game.world.components.get('Health');
+    for (const [entity, state] of health?.entries?.() ?? []) {
+      if (entity === app.state.game.dragonId) continue;
+      state.hp = 0;
+      state.alive = false;
+    }
+    for (const selector of ['.bsb-tutorial', '.bsb-arena-banner']) document.querySelector(selector)?.style.setProperty('display', 'none', 'important');
+  });
   const captures = [];
   captures.push(await capture('idle-torch'));
 
@@ -32,14 +45,28 @@ try {
   await page.waitForTimeout(260);
 
   for (const expected of ['left_claw_swipe', 'right_claw_swipe', 'bite_attack']) {
-    await page.keyboard.press('j');
-    await page.waitForFunction((actionId) => window.BSB_V2_DEMO.state.game.actors.find((actor) => actor.team === 'player')?.wyvernProjection?.actionState?.actionId === actionId, expected);
-    await page.waitForTimeout(expected === 'bite_attack' ? 130 : 180);
+    await page.evaluate(async (actionId) => {
+      const { startProceduralAction } = await import('/src/systems/proceduralActionState.js');
+      const app = window.BSB_V2_DEMO;
+      const transform = app.state.game.world.components.get('Transform').get(app.state.game.dragonId);
+      startProceduralAction(app.state.game.world, app.state.game.dragonId, actionId, {
+        force: true,
+        aimX: transform.x + Math.cos(transform.rotation ?? 0) * 4,
+        aimY: transform.y + Math.sin(transform.rotation ?? 0) * 4
+      });
+    }, expected);
+    await page.waitForFunction((actionId) => {
+      const actor = window.BSB_V2_DEMO.state.game.actors.find((entry) => entry.team === 'player');
+      return actor?.wyvernProjection?.actionState?.actionId === actionId
+        && (actor?.bodyContactRig?.attackVolumes?.length ?? 0) > 0;
+    }, expected);
+    await page.evaluate(() => { window.BSB_V2_DEMO.state.paused = true; });
     const shot = await capture(`${expected}-torch`);
     assert.equal(shot.pose.actionId, expected, `${expected} must come from the authoritative combo state`);
     assert.ok(shot.pose.attackVolumes > 0, `${expected} must expose its authoritative swept contact volume`);
     captures.push(shot);
-    await page.waitForTimeout(expected === 'bite_attack' ? 410 : 350);
+    await page.evaluate(() => { window.BSB_V2_DEMO.state.paused = false; });
+    await page.waitForFunction((actionId) => window.BSB_V2_DEMO.state.game.actors.find((actor) => actor.team === 'player')?.wyvernProjection?.actionState?.actionId !== actionId, expected);
   }
 
   await page.evaluate(async () => {
@@ -86,14 +113,15 @@ try {
   captures.push(alignment);
 
   const actorStats = alignment.actors;
-  assert.ok(actorStats.wyvernMeshCount >= 35, 'accepted faceted player topology must remain live in every pose');
+  assert.ok(actorStats.wyvernMeshCount <= 10 && actorStats.wyvernTriangleCount <= 6000, 'production v2 surface budgets must remain live in every pose');
+  assert.equal(actorStats.wyvernContract, expectedContract, 'requested embodiment contract must remain live in every pose');
   assert.equal(actorStats.membraneCount, 2, 'both procedural wing membranes must remain live');
   assert.ok(actorStats.wyvernPoseUpdateCount > 0, 'live frames must continue driving the authoritative procedural rig');
   assert.ok(actorStats.contactDebug.enabled && actorStats.contactDebug.pooledVolumes > 0, 'F3 must expose pooled authoritative contact volumes');
   assert.deepEqual(issues.consoleErrors, [], 'console errors');
   assert.deepEqual(issues.pageErrors, [], 'page errors');
   assert.deepEqual(issues.requestFailures, [], 'request failures');
-  const report = { contract: 'black-sky-bound.webgl3d-procedural-wyvern-pose-browser-proof.v1', captures, issues };
+  const report = { contract: 'black-sky-bound.webgl3d-procedural-wyvern-pose-browser-proof.v1', embodiment, rendererContract: expectedContract, captures, issues };
   const reportFile = path.join(artifacts, 'report.json');
   await writeFile(reportFile, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   console.log(JSON.stringify({ status: 'passed', reportFile, captures: captures.map(({ name, pose, screenshot }) => ({ name, pose, screenshot })), issues }, null, 2));

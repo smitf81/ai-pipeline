@@ -1,0 +1,99 @@
+{
+  "id": "capability-acquisition-proof-mapforge-report",
+  "name": "Map Forge Context Reporter",
+  "version": "0.1.0",
+  "description": "Reports the active Map Forge map identity, revision, dimensions, terrain regions, and authoring status for planning context.",
+  "author": {
+    "name": "AXIOM Local Model Agent",
+    "source": "axiom-agent"
+  },
+  "entrypoint": "src/index.js",
+  "capabilities": [
+    "mcp-tool-expose"
+  ],
+  "permissions": {
+    "mcp": {
+      "expose_tools": true
+    }
+  },
+  "mcp_tools": [
+    {
+      "name": "mapforge_status_report",
+      "description": "Reports the active Map Forge map identity, revision, dimensions, terrain regions, and authoring status for planning context.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ],
+  "lifecycle_hooks": {
+    "on_load": "onLoad",
+    "on_activate": "onActivate",
+    "on_deactivate": "onDeactivate",
+    "on_unload": "onUnload"
+  },
+  "event_subscriptions": [],
+  "ui_surfaces": [],
+  "axiom_runtime": {
+    "min_version": "1.0.0",
+    "apis": [
+      "mapforge.status"
+    ]
+  },
+  "lifecycle": {
+    "status": "registered",
+    "created_at": "2026-08-17T17:01:04.713Z",
+    "model_candidate_generated_at": "2026-08-17T17:01:04.721Z",
+    "validated_at": "2026-08-17T17:01:04.726Z",
+    "packaged_at": "2026-08-17T17:01:04.730Z",
+    "bundle_path": "C:\\Users\\felix\\Desktop\\Automated_AI_Pipeline\\AXIOM\\apps\\plugin-builder\\packages\\capability-acquisition-proof-mapforge-report-0.1.0.axpkg",
+    "registered_at": "2026-08-17T17:01:04.732Z"
+  },
+  "safety": {
+    "may_modify_core": false,
+    "sandboxed": true,
+    "timeout_ms": 30000
+  },
+  "provenance": {
+    "request_id": "direct-proof-build-004",
+    "generated_by": "axiom-local-model-agent",
+    "template_used": "mcp_tool",
+    "generated_from": "capability_gap",
+    "acquisition_mode": "bounded_runtime_tool",
+    "original_request": "Tell me which Map Forge map is active and what terrain is currently authored there."
+  },
+  "compatibility": {
+    "os": [
+      "any"
+    ],
+    "node_version": ">=18"
+  },
+  "validation_status": {
+    "passed": true,
+    "validator_version": "1.0.0",
+    "schema_version": "1.0.0",
+    "errors": [],
+    "warnings": [],
+    "checksum": "46ac76032e0a025200a5b1f4f46888ffed5dc844e6c02b78820bdc50523bd9c6"
+  },
+  "implementation": {
+    "required_runtime_apis": [
+      "mapforge.status"
+    ],
+    "kind": "implementation_bearing_plugin_proposal",
+    "implementation_kind": "bounded_runtime_mcp_tool",
+    "target_area": "editor.runtime_plugin",
+    "capability_gap": "The agent needs a reusable callable tool that reports the active Map Forge map identity, revision, dimensions, terrain regions, and authoring status before it plans work.",
+    "available_runtime_apis": [
+      "workspace.getContext",
+      "mapforge.status",
+      "mapforge.describeTerrain",
+      "mapforge.previewTerrainPatch",
+      "mapforge.commitTerrainPatch",
+      "mapforge.undoTerrainPatch"
+    ],
+    "runtime_contract": "axiom.runtime-plugin-authoring.v1",
+    "integration_contract_path": "integration-contract.json",
+    "proposal_only": true
+  }
+}

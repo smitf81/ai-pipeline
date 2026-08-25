@@ -2,9 +2,13 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assert, equal } from './assert.mjs';
-import { getSoundCue } from '../src/audio/soundManifest.js';
+import { collectSoundAssetFiles, getSoundCue, SOUND_CUES } from '../src/audio/soundManifest.js';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
+const manifestAudioFiles = collectSoundAssetFiles();
+const environmentFiles = Object.values(SOUND_CUES).flatMap((cue) => cue.environmentFiles ?? []);
+assert(environmentFiles.length > 0, 'production manifest should expose authored environment-return assets');
+assert(environmentFiles.every((file) => manifestAudioFiles.includes(file)), 'canonical asset enumeration should include every environment return');
 const targets = [
   {
     cueId: 'player.voice.first_cry',
@@ -284,7 +288,8 @@ assert(directorSource.includes("cue.source === 'file'"), 'AudioDirector should r
 assert(fileVoiceSource.includes('source.loop = loop'), 'decoded file playback should loop production buffers for file-backed body cues');
 assert(directorSource.includes('recordPlaybackError'), 'required file playback failures should be explicit in runtime diagnostics');
 assert(!directorSource.includes('file_fallback_to_placeholder'), 'production file cues must not silently fall back to synthesis');
-assert(buildSource.includes("filter((cue) => cue.source === 'file')"), 'packaged playtests should derive production audio from the canonical sound manifest');
+assert(buildSource.includes('collectSoundAssetFiles(SOUND_CUES)'), 'packaged playtests should use canonical direct-plus-environment asset enumeration');
+assert(buildSource.includes('playtest_export_audio_scope_invalid'), 'packaged playtests should fail loudly when copied audio diverges from the manifest');
 assert(!buildSource.includes("'enemy_hit_flesh_01.wav',"), 'packaged playtests should not retain a hand-maintained audio allowlist');
 
 function inspectPcmWav(path) {

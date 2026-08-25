@@ -1,4 +1,5 @@
 import { EntityKind } from '../constants/entityKinds.js';
+import { metersToTiles } from './worldScale.js';
 
 export const LocomotionProfileId = Object.freeze({
   BABY_WYVERN: 'baby_wyvern_restrained_stamina_v0',
@@ -13,8 +14,34 @@ export const LOCOMOTION_PROFILES = Object.freeze({
     max: 60,
     regenPerSecond: 11,
     recoveryDelay: 1.4,
-    sprint: { enabled: true, multiplier: 1.42, drainPerSecond: 30, resumeThreshold: 18 },
-    dodge: { enabled: true, cost: 24, distance: 1.12, duration: 0.16, cooldown: 0.55, visualRecoveryDuration: 0.12, visualRecoveryStartPhase: 0.5, aiStyle: null, aiTriggerRange: 0 }
+    sprint: { enabled: true, multiplier: 1.42, drainPerSecond: 30, resumeEnergy01: 0.3 },
+    dodge: {
+      enabled: true,
+      cost: 24,
+      distance: metersToTiles(0.56),
+      duration: 0.16,
+      cooldown: 0.55,
+      visualRecoveryDuration: 0.12,
+      visualRecoveryStartPhase: 0.5,
+      inputBufferSeconds: 0.12,
+      interruptionBlendSeconds: 0.08,
+      gradient: {
+        enabled: true,
+        curve: 'smoothstep',
+        fullEffectEnergy01: 0.4,
+        minEffectiveness: 0.5,
+        distanceMinMeters: 0.28,
+        distanceMaxMeters: 0.56,
+        apexMinMeters: 0.06,
+        apexMaxMeters: 0.12,
+        landingCompressionLowEnergyMeters: 0.09,
+        landingCompressionFullEnergyMeters: 0.06,
+        cooldownLowEnergySeconds: 0.75,
+        cooldownFullEnergySeconds: 0.55
+      },
+      aiStyle: null,
+      aiTriggerRange: 0
+    }
   }),
   [LocomotionProfileId.RAIDER]: profile({
     id: LocomotionProfileId.RAIDER,
@@ -64,6 +91,9 @@ function profile(data) {
       recoveryDelay: data.recoveryDelay
     }),
     sprint: Object.freeze({ ...data.sprint }),
-    dodge: Object.freeze({ ...data.dodge })
+    dodge: Object.freeze({
+      ...data.dodge,
+      gradient: data.dodge?.gradient ? Object.freeze({ ...data.dodge.gradient }) : null
+    })
   });
 }

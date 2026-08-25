@@ -76,6 +76,11 @@ _A_Projects/BLACK_SKY_BOUND_V2/artifacts/
 _A_Projects/BLACK_SKY_BOUND_V2/output/
 _A_Projects/BLACK_SKY_BOUND_V2/node_modules/
 _A_Projects/BLACK_SKY_BOUND_V2/**/*.zip
+_A_Projects/BLACK_SKY_BOUND_V2/.vs/
+_A_Projects/BLACK_SKY_BOUND_V2/dist/
+_A_Projects/BLACK_SKY_BOUND_V2/tools/audio/__pycache__/
+.codex-backups/
+AXIOM/apps/launcher/data/level-design-sessions/
 
 # Local ACE run state is evidence, not repository source.
 ACE_Local_lightweight/**/.ace-local-agent-ide/

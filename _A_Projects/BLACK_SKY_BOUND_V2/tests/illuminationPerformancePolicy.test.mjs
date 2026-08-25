@@ -30,13 +30,27 @@ const criticalBudget = buildVisibleLightProjection([
 ], camera, tileSize, { ...RENDER_BUDGETS.lightEmitters, maxActive: 2 });
 equal(criticalBudget.lights[0].illuminationState, IlluminationState.CRITICAL, 'critical world-event light should survive the active-light budget first');
 assert(buildVisibleLightProjection([light('ember', 0, 0, { sourceKind: 'ember', radius: 2, revealRadius: 2 })], camera, tileSize).lights.every((item) => item.castsShadows === false), 'minor decorative emitters should illuminate without geometric shadows');
-const anchoredLightning = buildVisibleLightProjection([
+const rejectedOffscreenLightning = buildVisibleLightProjection([
   light('storm:far', 900, -700, { sourceKind: 'storm_lightning', sceneLight: true, stormEvent: { eventIndex: 4, flashIndex: 1 } })
 ], { ...camera, x: 640, y: 960 }, tileSize).lights[0];
-assert(anchoredLightning, 'an authored storm strike should remain visible even when its scheduler origin is outside the current map view');
-equal(anchoredLightning.visualAnchorPolicy, 'camera_local_high_cloud_strike_v1', 'lightning should publish its renderer-neutral visual anchoring policy');
-assert(Math.hypot(anchoredLightning.x - 20, anchoredLightning.y - 30) <= 7.1, 'the visible strike should land close enough to the camera focus to illuminate real local geometry');
-equal(anchoredLightning.scheduledOrigin.x, 900, 'the projected strike should retain its canonical scheduled origin as provenance');
+equal(rejectedOffscreenLightning, undefined, 'projection should not move an invalid offscreen storm origin into the camera');
+const acquiredLightningInput = light('storm:acquired', 20, 30, {
+  sourceKind: 'storm_lightning',
+  sceneLight: true,
+  radius: 122,
+  visualAnchorPolicy: 'fixed_world_storm_event_origin_v1',
+  stormEvent: {
+    eventIndex: 4,
+    flashIndex: 1,
+    originAcquisition: { policy: 'viewport_acquired_then_world_frozen_v1', worldFrozen: true }
+  }
+});
+const acquiredLightning = buildVisibleLightProjection([acquiredLightningInput], { ...camera, x: 640, y: 960 }, tileSize).lights[0];
+assert(acquiredLightning, 'a viewport-acquired storm strike should reach projection at its real world location');
+equal(acquiredLightning.visualAnchorPolicy, 'fixed_world_storm_event_origin_v1', 'lightning should publish its fixed-world visual anchoring policy');
+equal(acquiredLightning.x, 20, 'projection should preserve scheduler-owned world X');
+equal(acquiredLightning.y, 30, 'projection should preserve scheduler-owned world Y');
+equal(acquiredLightning.stormEvent.originAcquisition.policy, 'viewport_acquired_then_world_frozen_v1', 'projection should preserve acquisition provenance');
 
 const projectedLights = selected.lights;
 const culling = buildLightSpaceRenderCulling(projectedLights, camera, tileSize);

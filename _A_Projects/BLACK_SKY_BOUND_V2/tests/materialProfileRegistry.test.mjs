@@ -53,6 +53,7 @@ const leafLitter = projection.scenery.find((object) => object.type === SceneObje
 const grass = projection.terrain.tiles.find((tile) => tile.type === 'grass');
 const dirt = projection.terrain.tiles.find((tile) => tile.type === 'dirt');
 const scorched = projection.terrain.tiles.find((tile) => tile.type === 'scorched');
+const water = projection.terrain.tiles.find((tile) => tile.type === 'water');
 
 equal(player.material.profileId, MaterialProfileId.SCALE_WYVERN_COPPER, 'wyvern should project a scale material profile');
 equal(raider.material.profileId, MaterialProfileId.CLOTH_RAIDER, 'human raider should project a cloth material profile');
@@ -67,6 +68,9 @@ equal(leafLitter.material.profileId, MaterialProfileId.FOREST_FLOOR_DECAL, 'leaf
 equal(grass.material.profileId, MaterialProfileId.SOIL_GRASS, 'grass terrain should project a soil/grass material profile');
 equal(dirt.material.profileId, MaterialProfileId.SOIL_DIRT, 'dirt terrain should project a soil/dirt material profile');
 equal(scorched.material.profileId, MaterialProfileId.SCORCHED_SOIL, 'scorched terrain should project a scorched-soil material profile');
+equal(water.material.profileId, MaterialProfileId.WATER_DARK, 'water terrain should project the reflective water profile');
+equal(water.material.shaderVariant, 'terrainMaterial.water_reflective_physical_v1', 'water projection should advertise the active reflective physical shader');
+equal(water.material.state.wetness, 1, 'water should remain intrinsically wet independently of rainfall');
 
 assert(player.material.state.integrity > 0.99, 'undamaged player material should preserve full integrity');
 equal(player.material.provenance.truthSource, 'material profile registry plus projected object state', 'material packets should preserve projection/truth provenance');

@@ -1,0 +1,22 @@
+{
+  "contract": "black-sky-bound.mama-flyover-runtime-lod.v1",
+  "id": "mama_wyvern_dragon_main_march_v5_flyover_lod1",
+  "source": {
+    "asset": "dragon_main_march_v5_flyover.glb",
+    "vertexCount": 37286,
+    "triangleCount": 62848,
+    "bytes": 1571404
+  },
+  "bake": {
+    "tool": "tools/buildMamaFlyoverLod.mjs",
+    "policy": "three_simplify_modifier_offline_bake_preserve_original_source_glb",
+    "targetVertexCount": 8000
+  },
+  "runtime": {
+    "asset": "dragon_main_march_v5_flyover_lod1.glb",
+    "vertexCount": 5445,
+    "triangleCount": 7661,
+    "bytes": 222048,
+    "sha256": "21BF9C4059A3D3E4F99B219E2F91044B14C1986F1ED6D960A334FDFB4FFA41FF"
+  }
+}

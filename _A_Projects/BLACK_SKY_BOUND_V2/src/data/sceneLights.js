@@ -8,6 +8,8 @@ export const SceneLightSourceKind = Object.freeze({
   LIGHTNING: 'lightning_scene_flash'
 });
 
+const LIGHTNING_ORIGIN_CACHE = new WeakMap();
+
 export const SCENE_LIGHTS = Object.freeze({
   [SceneLightId.MOONLIGHT]: Object.freeze({
     id: SceneLightId.MOONLIGHT,
@@ -60,6 +62,8 @@ export const SCENE_LIGHTS = Object.freeze({
     enabled: true,
     radius: 122,
     intensity: 1,
+    luminousPowerLumens: 45000,
+    overheadIlluminationIntensity: 1.75,
     softness: 0.94,
     colour: 'rgba(180, 205, 255, 1)',
     innerColour: 'rgba(255, 252, 230, 1)',
@@ -75,11 +79,16 @@ export const SCENE_LIGHTS = Object.freeze({
       policy: 'deterministic_semirandom_clustered_storm_light_scene_emission',
       firstStrikeAt: 21,
       intervalSeconds: Object.freeze({ min: 18, max: 32 }),
-      clusterCount: Object.freeze({ min: 1, max: 3 }),
-      clusterSpacingSeconds: Object.freeze({ min: 0.075, max: 0.28 }),
-      flashSeconds: 0.095,
-      burnoffSeconds: 0.86,
-      originBounds: Object.freeze({ minX: -12, maxX: 48, minY: -18, maxY: 8 })
+      clusterCount: Object.freeze({ min: 1, max: 4 }),
+      clusterSpacingSeconds: Object.freeze({ min: 0.05, max: 0.24 }),
+      flashSeconds: 0.085,
+      burnoffSeconds: 0.78,
+      originBounds: Object.freeze({ minX: 2, maxX: 40, minY: 1, maxY: 13 }),
+      thunder: Object.freeze({
+        delay: Object.freeze({ baseMs: 520, perTileMs: 24, maxDistanceMs: 1700 }),
+        intensity: Object.freeze({ base: 0.62, flashWeight: 0.38 }),
+        cameraShake: Object.freeze({ durationMs: 720, amplitudeTiles: 0.18, frequencyHz: 12.5, decayPower: 2.05 })
+      })
     })
   })
 });
@@ -96,11 +105,11 @@ export function getSceneLightDefinition(id) {
   return light;
 }
 
-export function buildSceneLightViews(sceneLights = [], renderTime = 0) {
+export function buildSceneLightViews(sceneLights = [], renderTime = 0, visibilityContext = null) {
   return sceneLights
     .filter((light) => light?.enabled !== false)
     .flatMap((light) => {
-      if (light.sourceKind === SceneLightSourceKind.LIGHTNING) return buildLightningSceneLightViews(light, renderTime);
+      if (light.sourceKind === SceneLightSourceKind.LIGHTNING) return buildLightningSceneLightViews(light, renderTime, visibilityContext);
       return [buildStaticSceneLightView(light, renderTime)];
     });
 }
@@ -134,6 +143,8 @@ function buildStaticSceneLightView(light, renderTime) {
     y: light.y,
     radius: light.radius,
     intensity: light.intensity,
+    luminousPowerLumens: light.luminousPowerLumens ?? null,
+    overheadIlluminationIntensity: light.overheadIlluminationIntensity ?? null,
     softness: light.softness,
     colour: light.colour,
     innerColour: light.innerColour,
@@ -146,6 +157,9 @@ function buildStaticSceneLightView(light, renderTime) {
     sourceKind: light.sourceKind,
     sceneLight: true,
     sourcePolicy: light.sourcePolicy,
+    visualAnchorPolicy: light.sourceKind === SceneLightSourceKind.LIGHTNING
+      ? 'fixed_world_storm_event_origin_v1'
+      : null,
     direction: cloneData(light.direction),
     shadow: cloneData(light.shadow),
     cloudOcclusion: cloneData(light.cloudOcclusion),
@@ -153,7 +167,7 @@ function buildStaticSceneLightView(light, renderTime) {
   };
 }
 
-function buildLightningSceneLightViews(light, renderTime) {
+function buildLightningSceneLightViews(light, renderTime, visibilityContext) {
   const storm = light.storm ?? {};
   const time = finite(renderTime, 0);
   const active = [];
@@ -161,13 +175,13 @@ function buildLightningSceneLightViews(light, renderTime) {
   let eventStart = finite(storm.firstStrikeAt, 24);
   const searchEnd = time + finite(storm.burnoffSeconds, 0.86) + 1.2;
   while (eventStart <= searchEnd && eventIndex < 512) {
-    active.push(...buildLightningClusterViews(light, storm, eventIndex, eventStart, time));
+    active.push(...buildLightningClusterViews(light, storm, eventIndex, eventStart, time, visibilityContext));
     eventStart += lightningIntervalSeconds(storm, eventIndex);
     eventIndex += 1;
   }
   for (const strike of light.manualStrikes ?? []) {
     const manualIndex = 100000 + Math.max(0, Math.floor(strike.sequence ?? 0));
-    const views = buildLightningClusterViews(light, storm, manualIndex, finite(strike.startedAt, time), time);
+    const views = buildLightningClusterViews(light, storm, manualIndex, finite(strike.startedAt, time), time, visibilityContext);
     active.push(...views.map((view) => ({
       ...view,
       stormEvent: { ...view.stormEvent, manual: true, sourceEventId: strike.sourceEventId ?? null }
@@ -176,26 +190,29 @@ function buildLightningSceneLightViews(light, renderTime) {
   return active;
 }
 
-function buildLightningClusterViews(light, storm, eventIndex, eventStart, time) {
-  const clusterCount = rangedInteger(storm.clusterCount, hash01(eventIndex, 11), 1, 3);
-  const origin = lightningOrigin(storm, eventIndex);
+function buildLightningClusterViews(light, storm, eventIndex, eventStart, time, visibilityContext) {
+  const clusterCount = rangedInteger(storm.clusterCount, hash01(eventIndex, 11), 1, 4);
+  const flashSeconds = Math.max(0.025, finite(storm.flashSeconds, 0.095));
+  const burnoffSeconds = Math.max(0.08, finite(storm.burnoffSeconds, 0.86));
+  const lastFlashOffset = clusterOffsetSeconds(storm, eventIndex, Math.max(0, clusterCount - 1));
+  if (time < eventStart || time > eventStart + lastFlashOffset + flashSeconds + burnoffSeconds) return [];
+  const origin = acquireLightningOrigin(light, storm, eventIndex, eventStart, visibilityContext);
   const views = [];
   for (let flashIndex = 0; flashIndex < clusterCount; flashIndex += 1) {
     const offset = clusterOffsetSeconds(storm, eventIndex, flashIndex);
     const startedAt = eventStart + offset;
-    const flashSeconds = Math.max(0.025, finite(storm.flashSeconds, 0.095));
-    const burnoffSeconds = Math.max(0.08, finite(storm.burnoffSeconds, 0.86));
     const elapsed = time - startedAt;
     if (elapsed < 0 || elapsed > flashSeconds + burnoffSeconds) continue;
     const envelope = lightningEnvelope(elapsed, flashSeconds, burnoffSeconds);
+    const flashEnergy = flashIndex === 0 ? 1 : 0.65 + hash01(eventIndex, flashIndex, 83) * 0.35;
     const clusterEnergyScale = envelope.stage === 'afterimage_burnoff' ? 1 / Math.max(1, clusterCount) : 1;
     views.push({
       ...buildStaticSceneLightView(light, time),
       id: `${light.id}:${eventIndex}:${flashIndex}`,
-      x: origin.x + (hashSigned(eventIndex, flashIndex, 71) * 1.6),
-      y: origin.y + (hashSigned(eventIndex, flashIndex, 97) * 0.8),
+      x: origin.x,
+      y: origin.y,
       radius: light.radius * (0.94 + hash01(eventIndex, flashIndex, 43) * 0.14),
-      intensity: clamp01((light.intensity ?? 1) * envelope.intensity * clusterEnergyScale),
+      intensity: clamp01((light.intensity ?? 1) * envelope.intensity * flashEnergy * clusterEnergyScale),
       flashStage: envelope.stage,
       flashElapsed: round3(elapsed),
       flashSeconds,
@@ -208,11 +225,14 @@ function buildLightningClusterViews(light, storm, eventIndex, eventStart, time) 
         eventIndex,
         flashIndex,
         clusterCount,
+        flashEnergy: round3(flashEnergy),
         eventStart: round3(eventStart),
         startedAt: round3(startedAt),
-        nextEventStart: round3(getLightningEventStart(light, eventIndex + 1)),
+        nextEventStart: eventIndex >= 100000 ? null : round3(getLightningEventStart(light, eventIndex + 1)),
         origin: { x: round3(origin.x), y: round3(origin.y) },
-        intervalClampSeconds: cloneData(storm.intervalSeconds)
+        originAcquisition: cloneData(origin.acquisition),
+        intervalClampSeconds: cloneData(storm.intervalSeconds),
+        thunder: cloneData(storm.thunder)
       }
     });
   }
@@ -266,6 +286,89 @@ function lightningOrigin(storm, eventIndex) {
   };
 }
 
+function acquireLightningOrigin(light, storm, eventIndex, eventStart, visibilityContext) {
+  const key = `${eventIndex}:${round3(eventStart)}`;
+  const records = lightningOriginRecords(light);
+  const existing = records.find((record) => record.key === key);
+  if (existing) return existing;
+  const acquired = viewportLightningOrigin(visibilityContext, eventIndex);
+  const fallback = lightningOrigin(storm, eventIndex);
+  const record = acquired ?? {
+    key,
+    eventIndex,
+    eventStart: round3(eventStart),
+    x: fallback.x,
+    y: fallback.y,
+    acquisition: {
+      policy: 'deterministic_scene_bounds_fallback_no_viewport_v1',
+      worldFrozen: true
+    }
+  };
+  record.key = key;
+  record.eventIndex = eventIndex;
+  record.eventStart = round3(eventStart);
+  records.push(record);
+  while (records.length > 16) records.shift();
+  return record;
+}
+
+function viewportLightningOrigin(context, eventIndex) {
+  const camera = context?.camera;
+  const tileSize = Math.max(1, finite(context?.tileSize, 32));
+  const zoom = Math.max(0.1, finite(camera?.zoom, 0));
+  const viewportW = finite(camera?.viewportW, 0);
+  const viewportH = finite(camera?.viewportH, 0);
+  if (!camera || !Number.isFinite(Number(camera.x)) || !Number.isFinite(Number(camera.y)) || viewportW <= 0 || viewportH <= 0) return null;
+  const centerX = Number(camera.x) / tileSize;
+  const centerY = Number(camera.y) / tileSize;
+  const halfWidthTiles = viewportW / (2 * zoom * tileSize);
+  const halfHeightTiles = viewportH / (2 * zoom * tileSize);
+  const upperOffsetTiles = Math.max(0.8, Math.min(4, halfHeightTiles * 0.52));
+  const lateralRangeTiles = Math.max(0.55, Math.min(2.4, halfWidthTiles * 0.18));
+  const lateralOffsetTiles = hashSigned(eventIndex, 211) * lateralRangeTiles;
+  const diagonal = Math.SQRT1_2;
+  const rawX = centerX - diagonal * upperOffsetTiles + diagonal * lateralOffsetTiles;
+  const rawY = centerY - diagonal * upperOffsetTiles - diagonal * lateralOffsetTiles;
+  const margin = 0.75;
+  const mapMaxX = Math.max(margin, finite(context?.map?.width, rawX + margin) - margin);
+  const mapMaxY = Math.max(margin, finite(context?.map?.height, rawY + margin) - margin);
+  const x = clampRange(rawX, margin, mapMaxX);
+  const y = clampRange(rawY, margin, mapMaxY);
+  return {
+    x,
+    y,
+    acquisition: {
+      policy: 'viewport_acquired_then_world_frozen_v1',
+      worldFrozen: true,
+      intendedScreenBand: 'upper_middle',
+      intendedViewportX: round3(clampRange(0.5 + lateralOffsetTiles / Math.max(1, halfWidthTiles * 2), 0.38, 0.62)),
+      intendedViewportY: round3(clampRange(0.5 - upperOffsetTiles / Math.max(1, halfHeightTiles * 2), 0.16, 0.42)),
+      cameraSnapshot: {
+        x: round3(centerX),
+        y: round3(centerY),
+        zoom: round3(zoom),
+        halfWidthTiles: round3(halfWidthTiles),
+        halfHeightTiles: round3(halfHeightTiles)
+      },
+      clampedToMap: x !== rawX || y !== rawY
+    }
+  };
+}
+
+function lightningOriginRecords(light) {
+  if (Array.isArray(light?.stormEventOrigins)) return light.stormEventOrigins;
+  if (light && Object.isExtensible(light)) {
+    light.stormEventOrigins = [];
+    return light.stormEventOrigins;
+  }
+  let records = LIGHTNING_ORIGIN_CACHE.get(light);
+  if (!records) {
+    records = [];
+    LIGHTNING_ORIGIN_CACHE.set(light, records);
+  }
+  return records;
+}
+
 function rangedInteger(range, seed, fallbackMin, fallbackMax) {
   const min = Math.max(0, Math.round(finite(range?.min, fallbackMin)));
   const max = Math.max(min, Math.round(finite(range?.max, fallbackMax)));
@@ -273,7 +376,9 @@ function rangedInteger(range, seed, fallbackMin, fallbackMax) {
 }
 
 function cloneSceneLight(light) {
-  return cloneData(light);
+  const cloned = cloneData(light);
+  if (cloned?.sourceKind === SceneLightSourceKind.LIGHTNING) cloned.stormEventOrigins = [];
+  return cloned;
 }
 
 function cloneData(value) {
@@ -302,6 +407,12 @@ function clamp01(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 0;
   return Math.max(0, Math.min(1, numeric));
+}
+
+function clampRange(value, min, max) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return min;
+  return Math.max(min, Math.min(max, numeric));
 }
 
 function round3(value) {

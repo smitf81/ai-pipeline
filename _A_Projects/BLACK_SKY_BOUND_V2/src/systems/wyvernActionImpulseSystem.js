@@ -3,6 +3,8 @@ import { getComponent } from '../ecs/world.js';
 import { query } from '../ecs/query.js';
 import { getWyvernActionProfile } from '../data/creatures/groundedWyvernMotionProfiles.js';
 import { moveEntityRaw } from './movementSystem.js';
+import { forceProceduralActionPhase } from './proceduralActionState.js';
+import { applyImpactToReceiver } from './impactResponseState.js';
 
 export function wyvernActionImpulseSystem({ game, map, dt = 0 }) {
   for (const entity of query(game.world, [ComponentType.ActionState, ComponentType.Transform])) {
@@ -11,7 +13,8 @@ export function wyvernActionImpulseSystem({ game, map, dt = 0 }) {
     const profile = getWyvernActionProfile(actionState.actionId);
     const impulse = profile?.movementImpulse;
     if (!impulse || actionState.phase < impulse.activePhaseStart || actionState.phase > impulse.activePhaseEnd) continue;
-    const distance = Math.max(0, impulse.distance ?? 0);
+    const authoredDistance = Math.max(0, impulse.distance ?? 0);
+    const distance = Math.min(authoredDistance, Math.max(0, actionState.movementDistanceLimit ?? authoredDistance));
     const applied = Math.max(0, actionState.movementImpulseApplied ?? 0);
     const remaining = Math.max(0, distance - applied);
     if (remaining <= 0) continue;
@@ -32,7 +35,36 @@ export function wyvernActionImpulseSystem({ game, map, dt = 0 }) {
     actionState.movementImpulseApplied = Math.min(distance, applied + moved);
     if (step > 0.0001 && moved + 0.0001 < step) {
       actionState.movementBlocked = true;
-      if (impulse.stopOnBlocked) actionState.movementImpulseApplied = distance;
+      if (impulse.stopOnBlocked) {
+        const travelPolicy = impulse.impactTravel ?? {};
+        const recoilResponse = applyImpactToReceiver(getComponent(game.world, entity, ComponentType.ImpactResponse), {
+          source: 'terrain',
+          target: entity,
+          actionId: profile.id,
+          contactBodyPart: 'chest_body_front',
+          impactDirection: 'opposite_forward',
+          directionX: -direction.x,
+          directionY: -direction.y,
+          impactStrength: travelPolicy.sourceRecoilImpactStrength ?? 0,
+          staggerStrength: travelPolicy.sourceRecoilStaggerStrength ?? 0,
+          phase: actionState.phase
+        });
+        actionState.movementDistanceLimit = actionState.movementImpulseApplied;
+        actionState.impactLanding = true;
+        actionState.contactClosed = true;
+        actionState.lastImpactReceipt = Object.freeze({
+          target: null,
+          effectiveMass: null,
+          ratio: null,
+          retainedTravel: 0,
+          interruptionKind: 'terrain',
+          recoil: recoilResponse.impulse,
+          stopped: true,
+          requestedDistanceMeters: actionState.movementDistanceMeters,
+          appliedDistanceTiles: actionState.movementImpulseApplied
+        });
+        forceProceduralActionPhase(actionState, profile.impactPhaseStart ?? impulse.activePhaseEnd);
+      }
     }
   }
 }

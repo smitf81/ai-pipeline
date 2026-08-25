@@ -85,6 +85,51 @@ try {
   assert.equal(mapEntry.derived.interpretations[0].payload.confidence, 'high');
   assert.equal(mapEntry.derived.evidence.knowledgeLinks.some(item => item.path === 'docs/LIGHT_SPACE_RENDER_CULLING.md'), false, 'map intent should not inherit unrelated rendering constraints');
 
+  const visualService = createProjectDiaryService({ dataRoot: path.join(fixtureRoot, 'visual-diary-data'), maxEvidenceFiles: 80 });
+  const visualEntry = visualService.capture(project, {
+    source: {
+      text: '',
+      classification: 'visual_annotation',
+      annotations: [{
+        id: 'ann_circle_1',
+        kind: 'circle',
+        path: [{ x: 120, y: 90, nx: 0.2, ny: 0.25 }, { x: 190, y: 140, nx: 0.32, ny: 0.39 }],
+        surface: {
+          surfaceId: 'bsb-v2-map-authoring',
+          view: 'author',
+          classification: 'canonical_authoring_anchor',
+          catalogueMapId: 'first_flightless_night',
+          mapId: 'first_escape',
+          revision: 2409,
+          tile: { x: 27, y: 30 }
+        }
+      }],
+      attachments: [{
+        name: 'annotation-preview.png',
+        type: 'image/png',
+        dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+      }]
+    },
+    context: {
+      project: { id: project.id, name: project.name, root: project.selector, identityStatus: 'verified' },
+      scene: { kind: 'map', mapId: 'first_escape', catalogueMapId: 'first_flightless_night' },
+      authoring: { active: true, surfaceId: 'bsb-v2-map-authoring', sourcePath: 'data/bsb-v2/maps/first_escape.authoring.json', revision: 2409 }
+    },
+    spatialAnchor: { surfaceId: 'bsb-v2-map-authoring', catalogueMapId: 'first_flightless_night', mapId: 'first_escape', tile: { x: 27, y: 30 } }
+  });
+  assert.equal(visualEntry.source.text, '', 'visual-only entries do not invent source text');
+  assert.equal(visualEntry.source.classification, 'visual_annotation');
+  assert.equal(visualEntry.source.annotations[0].classification, 'preserved_viewport_annotation');
+  assert.deepEqual(visualEntry.source.annotations[0].surface.tile, { x: 27, y: 30 });
+  assert.equal(visualEntry.source.attachments[0].classification, 'user_attachment_preserved');
+  assert.equal(Boolean(visualEntry.source.attachments[0].sha256), true);
+  assert.equal(path.isAbsolute(visualEntry.source.attachments[0].reference || ''), false, 'public attachment reference must not leak an absolute path');
+  const visualAsset = visualService.readAttachment(project, visualEntry.id, visualEntry.source.attachments[0].id);
+  assert.equal(fs.existsSync(visualAsset.path), true, 'preserved visual source is readable through the service');
+  assert.equal(visualAsset.type, 'image/png');
+  assert.throws(() => visualService.capture(project, { source: { text: '', annotations: [], attachments: [] } }), /project_diary_source_material_required/);
+  assert.throws(() => visualService.capture(project, { source: { attachments: [{ name: 'unsafe.svg', type: 'image/svg+xml', dataUrl: 'data:image\/svg\+xml;base64,PHN2Zz48L3N2Zz4=' }] } }), /project_diary_attachment_type_unsupported/);
+
   const interpreted = service.appendInterpretation(project, entry.id, {
     provider: 'Ollama',
     model: 'qwen3.5:9b',

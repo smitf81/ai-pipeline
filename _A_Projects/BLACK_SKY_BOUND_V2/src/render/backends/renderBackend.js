@@ -31,6 +31,7 @@ export function createRenderBackend(canvas, policy = {}) {
         setTerrainDebugMode(mode) { return renderer.setTerrainDebugMode(mode); },
         setGroundDetailEnabled(enabled) { return renderer.setGroundDetailEnabled(enabled); },
         setTerrainProofCanopyVisible(visible) { return renderer.setTerrainProofCanopyVisible(visible); },
+        resourceAuditTarget() { return renderer.resourceAuditTarget(); },
         dispose() { renderer.dispose(); }
       };
     } catch (error) {

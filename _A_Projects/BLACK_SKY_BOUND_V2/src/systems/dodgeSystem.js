@@ -2,6 +2,17 @@ import { ComponentType } from '../constants/componentTypes.js';
 import { getComponent } from '../ecs/world.js';
 import { query } from '../ecs/query.js';
 import { moveEntityRaw } from './movementSystem.js';
+import {
+  cancelBufferedPlayerDodge,
+  queuedDodgeResolution,
+  refundQueuedDodgeCost,
+  startDodge
+} from './dodgeState.js';
+import { openPounceCounterWindow } from './chargeCounterSystem.js';
+import { AbilityId } from '../constants/abilityIds.js';
+import { EventType } from '../constants/eventTypes.js';
+import { emitEvent } from '../ecs/events.js';
+import { getAbilityDefinition } from '../data/abilities.js';
 
 export function dodgeSystem({ game, map, dt }) {
   const delta = Math.max(0, Number(dt) || 0);
@@ -9,11 +20,19 @@ export function dodgeSystem({ game, map, dt }) {
     const dodge = getComponent(game.world, entity, ComponentType.DodgeState);
     const health = getComponent(game.world, entity, ComponentType.Health);
     if (!health.alive) {
+      if (dodge.buffered) cancelBufferedPlayerDodge(game.world, entity, 'dodge_buffer_death_refund');
+      if (dodge.queuedChain) refundQueuedDodgeCost(game.world, entity, 'dodge_chain_death_refund');
       clearDodgeVisualState(dodge);
       continue;
     }
     if (!dodge.active) {
-      if (dodge.recovering) advanceDodgeRecovery(dodge, delta);
+      if (dodge.recovering) {
+        advanceDodgeRecovery(dodge, delta);
+        if (dodge.queuedChain) {
+          dodge.landingHoldRemaining = Math.max(0, dodge.landingHoldRemaining - delta);
+          if (dodge.landingHoldRemaining <= 0) launchQueuedDodge(game, entity, dodge);
+        }
+      }
       continue;
     }
     const transform = getComponent(game.world, entity, ComponentType.Transform);
@@ -47,8 +66,40 @@ function beginDodgeRecovery(dodge, previousPhase) {
   dodge.recoveryElapsed = 0;
   dodge.recoveryProgress = 0;
   dodge.recoveryStartPhase = startPhase;
+  dodge.landingHoldRemaining = dodge.queuedChain ? dodge.chainLandingHoldSeconds : 0;
   dodge.phase = startPhase;
   if (!dodge.recovering) dodge.phase = 1;
+}
+
+function launchQueuedDodge(game, entity, dodge) {
+  const world = game.world;
+  const direction = { x: dodge.queuedDirectionX, y: dodge.queuedDirectionY };
+  const nextChainIndex = (dodge.chainIndex ?? 1) + 1;
+  const resolvedGradient = queuedDodgeResolution(dodge);
+  const started = startDodge(world, entity, direction, 'queued_dodge_chain', {
+    allowCooldownBypass: true,
+    allowPartialStamina: true,
+    costAlreadyPaid: true,
+    chainIndex: nextChainIndex,
+    resolvedGradient
+  });
+  if (started) {
+    if (dodge.followupsEnabled) openPounceCounterWindow(world, entity);
+    const ability = getAbilityDefinition(AbilityId.DODGE);
+    emitEvent(world, EventType.PLAYER_ACTION_ACCEPTED, {
+      source: entity,
+      abilityId: AbilityId.DODGE,
+      inputAction: ability?.inputAction ?? null,
+      chained: true,
+      chainIndex: nextChainIndex,
+      dodgeMode: resolvedGradient.mode,
+      energy01: resolvedGradient.energy01,
+      effectiveness: resolvedGradient.effectiveness,
+      followupsEnabled: resolvedGradient.followupsEnabled
+    });
+    return;
+  }
+  refundQueuedDodgeCost(world, entity, 'dodge_chain_launch_refund');
 }
 
 function advanceDodgeRecovery(dodge, delta) {
@@ -70,6 +121,12 @@ function clearDodgeVisualState(dodge) {
   dodge.recoveryProgress = 0;
   dodge.recoveryStartPhase = 1;
   dodge.phase = 1;
+  dodge.landingHoldRemaining = 0;
+  dodge.queuedChain = false;
+  dodge.queuedDirectionX = 0;
+  dodge.queuedDirectionY = 0;
+  dodge.reservedChainCost = 0;
+  dodge.committedBranch = null;
 }
 
 function lerp(a, b, t) {

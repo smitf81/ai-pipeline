@@ -466,8 +466,7 @@ function buildRuntimeProjection(actor, resolved, map, cameraVisibilityFocus, aud
       mode: 'occlusion_aware_orthographic_sightline_corridor',
       radiusMeters: resolved.profile?.visibilityFocus?.radiusMeters ?? null,
       featherMeters: resolved.profile?.visibilityFocus?.featherMeters ?? null,
-      minimumOccluderOpacity: resolved.profile?.visibilityFocus?.minimumOccluderOpacity ?? null,
-      readabilityLightPower: resolved.profile?.visibilityFocus?.readabilityLightPower ?? null
+      minimumOccluderOpacity: resolved.profile?.visibilityFocus?.minimumOccluderOpacity ?? null
     },
     terrain,
     occlusionDensity,

@@ -89,16 +89,16 @@ export const TUTORIAL_CUES = Object.freeze({
     trigger: 'hostile_near_death_threshold_crossed',
     requiredAbilities: [AbilityId.DODGE],
     priority: 90,
-    presentationType: 'dodge_charge_sequence',
-    inputActions: [InputActionId.DODGE, InputActionId.DODGE_FOLLOWUP],
-    title: 'DODGE · CHARGE',
-    supportingText: 'DODGE AGAIN TO COUNTER',
+    presentationType: 'dodge_pounce_sequence',
+    inputActions: [InputActionId.DODGE, InputActionId.POUNCE_COUNTER],
+    title: 'DODGE · POUNCE',
+    supportingText: 'SPACE AWAY · LMB TO COUNTER',
     slowTime: {
       scale: 0.36,
       reducedScale: TUTORIAL_TUNING.timeSlow.reducedScale,
       durationRealSeconds: TUTORIAL_TUNING.timeSlow.durationRealSeconds
     },
-    dismissConditions: { acceptedSequence: [InputActionId.DODGE, InputActionId.DODGE_FOLLOWUP], timeoutRealSeconds: 4.2 },
+    dismissConditions: { acceptedSequence: [InputActionId.DODGE, InputActionId.POUNCE_COUNTER], timeoutRealSeconds: 4.2 },
     unlockEventId: AbilityUnlockEventId.INSTINCT_CHARGE_AWAKENED
   })
 });

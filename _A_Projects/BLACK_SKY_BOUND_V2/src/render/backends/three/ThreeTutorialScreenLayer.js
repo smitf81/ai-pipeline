@@ -56,11 +56,12 @@ export function buildThreeTutorialView(cue) {
     const label = cue.inputRows?.find((row) => row.actionId === 'melee')?.bindings?.[0] ?? firstBindings[0] ?? 'LMB';
     keys = Array.from({ length: 3 }, (_, index) => key(label, pressed.has(label), Number(progress.comboAccepted ?? 0) > index));
     separator = '\u00b7';
-  } else if (presentationType === 'dodge_charge_sequence') {
-    const label = firstBindings[0] ?? 'SPACE';
+  } else if (presentationType === 'dodge_pounce_sequence') {
+    const firstLabel = firstBindings[0] ?? 'SPACE';
+    const secondLabel = cue.inputRows?.[1]?.bindings?.[0] ?? 'LMB';
     keys = [
-      key(label, pressed.has(label), progress.dodgeAccepted === true),
-      key(label, pressed.has(label) && progress.dodgeAccepted === true, progress.chargeAccepted === true)
+      key(firstLabel, pressed.has(firstLabel), progress.dodgeAccepted === true),
+      key(secondLabel, pressed.has(secondLabel) && progress.dodgeAccepted === true, progress.pounceAccepted === true, progress.pounceAvailable !== false)
     ];
     separator = '\u203a';
   } else if (presentationType !== 'message') {
@@ -83,7 +84,7 @@ export function buildThreeTutorialView(cue) {
 function renderTutorial(view) {
   const keys = view.keys.length ? `<div class="bsb-key-row">${view.keys.map((entry, index) => {
     const marker = index > 0 && view.separator ? `<span class="bsb-key-arrow">${html(view.separator)}</span>` : '';
-    const classes = `bsb-keycap${entry.active ? ' is-active' : ''}${entry.complete ? ' is-complete' : ''}`;
+    const classes = `bsb-keycap${entry.active ? ' is-active' : ''}${entry.complete ? ' is-complete' : ''}${entry.available ? '' : ' is-unavailable'}`;
     return `${marker}<span class="${classes}" data-key-label="${attribute(entry.label)}">${html(entry.label)}</span>`;
   }).join('')}</div>` : '';
   const messageClass = view.presentationType === 'message' ? ' is-message' : '';
@@ -99,7 +100,7 @@ function cueOpacity(cue) {
   return 1;
 }
 
-function key(label, active, complete) { return { label: displayText(label), active: active === true, complete: complete === true }; }
+function key(label, active, complete, available = true) { return { label: displayText(label), active: active === true, complete: complete === true, available: available !== false }; }
 function inactiveStats() { return { contract: THREE_TUTORIAL_SCREEN_CONTRACT, active: false, cueId: null, presentationType: null, keyCount: 0, completedKeyCount: 0, opacity: 0 }; }
 function displayText(value) {
   return String(value ?? '')

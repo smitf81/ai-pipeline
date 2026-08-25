@@ -11,9 +11,14 @@ export const PROJECT_DIARY_STEWARD_SCHEMA = 'axiom.project-diary.steward.v0';
 const SOURCE_LIMIT = 24000;
 const REPORT_LIMIT = 60000;
 const ENTRY_LIMIT = 500;
+const MAX_ATTACHMENTS = 4;
+const MAX_ATTACHMENT_BYTES = 1000000;
+const MAX_ATTACHMENT_TOTAL_BYTES = 4000000;
 const MAX_EVIDENCE_FILES = 220;
 const MAX_FILE_BYTES = 800000;
 const TEXT_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.json', '.md', '.txt', '.html', '.css', '.yml', '.yaml']);
+const ATTACHMENT_TEXT_TYPES = new Set(['text/plain', 'text/markdown', 'application/json', 'text/javascript', 'text/css', 'text/html']);
+const ATTACHMENT_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
 const IGNORED_DIRECTORIES = new Set(['.git', 'node_modules', 'artifacts', 'output', 'coverage', 'dist', 'build', '.cache', '.playwright-cli']);
 const STOP_WORDS = new Set([
   'about', 'again', 'also', 'and', 'because', 'being', 'could', 'does', 'from', 'have', 'into', 'just', 'look', 'make', 'more',
@@ -41,9 +46,11 @@ export function createProjectDiaryService(options = {}) {
   }
 
   function storePath(project) {
-    const snapshot = projectSnapshot(project);
-    const key = `${safeKey(snapshot.id)}-${snapshot.rootHash.slice(0, 10)}`;
-    return path.join(dataRoot, `${key}.json`);
+    return path.join(dataRoot, `${projectStorageKey(project)}.json`);
+  }
+
+  function attachmentDirectory(project, entryId) {
+    return path.join(dataRoot, 'attachments', projectStorageKey(project), safeKey(entryId));
   }
 
   function emptyStore(project) {
@@ -104,26 +111,35 @@ export function createProjectDiaryService(options = {}) {
 
   function capture(project, payload = {}) {
     const sourceText = boundedText(payload.source?.text ?? payload.text, SOURCE_LIMIT).trim();
-    if (!sourceText) throw new Error('project_diary_source_text_required');
     const capturedAt = now();
     const repository = repositoryPosture(project);
     const context = sanitizeContext(payload.context, project, repository, payload.spatialAnchor);
-    const evidence = retrieveEvidence(project, sourceText, {
+    const annotations = sanitizeAnnotations(payload.source?.annotations || payload.annotations);
+    const rawAttachments = payload.source?.attachments || payload.attachments;
+    if (!sourceText && !annotations.length && !(Array.isArray(rawAttachments) && rawAttachments.length)) {
+      throw new Error('project_diary_source_material_required');
+    }
+    const entryId = `diary_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const attachments = persistAttachments(project, entryId, rawAttachments);
+    const evidenceQuery = sourceText || visualSourceSummary({ annotations, attachments, context });
+    const evidence = retrieveEvidence(project, evidenceQuery, {
       maxFiles: options.maxEvidenceFiles || MAX_EVIDENCE_FILES,
       context
     });
     const source = {
       text: sourceText,
-      classification: classifySource(sourceText, payload.source?.classification),
-      attachments: sanitizeAttachments(payload.source?.attachments || payload.attachments),
+      classification: classifySource(sourceText, payload.source?.classification, { annotations, attachments }),
+      annotations,
+      attachments,
       capturedAt,
       preserved: true,
-      hash: digest(sourceText)
+      hash: null
     };
+    source.hash = sourceIntegrityHash(source);
     const baseline = buildBaselineInterpretation(source, evidence, capturedAt);
     const entry = {
       schema: PROJECT_DIARY_ENTRY_SCHEMA,
-      id: `diary_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+      id: entryId,
       project: projectSnapshot(project),
       source,
       context,
@@ -147,14 +163,19 @@ export function createProjectDiaryService(options = {}) {
       createdAt: capturedAt,
       updatedAt: capturedAt
     };
-    const store = readStore(project);
-    store.entries.push(entry);
-    evidence.knowledgeLinks.forEach(link => {
-      if (link.classification === 'unresolved_question') store.knowledge.unresolvedQuestions.push(link);
-    });
-    store.knowledge.updatedAt = capturedAt;
-    writeStore(project, store);
-    return clone(entry);
+    try {
+      const store = readStore(project);
+      store.entries.push(entry);
+      evidence.knowledgeLinks.forEach(link => {
+        if (link.classification === 'unresolved_question') store.knowledge.unresolvedQuestions.push(link);
+      });
+      store.knowledge.updatedAt = capturedAt;
+      writeStore(project, store);
+      return clone(entry);
+    } catch (error) {
+      try { fs.rmSync(attachmentDirectory(project, entryId), { recursive: true, force: true }); } catch { /* best-effort rollback */ }
+      throw error;
+    }
   }
 
   function list(project, options = {}) {
@@ -207,7 +228,7 @@ export function createProjectDiaryService(options = {}) {
     entry.derived.unresolvedQuestions = payload.uncertainties;
     entry.derived.status = 'interpreted';
     entry.updatedAt = createdAt;
-    if (entry.source.hash !== beforeSourceHash || digest(entry.source.text) !== entry.source.hash) throw new Error('project_diary_source_integrity_violation');
+    if (entry.source.hash !== beforeSourceHash || !sourceIntegrityMatches(entry.source)) throw new Error('project_diary_source_integrity_violation');
     writeStore(project, store);
     return clone(entry);
   }
@@ -240,7 +261,7 @@ export function createProjectDiaryService(options = {}) {
       interpretation.payload.interpretedIntent,
       '',
       '## Original user material (preserved)',
-      entry.source.text,
+      formatOriginalSource(entry.source),
       '',
       '## Verified facts',
       ...facts.map(item => `- ${item}`),
@@ -403,11 +424,63 @@ export function createProjectDiaryService(options = {}) {
         classification: 'durable_project_linked_memory',
         identityOwner: 'FileManagerRuntime',
         path: storePath(project)
+      },
+      attachments: {
+        maxFiles: MAX_ATTACHMENTS,
+        maxBytesPerFile: MAX_ATTACHMENT_BYTES,
+        maxTotalBytes: MAX_ATTACHMENT_TOTAL_BYTES,
+        persistedOutsideEntryIndex: true
       }
     };
   }
 
-  return { capture, list, get, appendInterpretation, createHandover, reconcileCompletion, handleEvent, status, storePath };
+  function persistAttachments(project, entryId, values) {
+    if (!Array.isArray(values) || !values.length) return [];
+    const directory = attachmentDirectory(project, entryId);
+    const output = [];
+    let totalBytes = 0;
+    for (const [index, item] of values.slice(0, MAX_ATTACHMENTS).entries()) {
+      const decoded = decodeAttachment(item);
+      if (!decoded) {
+        output.push(sanitizeAttachmentReference(item));
+        continue;
+      }
+      totalBytes += decoded.buffer.length;
+      if (decoded.buffer.length > MAX_ATTACHMENT_BYTES) throw new Error(`project_diary_attachment_too_large:${decoded.name}`);
+      if (totalBytes > MAX_ATTACHMENT_TOTAL_BYTES) throw new Error('project_diary_attachment_total_too_large');
+      fs.mkdirSync(directory, { recursive: true });
+      const attachmentId = `attachment_${index + 1}_${digest(decoded.buffer).slice(0, 10)}`;
+      const storageName = `${attachmentId}${attachmentExtension(decoded.type, decoded.name)}`;
+      fs.writeFileSync(path.join(directory, storageName), decoded.buffer);
+      output.push({
+        id: attachmentId,
+        name: decoded.name,
+        type: decoded.type,
+        size: decoded.buffer.length,
+        sha256: digest(decoded.buffer),
+        storageName,
+        reference: `project-diary://${entryId}/${attachmentId}`,
+        classification: 'user_attachment_preserved'
+      });
+    }
+    return output;
+  }
+
+  function readAttachment(project, entryId, attachmentId) {
+    const entry = get(project, entryId);
+    const attachment = (entry.source?.attachments || []).find(item => item.id === String(attachmentId || ''));
+    if (!attachment?.storageName || attachment.classification !== 'user_attachment_preserved') {
+      throw new Error('project_diary_attachment_not_found');
+    }
+    const directory = path.resolve(attachmentDirectory(project, entryId));
+    const target = path.resolve(directory, path.basename(attachment.storageName));
+    if (path.dirname(target) !== directory || !fs.existsSync(target) || !fs.statSync(target).isFile()) {
+      throw new Error('project_diary_attachment_not_found');
+    }
+    return { path: target, name: attachment.name, type: attachment.type, size: attachment.size, sha256: attachment.sha256 };
+  }
+
+  return { capture, list, get, readAttachment, appendInterpretation, createHandover, reconcileCompletion, handleEvent, status, storePath };
 }
 
 export function retrieveProjectDiaryEvidence(project, sourceText, options = {}) {
@@ -428,6 +501,11 @@ function projectSnapshot(project = {}) {
     kind: boundedText(project.kind || 'workspace_project', 120),
     trust: boundedText(project.trust || 'unknown', 120)
   };
+}
+
+function projectStorageKey(project) {
+  const snapshot = projectSnapshot(project);
+  return `${safeKey(snapshot.id)}-${snapshot.rootHash.slice(0, 10)}`;
 }
 
 function sanitizeContext(input = {}, project, repository, spatialAnchorInput = null) {
@@ -664,7 +742,7 @@ function buildBaselineInterpretation(source, evidence, createdAt) {
     model: null,
     sourceHash: source.hash,
     payload: {
-      interpretedIntent: boundedText(source.text, 1200),
+      interpretedIntent: boundedText(source.text || visualSourceSummary({ annotations: source.annotations, attachments: source.attachments }), 1200),
       affectedSystems: affectedSystems.length ? affectedSystems : ['unresolved active-project subsystem'],
       tasks,
       uncertainties,
@@ -720,8 +798,9 @@ function stemWord(word) {
   return word;
 }
 
-function classifySource(text, explicit) {
-  if (explicit && ['bug', 'observation', 'design_idea', 'decision', 'task_request', 'code', 'completion_report'].includes(explicit)) return explicit;
+function classifySource(text, explicit, visual = {}) {
+  if (explicit && ['bug', 'observation', 'design_idea', 'decision', 'task_request', 'code', 'completion_report', 'visual_annotation'].includes(explicit)) return explicit;
+  if (!String(text || '').trim() && ((visual.annotations || []).length || (visual.attachments || []).length)) return 'visual_annotation';
   if (/\b(error|bug|broken|fails?|wrong|unclear|vibrat|flicker|regression)\b/i.test(text)) return 'bug';
   if (/\b(decide|decision|must|do not|never|accepted)\b/i.test(text)) return 'decision';
   if (/\b(please|task|implement|change|fix|add|remove)\b/i.test(text)) return 'task_request';
@@ -819,6 +898,71 @@ function sanitizeSpatialAnchor(value) {
   };
 }
 
+function sanitizeAnnotations(values) {
+  if (!Array.isArray(values)) return [];
+  return values.slice(0, 24).map((item, index) => {
+    const kind = ['point', 'circle', 'arrow', 'freehand', 'highlight'].includes(item?.kind) ? item.kind : 'freehand';
+    const pathPoints = Array.isArray(item?.path) ? item.path : [];
+    const path = pathPoints.slice(0, 256).map(sanitizeAnnotationPoint).filter(Boolean);
+    const fallback = sanitizeAnnotationPoint(item?.screen);
+    if (!path.length && fallback) path.push(fallback);
+    return {
+      id: boundedText(item?.id || `annotation_${index + 1}`, 180),
+      schema: 'axiom.annotation.v1',
+      kind,
+      classification: 'preserved_viewport_annotation',
+      path,
+      radius: finiteNumber(item?.radius),
+      surface: sanitizeAnnotationSurface(item?.surface || item?.anchor || item?.surfaceAnchor),
+      focus: sanitizeFocus(item?.focus),
+      note: boundedText(item?.note || '', 1000) || null,
+      provenance: {
+        createdBy: boundedText(item?.provenance?.createdBy || 'InteractionModeRuntime', 180),
+        createdAt: boundedText(item?.provenance?.createdAt || new Date().toISOString(), 80),
+        sourceGesture: boundedText(item?.provenance?.sourceGesture || 'axiom.annotation.gesture.v1', 180)
+      }
+    };
+  }).filter(item => item.path.length);
+}
+
+function sanitizeAnnotationPoint(value) {
+  if (!value || typeof value !== 'object') return null;
+  const x = finiteNumber(value.x);
+  const y = finiteNumber(value.y);
+  const nx = finiteNumber(value.nx);
+  const ny = finiteNumber(value.ny);
+  if (x === null && y === null && nx === null && ny === null) return null;
+  return {
+    x,
+    y,
+    nx: nx === null ? null : Math.max(0, Math.min(1, nx)),
+    ny: ny === null ? null : Math.max(0, Math.min(1, ny))
+  };
+}
+
+function sanitizeAnnotationSurface(value) {
+  if (!value || typeof value !== 'object') return null;
+  const classification = ['canonical_authoring_anchor', 'runtime_only_reference', 'derived_viewport_reference'].includes(value.classification)
+    ? value.classification
+    : 'derived_viewport_reference';
+  const tile = value.tile && Number.isFinite(Number(value.tile.x)) && Number.isFinite(Number(value.tile.y))
+    ? { x: Number(value.tile.x), y: Number(value.tile.y) }
+    : null;
+  return {
+    surfaceId: boundedText(value.surfaceId || 'axiom-viewport', 180),
+    view: boundedText(value.view || '', 80) || null,
+    classification,
+    mapId: boundedText(value.mapId || '', 180) || null,
+    catalogueMapId: boundedText(value.catalogueMapId || '', 180) || null,
+    revision: finiteNumber(value.revision),
+    tile,
+    normalized: value.normalized && typeof value.normalized === 'object' ? {
+      x: finiteNumber(value.normalized.x),
+      y: finiteNumber(value.normalized.y)
+    } : null
+  };
+}
+
 function sanitizeFocus(value) {
   if (!value || typeof value !== 'object') return null;
   return {
@@ -835,15 +979,93 @@ function sanitizeTileBounds(value) {
   return Object.fromEntries(['minX', 'minY', 'maxX', 'maxY'].map(key => [key, finiteNumber(value[key])]).filter(([, number]) => number !== null));
 }
 
-function sanitizeAttachments(values) {
-  if (!Array.isArray(values)) return [];
-  return values.slice(0, 8).map(item => ({
+function sanitizeAttachmentReference(item) {
+  return {
+    id: boundedText(item?.id || `reference_${digest(String(item?.reference || item?.name || 'attachment')).slice(0, 10)}`, 180),
     name: boundedText(item?.name || 'attachment', 240),
     type: boundedText(item?.type || 'application/octet-stream', 160),
     size: finiteNumber(item?.size),
     reference: boundedText(item?.reference || '', 500) || null,
-    classification: 'user_attachment_reference'
+    classification: 'user_attachment_reference_unresolved'
+  };
+}
+
+function decodeAttachment(item) {
+  if (!item || typeof item !== 'object') return null;
+  const name = boundedText(path.basename(String(item.name || 'attachment')), 240);
+  const requestedType = boundedText(item.type || '', 160).toLowerCase();
+  let type = requestedType;
+  let buffer = null;
+  const dataUrl = String(item.dataUrl || '');
+  const match = dataUrl.match(/^data:([^;,]+);base64,([a-z0-9+/=\r\n]+)$/i);
+  if (match) {
+    type = String(match[1] || type).toLowerCase();
+    buffer = Buffer.from(match[2], 'base64');
+  } else if (typeof item.content === 'string') {
+    type = type || attachmentTypeFromName(name);
+    buffer = Buffer.from(item.content, 'utf8');
+  }
+  if (!buffer) return null;
+  if (!ATTACHMENT_IMAGE_TYPES.has(type) && !ATTACHMENT_TEXT_TYPES.has(type)) {
+    throw new Error(`project_diary_attachment_type_unsupported:${type || 'unknown'}`);
+  }
+  return { name, type, buffer };
+}
+
+function attachmentTypeFromName(name) {
+  const extension = path.extname(String(name || '')).toLowerCase();
+  if (extension === '.md') return 'text/markdown';
+  if (extension === '.json') return 'application/json';
+  if (['.js', '.mjs', '.cjs', '.ts'].includes(extension)) return 'text/javascript';
+  if (extension === '.css') return 'text/css';
+  if (extension === '.html') return 'text/html';
+  return 'text/plain';
+}
+
+function attachmentExtension(type, name) {
+  const known = {
+    'image/png': '.png',
+    'image/jpeg': '.jpg',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+    'text/plain': '.txt',
+    'text/markdown': '.md',
+    'application/json': '.json',
+    'text/javascript': '.js',
+    'text/css': '.css',
+    'text/html': '.html'
+  }[type];
+  return known || path.extname(String(name || '')).toLowerCase().slice(0, 10) || '.bin';
+}
+
+function sourceIntegrityHash(source = {}) {
+  return digest(JSON.stringify({
+    text: String(source.text || ''),
+    annotations: source.annotations || [],
+    attachments: (source.attachments || []).map(item => ({ id: item.id, name: item.name, type: item.type, size: item.size, sha256: item.sha256 || null, reference: item.reference || null }))
   }));
+}
+
+function sourceIntegrityMatches(source = {}) {
+  if (sourceIntegrityHash(source) === source.hash) return true;
+  const legacyVisualsAbsent = !Array.isArray(source.annotations) && (source.attachments || []).every(item => !item?.sha256);
+  return legacyVisualsAbsent && digest(String(source.text || '')) === source.hash;
+}
+
+function visualSourceSummary({ annotations = [], attachments = [], context = null } = {}) {
+  const types = uniqueStrings((annotations || []).map(item => item.kind), 8);
+  const surface = annotations?.[0]?.surface?.surfaceId || context?.authoring?.surfaceId || context?.project?.surfaceId || 'viewport';
+  const parts = [`Visual Journal entry on ${surface}`];
+  if (annotations.length) parts.push(`${annotations.length} annotation${annotations.length === 1 ? '' : 's'}${types.length ? ` (${types.join(', ')})` : ''}`);
+  if (attachments.length) parts.push(`${attachments.length} preserved source file${attachments.length === 1 ? '' : 's'}`);
+  return `${parts.join(' · ')}.`;
+}
+
+function formatOriginalSource(source = {}) {
+  const lines = [];
+  if (String(source.text || '').trim()) lines.push(source.text);
+  if ((source.annotations || []).length || (source.attachments || []).length) lines.push(visualSourceSummary(source));
+  return lines.join('\n\n') || 'No source material available.';
 }
 
 function normalizeRelativePath(value) {

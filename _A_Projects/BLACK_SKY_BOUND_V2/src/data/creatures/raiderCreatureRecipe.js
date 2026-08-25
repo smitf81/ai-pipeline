@@ -2,7 +2,7 @@ import { EntityKind } from '../../constants/entityKinds.js';
 import { LightEmitterId } from '../../constants/lightEmitterIds.js';
 import { ActorLightReadabilityProfileId } from '../actorLightReadabilityProfiles.js';
 import { EnemyAttackProfileId } from '../enemyAttackProfiles.js';
-import { HumanoidProjectionId } from '../humanoids/raiderHumanoid.js';
+import { HumanoidEmbodimentId, HumanoidProjectionId } from '../humanoids/raiderHumanoid.js';
 import { ImpactReactionProfileId } from '../impactReactionProfiles.js';
 import { LocomotionProfileId } from '../locomotionProfiles.js';
 import { MaterialProfileId } from '../materialProfiles.js';
@@ -40,7 +40,8 @@ export const RAIDER_CREATURE_RECIPE = deepFreeze({
   bodyPlan: {
     family: 'humanoid',
     profileId: HumanoidProjectionId.RAIDER_TOP_DOWN_STICK,
-    poseSolverId: 'raider_contact_intent_solver_v0',
+    embodimentId: HumanoidEmbodimentId.INK_STICK,
+    poseSolverId: 'raider_ink_contact_intent_solver_v1',
     proportionVariation: {
       torsoScale: [0.92, 1.08],
       shoulderScale: [0.91, 1.1],

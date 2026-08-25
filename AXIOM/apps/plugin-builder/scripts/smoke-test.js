@@ -177,6 +177,89 @@ assert.equal(modelCandidate.ok, true);
 assert.equal(modelCandidate.status, 'registered');
 assert.equal(modelCandidate.result.landed, true);
 
+const boundedRuntimeCandidate = await builder.axiom_plugin_model_build_slice({
+  request_id: 'test-bounded-runtime-candidate',
+  plugin_id: 'acquired-mapforge-document-report',
+  name: 'Acquired Map Forge Document Report',
+  capability_gap: 'mapforge.document.report: report the canonical active map and revision',
+  original_request: 'Report the active Map Forge map and revision.',
+  target_area: 'editor.runtime_plugin',
+  template: 'mcp_tool',
+  register: true,
+  acquisition_mode: 'bounded_runtime_tool',
+  runtime_contract: {
+    contract: 'axiom.runtime-plugin-authoring.v1',
+    apis: [{ id: 'mapforge.describeTerrain', mode: 'read' }]
+  },
+  model_candidate: {
+    manifest: {
+      description: 'Bounded runtime MCP tool that reports the canonical active Map Forge document and revision.',
+      capabilities: ['mcp-tool-expose'],
+      permissions: { mcp: { expose_tools: true } },
+      mcp_tools: [{
+        name: 'mapforge_document_report',
+        description: 'Report the canonical active Map Forge map id and revision.',
+        input_schema: { type: 'object', additionalProperties: false, properties: {} }
+      }],
+      lifecycle_hooks: { on_load: 'onLoad', on_activate: 'onActivate', on_deactivate: 'onDeactivate', on_unload: 'onUnload' },
+      event_subscriptions: [],
+      ui_surfaces: [],
+      axiom_runtime: { min_version: '1.0.0', apis: ['mapforge.describeTerrain'] },
+      safety: { may_modify_core: false, sandboxed: true, timeout_ms: 30000 },
+      compatibility: { os: ['any'], node_version: '>=18' },
+      implementation: { required_runtime_apis: ['mapforge.describeTerrain'] }
+    },
+    files: {
+      'src/index.js': `let runtimeContext = null;
+export function installMapForgeDocumentReport(ctx) {
+  if (!ctx || !ctx.mapforge || typeof ctx.mapforge.describeTerrain !== 'function') return { ok: false, reason: 'missing_runtime_api', api: 'mapforge.describeTerrain' };
+  runtimeContext = ctx;
+  return { ok: true };
+}
+export function uninstallMapForgeDocumentReport() { runtimeContext = null; return { ok: true }; }
+export const tools = [{
+  name: 'mapforge_document_report',
+  description: 'Report the canonical active Map Forge document id and revision.',
+  inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+  async handler() {
+    if (!runtimeContext) return { ok: false, applied: false, reason: 'missing_runtime_api' };
+    const terrain = runtimeContext.mapforge.describeTerrain();
+    return { ok: !!terrain, applied: false, contract: terrain?.contract || null, mapId: terrain?.mapId || null, revision: terrain?.revision ?? null };
+  }
+}];
+export async function onLoad(ctx) { return installMapForgeDocumentReport(ctx); }
+export async function onActivate(ctx) {
+  const installed = installMapForgeDocumentReport(ctx);
+  if (!installed.ok) return installed;
+  for (const tool of tools) ctx.mcp.registerTool(tool);
+  return { ok: true, registered_tools: tools.map(tool => tool.name) };
+}
+export async function onDeactivate(ctx) {
+  for (const tool of tools) ctx.mcp.unregisterTool(tool.name);
+  return uninstallMapForgeDocumentReport();
+}
+export async function onUnload(ctx) { return onDeactivate(ctx); }
+`,
+      'tests/plugin.test.js': `import { tools } from '../src/index.js';
+if (tools.length !== 1 || tools[0].name !== 'mapforge_document_report') throw new Error('tool contract mismatch');
+`,
+      'README.md': '# Map Forge Document Report\n\nBounded runtime tool for reporting the active canonical Map Forge document.\n'
+    },
+    integration_contract: {
+      contract: 'axiom.runtime-plugin-integration.v1',
+      required_runtime_apis: ['mapforge.describeTerrain'],
+      activation: 'explicit_runtime_activation_and_callable_tool_verification'
+    }
+  }
+});
+assert.equal(boundedRuntimeCandidate.ok, true);
+assert.equal(boundedRuntimeCandidate.status, 'registered');
+const boundedInspect = await builder.axiom_plugin_inspect({ plugin_id: boundedRuntimeCandidate.plugin_id, include_files: true });
+assert.equal(boundedInspect.result.manifest.implementation.implementation_kind, 'bounded_runtime_mcp_tool');
+assert.deepEqual(boundedInspect.result.manifest.implementation.required_runtime_apis, ['mapforge.describeTerrain']);
+assert.equal(boundedInspect.result.manifest.mcp_tools.length, 1);
+assert.ok(boundedInspect.result.files['src/index.js'].includes('ctx.mcp.registerTool'));
+
 const failedCandidate = await builder.axiom_plugin_build_from_candidate({
   request_id: 'test-model-candidate-validation-feedback',
   plugin_id: 'bad-model-candidate',

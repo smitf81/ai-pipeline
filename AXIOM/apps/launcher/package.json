@@ -5,16 +5,24 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/project-management.test.mjs && node tests/bsb-v2-map-authoring.test.mjs && node tests/bsb-v2-geology-authoring.test.mjs && node tests/bsb-v2-undergrowth-brush.test.mjs && node tests/ux-shell.test.mjs && node tests/project-diary.test.mjs && node tests/entity-studio.test.mjs",
+    "test": "node tests/project-management.test.mjs && node tests/bsb-v2-map-authoring.test.mjs && node tests/bsb-v2-geology-authoring.test.mjs && node tests/bsb-v2-undergrowth-brush.test.mjs && node tests/bsb-v2-scene-brush.test.mjs && node tests/mapforge-terrain-agent.test.mjs && node tests/natural-language-agent.test.mjs && node tests/capability-acquisition.test.mjs && node tests/map-intent-preflight.test.mjs && node tests/level-design-spatial-critic.test.mjs && node tests/level-design-session.test.mjs && node tests/level-design-session-client.test.mjs && node tests/ux-shell.test.mjs && node tests/agent-activity.test.mjs && node tests/project-diary.test.mjs && node tests/entity-studio.test.mjs",
     "test:model-stream": "node tests/model-stream.test.mjs",
     "test:mapforge-receipts": "node tests/mapforge-receipts.test.mjs",
     "test:bsb-v2-authoring": "node tests/bsb-v2-map-authoring.playtest.mjs",
+    "test:region-lifecycle": "node tests/bsb-v2-region-lifecycle.playtest.mjs",
     "test:undergrowth-brush": "node tests/bsb-v2-undergrowth-brush.playtest.mjs",
     "test:bsb-authoring-goal": "node tests/bsb-authoring-goal.playtest.mjs",
     "test:scene-intent-agent": "node tests/bsb-v2-scene-intent-agent.playtest.mjs",
     "test:workspace-context": "node tests/workspace-context.playtest.mjs",
     "test:project-diary": "node tests/project-diary.playtest.mjs",
-    "test:entity-studio": "node tests/entity-studio.playtest.mjs"
+    "test:scene-authoring": "node tests/bsb-v2-scene-authoring.playtest.mjs",
+    "test:agent-activity": "node tests/agent-activity.playtest.mjs",
+    "test:mapforge-agent-authoring": "node tests/mapforge-agent-authoring.playtest.mjs",
+    "test:level-design-session": "node tests/semantic-route-boundary.playtest.mjs",
+    "test:map-intent-profile-recovery": "node tests/map-intent-profile-recovery.playtest.mjs",
+    "test:entity-studio": "node tests/entity-studio.playtest.mjs",
+    "test:natural-language-kernel": "node tests/natural-language-kernel.playtest.mjs",
+    "test:capability-acquisition": "node tests/capability-acquisition.playtest.mjs"
   },
   "dependencies": {
     "express": "^4.18.3"

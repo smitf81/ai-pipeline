@@ -1,8 +1,9 @@
 import { EnemyPressureState } from '../constants/enemyPressureStates.js';
 import { EnemyAttackPhase, EnemyAttackProfileId, getEnemyAttackRange } from '../data/enemyAttackProfiles.js';
 import { PlayerLifecycleState, PLAYER_LIFECYCLE_PROFILE } from '../data/playerLifecycle.js';
-import { createAbilityProgression, createChargeCounterState } from './abilityComponents.js';
+import { createAbilityProgression, createPounceCounterState } from './abilityComponents.js';
 import { createBodyContactRig } from './bodyContactComponents.js';
+import { createDodgeState } from './dodgeComponents.js';
 
 export const Components = Object.freeze({
   kind(type, label) { return { type, label }; },
@@ -11,6 +12,11 @@ export const Components = Object.freeze({
   motion(speed) { return { speed }; },
   stamina(profile) {
     const max = Math.max(0, finiteNumber(profile?.stamina?.max, 0));
+    const configuredResumeEnergy01 = profile?.sprint?.resumeEnergy01;
+    const sprintResumeEnergy01 = Math.max(0, Math.min(1, finiteNumber(
+      configuredResumeEnergy01,
+      max > 0 ? finiteNumber(profile?.sprint?.resumeThreshold, 0) / max : 0
+    )));
     return {
       classification: 'actor_stamina_resource_v0',
       profileId: profile?.id ?? 'unknown_locomotion_profile',
@@ -22,7 +28,8 @@ export const Components = Object.freeze({
       sprintEnabled: profile?.sprint?.enabled === true,
       sprintMultiplier: Math.max(1, finiteNumber(profile?.sprint?.multiplier, 1)),
       sprintDrainPerSecond: Math.max(0, finiteNumber(profile?.sprint?.drainPerSecond, 0)),
-      sprintResumeThreshold: Math.max(0, finiteNumber(profile?.sprint?.resumeThreshold, 0)),
+      sprintResumeEnergy01,
+      sprintResumeThreshold: max * sprintResumeEnergy01,
       sprinting: false,
       exhausted: false,
       state: 'ready',
@@ -31,36 +38,9 @@ export const Components = Object.freeze({
       regeneratedTotal: 0
     };
   },
-  dodgeState(profile, ability = null) {
-    return {
-      classification: 'shared_collision_safe_dodge_state_v0',
-      enabled: profile?.dodge?.enabled === true,
-      active: false,
-      recovering: false,
-      cost: Math.max(0, finiteNumber(ability?.staminaCost, profile?.dodge?.cost ?? 0)),
-      distance: Math.max(0, finiteNumber(profile?.dodge?.distance, 0)),
-      duration: Math.max(0.01, finiteNumber(profile?.dodge?.duration, 0.01)),
-      cooldown: Math.max(0, finiteNumber(profile?.dodge?.cooldown, 0)),
-      cooldownRemaining: 0,
-      directionX: 0,
-      directionY: 0,
-      elapsed: 0,
-      phase: 0,
-      visualRecoveryDuration: Math.max(0, finiteNumber(profile?.dodge?.visualRecoveryDuration, 0)),
-      visualRecoveryStartPhase: Math.max(0, Math.min(1, finiteNumber(profile?.dodge?.visualRecoveryStartPhase, 1))),
-      recoveryElapsed: 0,
-      recoveryProgress: 0,
-      recoveryStartPhase: 1,
-      distanceApplied: 0,
-      blocked: false,
-      aiStyle: profile?.dodge?.aiStyle ?? null,
-      aiTriggerRange: Math.max(0, finiteNumber(profile?.dodge?.aiTriggerRange, 0)),
-      count: 0,
-      lastReason: null,
-      lastDeniedReason: null
-    };
-  },
-  chargeCounterState: createChargeCounterState,
+  dodgeState: createDodgeState,
+  pounceCounterState: createPounceCounterState,
+  chargeCounterState: createPounceCounterState,
   abilityProgression: createAbilityProgression,
   health(hp, profile = null) {
     const maxHp = Math.max(1, finiteNumber(profile?.maxHealth, hp));
@@ -118,7 +98,7 @@ export const Components = Object.freeze({
     };
   },
   playerIntent() {
-    return { moveX: 0, moveY: 0, aimX: 0, aimY: 0, sprint: false, dodge: false, dodgeFollowup: false, melee: false, bite: false, lunge: false, smoke: false, smokeAbilityId: null };
+    return { moveX: 0, moveY: 0, aimX: 0, aimY: 0, aimActive: false, sprint: false, dodge: false, dodgeChain: false, pounceCounter: false, melee: false, bite: false, lunge: false, smoke: false, smokeAbilityId: null };
   },
   enemyPressureAI(data = {}, spawnX = 0, spawnY = 0) {
     const aggroRange = finiteNumber(data.aggroRange, 14);
@@ -313,44 +293,33 @@ export const Components = Object.freeze({
   },
   motionState() {
     return {
-      locomotionId: 'idle',
-      previousLocomotionId: 'idle',
-      speed: 0,
-      movement01: 0,
-      velocityX: 0,
-      velocityY: 0,
-      facing: 0,
-      phase: 0,
-      phaseBucket: 0
+      locomotionId: 'idle', previousLocomotionId: 'idle',
+      speed: 0, movement01: 0, velocityX: 0, velocityY: 0,
+      facing: 0, aimFacing: 0, aimActive: false,
+      turnError: 0, turnVelocity: 0, turnEffort: 0, turnPhase: 0,
+      turnPlantSide: 1, turnDirection: 0, turningInPlace: false,
+      localTravelForward: 0, localTravelRight: 0,
+      headLookYaw: 0, neckLookYaw: 0, phase: 0, phaseBucket: 0,
+      dodgeMode: null, dodgeEnergy01: 1, dodgeEffectiveness: 1,
+      dodgeApexHeightMeters: 0.12, dodgeLandingCompressionMeters: 0.06,
+      dodgeBuffered: false
     };
   },
   actionState() {
     return {
-      active: false,
-      recovering: false,
-      actionId: null,
-      previousActionId: null,
-      sourceAbilityId: null,
-      elapsed: 0,
-      duration: 0,
-      phase: 0,
-      phaseLabel: 'none',
-      recoveryActionId: null,
-      recoveryElapsed: 0,
-      recoveryDuration: 0,
-      recoveryProgress: 0,
-      recoveryStartPhase: 1,
-      recoveryPhase: 1,
-      side: 1,
-      aimX: 0,
-      aimY: 0,
-      directionX: 1,
-      directionY: 0,
-      committedFacing: 0,
-      movementImpulseApplied: 0,
-      movementBlocked: false,
+      active: false, recovering: false,
+      actionId: null, previousActionId: null, sourceAbilityId: null,
+      elapsed: 0, duration: 0, phase: 0, phaseLabel: 'none',
+      recoveryActionId: null, recoveryElapsed: 0, recoveryDuration: 0,
+      recoveryProgress: 0, recoveryStartPhase: 1, recoveryPhase: 1, recoveryKind: null,
+      side: 1, aimX: 0, aimY: 0,
+      directionX: 1, directionY: 0, committedFacing: 0,
+      movementImpulseApplied: 0, movementDistanceMeters: 0, movementDistanceTiles: 0,
+      movementDistanceLimit: null, movementBlocked: false,
+      impactLanding: false, contactClosed: false, lastImpactReceipt: null,
       emittedEvents: [],
-      resolvedContacts: []
+      resolvedContacts: [],
+      lastInterruptionReceipt: null
     };
   },
   comboState() {
@@ -397,6 +366,7 @@ export const Components = Object.freeze({
       solverId: null,
       profileId: null,
       visualScale: 1,
+      axialFrames: {},
       axial: {},
       head: null,
       body: null,
@@ -419,7 +389,12 @@ export const Components = Object.freeze({
       idlePhase: 0,
       movement01: 0,
       bodyPoints: [],
-      sockets: {}
+      sockets: {},
+      lastAimFacing: 0,
+      headLookYaw: 0,
+      neckLookYaw: 0,
+      axialTurn: null,
+      malformedTurnFrameCount: 0
     };
   },
   humanoidProjection(profileId, x, y) {

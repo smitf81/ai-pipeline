@@ -7,73 +7,84 @@ import { query } from '../ecs/query.js';
 import { canUseAbility } from '../game/playerAbilities.js';
 import { startProceduralAction } from './proceduralActionState.js';
 
-const CHARGE_ABILITY = ABILITIES[AbilityId.CHARGE_COUNTER];
+const POUNCE_ABILITY = ABILITIES[AbilityId.POUNCE_COUNTER];
 
-export function openChargeCounterWindow(world, entity) {
-  const charge = getComponent(world, entity, ComponentType.ChargeCounterState);
-  if (!charge || !canUseAbility(world, entity, AbilityId.CHARGE_COUNTER)) return false;
-  charge.followupWindowRemaining = charge.bufferWindowSeconds;
-  charge.lastDeniedReason = null;
+export function openPounceCounterWindow(world, entity) {
+  const pounce = getComponent(world, entity, ComponentType.PounceCounterState);
+  const dodge = getComponent(world, entity, ComponentType.DodgeState);
+  if (!pounce || dodge?.followupsEnabled === false || !canUseAbility(world, entity, AbilityId.POUNCE_COUNTER)) {
+    if (pounce && dodge?.followupsEnabled === false) {
+      pounce.followupWindowRemaining = 0;
+      pounce.lastDeniedReason = 'emergency_dodge_no_followup';
+    }
+    return false;
+  }
+  pounce.followupWindowRemaining = pounce.bufferWindowSeconds;
+  pounce.lastDeniedReason = null;
   return true;
 }
 
-export function queueChargeCounter(world, entity) {
-  const charge = getComponent(world, entity, ComponentType.ChargeCounterState);
+export function queuePounceCounter(world, entity, direction) {
+  const pounce = getComponent(world, entity, ComponentType.PounceCounterState);
   const dodge = getComponent(world, entity, ComponentType.DodgeState);
   const stamina = getComponent(world, entity, ComponentType.Stamina);
   const health = getComponent(world, entity, ComponentType.Health);
-  const denied = chargeCounterDenial(world, entity, charge, dodge, stamina, health);
+  const normalized = normalise(direction?.x, direction?.y);
+  const denied = pounceCounterDenial(world, entity, pounce, dodge, stamina, health, normalized);
   if (denied) {
-    if (charge) charge.lastDeniedReason = denied;
+    if (pounce) pounce.lastDeniedReason = denied;
+    if (dodge && denied === 'followup_committed') dodge.lastDeniedReason = denied;
     return false;
   }
-  stamina.current = Math.max(0, stamina.current - CHARGE_ABILITY.staminaCost);
-  stamina.spentTotal += CHARGE_ABILITY.staminaCost;
-  stamina.lastSpendReason = AbilityId.CHARGE_COUNTER;
+  stamina.current = Math.max(0, stamina.current - POUNCE_ABILITY.staminaCost);
+  stamina.spentTotal += POUNCE_ABILITY.staminaCost;
+  stamina.lastSpendReason = AbilityId.POUNCE_COUNTER;
   stamina.recoveryTimer = stamina.recoveryDelay;
   stamina.sprinting = false;
-  Object.assign(charge, {
+  Object.assign(pounce, {
     state: 'queued',
     queued: true,
     active: false,
     followupWindowRemaining: 0,
+    queuedDirectionX: normalized.x,
+    queuedDirectionY: normalized.y,
     lastDeniedReason: null,
+    lastImpactReceipt: null,
     lastHitIds: [],
     hitCount: 0
   });
+  dodge.committedBranch = 'pounce_counter';
+  const transform = getComponent(world, entity, ComponentType.Transform);
+  if (transform) transform.rotation = Math.atan2(normalized.y, normalized.x);
   return true;
 }
 
-export function chargeCounterSystem({ game, dt = 0 }) {
+export function pounceCounterSystem({ game, dt = 0 }) {
   const delta = Math.max(0, Number(dt) || 0);
-  for (const entity of query(game.world, [ComponentType.ChargeCounterState, ComponentType.Health])) {
-    const charge = getComponent(game.world, entity, ComponentType.ChargeCounterState);
+  for (const entity of query(game.world, [ComponentType.PounceCounterState, ComponentType.Health])) {
+    const pounce = getComponent(game.world, entity, ComponentType.PounceCounterState);
     const health = getComponent(game.world, entity, ComponentType.Health);
     const dodge = getComponent(game.world, entity, ComponentType.DodgeState);
     const action = getComponent(game.world, entity, ComponentType.ActionState);
-    charge.followupWindowRemaining = Math.max(0, charge.followupWindowRemaining - delta);
+    pounce.followupWindowRemaining = Math.max(0, pounce.followupWindowRemaining - delta);
     if (!health.alive) {
-      resetChargeCounterState(charge);
+      resetPounceCounterState(pounce);
       continue;
     }
-    if (charge.queued && !dodge?.active) beginQueuedCharge(game.world, entity, charge);
-    syncChargeStateFromAction(charge, action);
+    if (pounce.queued && !dodge?.active) beginQueuedPounce(game.world, entity, pounce);
+    syncPounceStateFromAction(pounce, action);
   }
 }
 
-export function resolveChargeCounterDirection(intent, transform, dodge) {
-  const dodgeDirection = normalise(dodge?.directionX, dodge?.directionY)
-    ?? facingDirection(transform);
-  const desired = normalise(intent?.moveX, intent?.moveY)
-    ?? normalise((intent?.aimX ?? transform?.x) - (transform?.x ?? 0), (intent?.aimY ?? transform?.y) - (transform?.y ?? 0))
-    ?? dodgeDirection
-    ?? facingDirection(transform);
-  return limitRedirect(dodgeDirection, desired, ABILITIES[AbilityId.CHARGE_COUNTER].maxRedirectDegrees * Math.PI / 180);
+export function resolvePounceCounterDirection(intent, transform) {
+  return (intent?.aimActive
+    ? normalise((intent?.aimX ?? transform?.x) - (transform?.x ?? 0), (intent?.aimY ?? transform?.y) - (transform?.y ?? 0))
+    : null) ?? facingDirection(transform);
 }
 
-export function resetChargeCounterState(charge) {
-  if (!charge) return;
-  Object.assign(charge, {
+export function resetPounceCounterState(pounce) {
+  if (!pounce) return;
+  Object.assign(pounce, {
     state: 'idle',
     active: false,
     queued: false,
@@ -81,91 +92,93 @@ export function resetChargeCounterState(charge) {
     queuedDirectionX: 0,
     queuedDirectionY: 0,
     hitCount: 0,
-    lastHitIds: []
+    lastHitIds: [],
+    lastImpactReceipt: null
   });
 }
 
-function chargeCounterDenial(world, entity, charge, dodge, stamina, health) {
-  if (!charge) return 'charge_state_missing';
-  if (!canUseAbility(world, entity, AbilityId.CHARGE_COUNTER)) return 'charge_locked';
+function pounceCounterDenial(world, entity, pounce, dodge, stamina, health, direction) {
+  if (!pounce) return 'pounce_state_missing';
+  if (!canUseAbility(world, entity, AbilityId.POUNCE_COUNTER)) return 'pounce_locked';
   if (!health?.alive) return 'not_alive';
-  if (charge.active || charge.queued) return 'charge_already_committed';
-  if (!(dodge?.active || dodge?.recovering) || charge.followupWindowRemaining <= 0) return 'followup_window_closed';
-  if (!stamina || stamina.current + 0.0001 < CHARGE_ABILITY.staminaCost) return 'insufficient_stamina';
+  if (pounce.active || pounce.queued) return 'pounce_already_committed';
+  if (dodge?.followupsEnabled === false) return 'emergency_dodge_no_followup';
+  if (dodge?.committedBranch) return 'followup_committed';
+  if (!(dodge?.active || dodge?.recovering || pounce.followupWindowRemaining > 0) || pounce.followupWindowRemaining <= 0) return 'followup_window_closed';
+  if (!direction) return 'missing_direction';
+  if (!stamina || stamina.current + 0.0001 < POUNCE_ABILITY.staminaCost) return 'insufficient_stamina';
   return null;
 }
 
-function beginQueuedCharge(world, entity, charge) {
+function beginQueuedPounce(world, entity, pounce) {
   const transform = getComponent(world, entity, ComponentType.Transform);
-  const intent = getComponent(world, entity, ComponentType.PlayerIntent);
-  const dodge = getComponent(world, entity, ComponentType.DodgeState);
-  const direction = resolveChargeCounterDirection(intent, transform, dodge);
-  const started = startProceduralAction(world, entity, WyvernActionId.CHARGE_COUNTER, {
+  const direction = normalise(pounce.queuedDirectionX, pounce.queuedDirectionY) ?? facingDirection(transform);
+  const started = startProceduralAction(world, entity, WyvernActionId.POUNCE_COUNTER, {
     force: true,
-    sourceAbilityId: AbilityId.CHARGE_COUNTER,
+    sourceAbilityId: AbilityId.POUNCE_COUNTER,
     aimX: transform.x + direction.x * 5,
     aimY: transform.y + direction.y * 5
   });
   if (!started) {
-    charge.queued = false;
-    charge.state = 'idle';
-    charge.lastDeniedReason = 'charge_action_start_failed';
-    refundChargeCost(world, entity);
+    pounce.queued = false;
+    pounce.state = 'idle';
+    pounce.lastDeniedReason = 'pounce_action_start_failed';
+    refundPounceCost(world, entity);
     return;
   }
-  Object.assign(charge, {
+  Object.assign(pounce, {
     queued: false,
     active: true,
-    state: 'plant',
+    state: 'coil',
     queuedDirectionX: direction.x,
     queuedDirectionY: direction.y,
-    count: charge.count + 1,
+    count: pounce.count + 1,
     lastDeniedReason: null,
     lastReceipt: null
   });
 }
 
-function syncChargeStateFromAction(charge, action) {
-  if (!charge.active) return;
-  if (action?.active && action.actionId === WyvernActionId.CHARGE_COUNTER) {
-    charge.state = action.phaseLabel ?? 'plant';
-    charge.lastHitIds = [...(action.resolvedContacts ?? charge.lastHitIds)];
-    charge.hitCount = charge.lastHitIds.length;
+function syncPounceStateFromAction(pounce, action) {
+  if (!pounce.active) return;
+  if (action?.active && action.actionId === WyvernActionId.POUNCE_COUNTER) {
+    pounce.state = action.phaseLabel ?? 'coil';
+    pounce.lastHitIds = [...(action.resolvedContacts ?? pounce.lastHitIds)];
+    pounce.hitCount = pounce.lastHitIds.length;
+    pounce.lastImpactReceipt = action.lastImpactReceipt ?? pounce.lastImpactReceipt;
     return;
   }
-  if (action?.recovering && action.recoveryActionId === WyvernActionId.CHARGE_COUNTER) {
-    charge.state = 'recover';
+  if (action?.recovering && action.recoveryActionId === WyvernActionId.POUNCE_COUNTER) {
+    pounce.state = 'recover';
     return;
   }
-  charge.lastReceipt = {
-    abilityId: AbilityId.CHARGE_COUNTER,
-    count: charge.count,
-    hitCount: charge.hitCount,
-    hitIds: [...charge.lastHitIds]
+  pounce.lastReceipt = {
+    abilityId: AbilityId.POUNCE_COUNTER,
+    count: pounce.count,
+    hitCount: pounce.hitCount,
+    hitIds: [...pounce.lastHitIds],
+    impact: pounce.lastImpactReceipt
   };
-  charge.state = 'idle';
-  charge.active = false;
+  pounce.state = 'idle';
+  pounce.active = false;
 }
 
-function refundChargeCost(world, entity) {
+function refundPounceCost(world, entity) {
   const stamina = getComponent(world, entity, ComponentType.Stamina);
   if (!stamina) return;
-  stamina.current = Math.min(stamina.max, stamina.current + CHARGE_ABILITY.staminaCost);
-  stamina.spentTotal = Math.max(0, stamina.spentTotal - CHARGE_ABILITY.staminaCost);
-}
-
-function limitRedirect(base, desired, maxRadians) {
-  const baseAngle = Math.atan2(base.y, base.x);
-  const desiredAngle = Math.atan2(desired.y, desired.x);
-  const delta = Math.atan2(Math.sin(desiredAngle - baseAngle), Math.cos(desiredAngle - baseAngle));
-  const limited = Math.max(-maxRadians, Math.min(maxRadians, delta));
-  return { x: Math.cos(baseAngle + limited), y: Math.sin(baseAngle + limited) };
+  stamina.current = Math.min(stamina.max, stamina.current + POUNCE_ABILITY.staminaCost);
+  stamina.spentTotal = Math.max(0, stamina.spentTotal - POUNCE_ABILITY.staminaCost);
 }
 
 function facingDirection(transform) {
   const rotation = transform?.rotation ?? 0;
   return { x: Math.cos(rotation), y: Math.sin(rotation) };
 }
+
+export const openChargeCounterWindow = openPounceCounterWindow;
+export const queueChargeCounter = queuePounceCounter;
+export const chargeCounterSystem = pounceCounterSystem;
+export const resolveChargeCounterDirection = resolvePounceCounterDirection;
+export const resetChargeCounterState = resetPounceCounterState;
 
 function normalise(x, y) {
   const dx = Number(x);

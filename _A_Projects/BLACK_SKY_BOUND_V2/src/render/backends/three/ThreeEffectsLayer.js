@@ -3,9 +3,11 @@ import { renderWorldPointToWorld3D } from '../../three/worldTransform3D.js';
 import { RENDER_BUDGETS } from '../../../data/renderBudgets.js';
 import { ThreeMamaFlyoverMesh } from './ThreeMamaFlyoverMesh.js';
 import { isBabyDroolParticle, isBabyDroolSmoke, ThreeBabyNapalmDroolLayer } from './ThreeBabyNapalmDroolLayer.js';
-
+import { prewarmThreeAtmosphere, updateThreeAtmosphericRain, updateThreeAtmosphericSparks } from './ThreeAtmosphericOverlayEffects.js';
+import { isFoliageSmoke, ThreeFoliageFireEffects } from './ThreeFoliageFireEffects.js';
+import { createDragonfireFlyoverGroup, updateDragonfireStream } from './ThreeDragonfireStream.js';
+import { isMamaInfernoSmoke, ThreeMamaNapalmFirewall } from './ThreeMamaNapalmFirewall.js';
 export const THREE_EFFECTS_LAYER_CONTRACT = 'black-sky-bound.three-effects-layer.v1';
-
 export class ThreeEffectsLayer {
   constructor(root, tileSize) {
     this.root = new THREE.Group();
@@ -24,28 +26,29 @@ export class ThreeEffectsLayer {
     this.scale = new THREE.Vector3();
     this.position = new THREE.Vector3();
     this.stats = {};
+    this.lightningAnchors = [];
     this.mamaFlyover = new ThreeMamaFlyoverMesh();
     this.babyNapalmDrool = new ThreeBabyNapalmDroolLayer(this.root, tileSize);
+    this.foliageFireEffects = new ThreeFoliageFireEffects(this.root, tileSize);
+    this.mamaNapalmFirewall = new ThreeMamaNapalmFirewall(this.root, tileSize);
+    this.screenWarmup = { status: 'pending', count: 0 };
+    this.screenWarmupRestore = null;
     this.prewarmPools();
   }
-
   prewarmPools() {
-    this.preallocate('decal', RENDER_BUDGETS.decalStamps.maxActive, () => this.mesh('disc', () => new THREE.CircleGeometry(1, 16), '#442218'));
-    this.preallocate('effect-ring', RENDER_BUDGETS.liveEffects.maxActive, () => this.mesh('effect-ring', () => new THREE.RingGeometry(0.7, 1, 18), '#d5ab65'));
-    this.preallocate('smoke', RENDER_BUDGETS.smokeField.maxSources + RENDER_BUDGETS.liveEffects.maxActive, () => this.mesh('smoke-mass', () => new THREE.IcosahedronGeometry(1, 1), '#777b79'));
+    this.preallocate('decal', RENDER_BUDGETS.decalStamps.maxActive, () => this.mesh('disc', () => new THREE.CircleGeometry(1, 16), '#442218', { transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+    this.preallocate('effect-ring', RENDER_BUDGETS.liveEffects.maxActive, () => this.mesh('effect-ring', () => new THREE.RingGeometry(0.7, 1, 18), '#d5ab65', { transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+    this.preallocate('smoke', RENDER_BUDGETS.smokeField.maxSources + RENDER_BUDGETS.liveEffects.maxActive, () => this.mesh('smoke-mass', () => new THREE.IcosahedronGeometry(1, 1), '#777b79', { transparent: true, depthWrite: false }));
     this.preallocate('dropped-torch', RENDER_BUDGETS.lightEmitters.maxActive, () => this.mesh('dropped-torch', () => new THREE.CylinderGeometry(0.018, 0.024, 1, 5), '#6d3f1e'));
     this.preallocate('torch-flame', RENDER_BUDGETS.lightEmitters.maxActive, () => this.mesh('effect-orb', () => new THREE.IcosahedronGeometry(1, 1), '#ffb45b'));
-    this.preallocate('fire-wall', 4, () => this.mesh('fire-wall', () => new THREE.BoxGeometry(1, 1, 1), '#ff5a18'));
-    this.preallocate('tree-fire', 32, () => this.mesh('effect-orb', () => new THREE.IcosahedronGeometry(1, 1), '#ff5b18'));
     this.preallocate('lightning-bolt', 2, () => createLightningBolt(this));
-    this.preallocate('mama-flyover', 1, () => createFlyoverGroup(this));
-    const rain = this.ensureInstanced('rain', RENDER_BUDGETS.ambientParticles.maxActive, 'rain-streak', () => new THREE.CylinderGeometry(0.004, 0.007, 0.42, 4, 1), '#a9bac1', { transparent: true, depthWrite: false });
+    this.preallocate('mama-flyover', 1, () => createDragonfireFlyoverGroup(this));
+    prewarmThreeAtmosphere(this);
     const particles = this.ensureInstanced('particles', RENDER_BUDGETS.ambientParticles.maxActive, 'particle', () => new THREE.IcosahedronGeometry(0.025, 0), '#d6a466', { emissive: '#c87932', opacity: 0.72, transparent: true, depthWrite: false });
-    for (const mesh of [rain, particles]) { if (mesh) { mesh.count = 0; mesh.visible = false; } }
+    if (particles) { particles.count = 0; particles.visible = false; }
     this.poolCursors.clear();
     this.hideUnusedPools();
   }
-
   preallocate(key, count, factory) {
     const pool = this.pools.get(key) ?? [];
     while (pool.length < count) {
@@ -58,8 +61,7 @@ export class ThreeEffectsLayer {
     }
     this.pools.set(key, pool);
   }
-
-  update(projection, screen = {}) {
+  update(projection, screen = {}, view = {}) {
     this.poolCursors.clear();
     this.reuses = 0;
     const babySmoke = (projection.fogSmoke ?? []).filter(isBabyDroolSmoke);
@@ -71,15 +73,21 @@ export class ThreeEffectsLayer {
       particles: babyParticles,
       renderTime: projection.renderTime ?? 0
     });
+    const foliageSmoke = (projection.fogSmoke ?? []).filter(isFoliageSmoke);
+    this.foliageFireEffects.update(foliageSmoke, projection.worldEvents?.foliageFires ?? [], projection.renderTime ?? 0, view);
+    this.mamaNapalmFirewall.update(projection.worldEvents?.fireWalls ?? [], projection.renderTime ?? 0, view);
     for (const decal of projection.decals ?? []) this.addDisc('decal', decal, 0.012, false);
     for (const effect of projection.effects ?? []) this.addEffect(effect);
-    for (const smoke of projection.fogSmoke ?? []) if (!isBabyDroolSmoke(smoke)) this.addSmoke(smoke);
+    for (const smoke of projection.fogSmoke ?? []) if (!isBabyDroolSmoke(smoke) && !isFoliageSmoke(smoke) && !isMamaInfernoSmoke(smoke)) this.addSmoke(smoke);
     for (const torch of projection.droppedTorches ?? []) this.addDroppedTorch(torch);
     this.addParticles((projection.particles ?? []).filter((particle) => !isBabyDroolParticle(particle)));
-    const rainStreaks = this.addAtmosphere(projection.atmosphericOverlay, projection.actors ?? []);
+    const rainStreaks = updateThreeAtmosphericRain(this, projection.atmosphericOverlay, projection.actors ?? [], view);
+    const atmosphereSparks = updateThreeAtmosphericSparks(this, projection.atmosphericOverlay, projection.actors ?? [], view);
     const lightningBolts = this.addLightning(projection.lights ?? []);
     this.addWorldEvents(projection.worldEvents);
     this.hideUnusedPools();
+    this.updatePooledScreenWarmup();
+    this.mamaFlyover.updateScreenWarmup(view, (projection.worldEvents?.flyovers?.length ?? 0) === 0);
     this.stats = {
       decals: projection.decals?.length ?? 0,
       hazards: projection.groundHazards?.length ?? 0,
@@ -88,54 +96,79 @@ export class ThreeEffectsLayer {
       smoke: projection.fogSmoke?.length ?? 0,
       particles: projection.particles?.length ?? 0,
       rainStreaks,
+      atmosphereSparks,
+      atmosphereSparkPresentation: { ...this.atmosphereSparkStats },
       flyovers: projection.worldEvents?.flyovers?.length ?? 0,
       fireWalls: projection.worldEvents?.fireWalls?.length ?? 0,
-      treeFires: projection.worldEvents?.treeFires?.length ?? 0,
+      mamaNapalmFirewall: this.mamaNapalmFirewall.diagnostics(),
+      foliageFires: projection.worldEvents?.foliageFires?.length ?? 0,
+      foliageFire: this.foliageFireEffects.diagnostics(),
       lightningBolts,
+      lightningAnchors: this.lightningAnchors.map((anchor) => ({ ...anchor })),
       dragonfire: (projection.worldEvents?.flyovers ?? []).filter((flyover) => flyover.breath?.active).length,
+      dragonfireStream: this.pools.get('mama-flyover')?.[0]?.userData?.dragonfireAlignment ?? null,
       transparentBudgetUsed: (projection.fogSmoke?.length ?? 0) + (projection.effects?.length ?? 0),
-      poolCount: this.pools.size + this.instanced.size + this.babyNapalmDrool.diagnostics().batchCount,
+      poolCount: this.pools.size + this.instanced.size + this.babyNapalmDrool.diagnostics().batchCount + 9,
       pooledObjects: [...this.pools.values()].reduce((sum, pool) => sum + pool.length, 0),
       allocations: this.allocations,
       reuses: this.reuses,
       mamaFlyoverAsset: this.mamaFlyover.diagnostics(),
-      babyWyvernDrool: this.babyNapalmDrool.diagnostics()
+      babyWyvernDrool: this.babyNapalmDrool.diagnostics(),
+      screenWarmup: { ...this.screenWarmup }
     };
   }
 
-  addAtmosphere(packet, actors) {
-    const density = packet?.enabled === false || packet?.tuning?.rainEnabled === false
-      ? 0
-      : clamp01(packet?.tuning?.rainDensity);
-    const count = Math.round(96 * density);
-    const player = actors.find((actor) => actor.team === 'player' && actor.alive) ?? actors[0];
-    const mesh = this.ensureInstanced('rain', count, 'rain-streak', () => new THREE.CylinderGeometry(0.004, 0.007, 0.42, 4, 1), '#a9bac1', { transparent: true, depthWrite: false });
-    if (!mesh || !player || !count) return 0;
-    updateMaterial(mesh.material, '#a9bac1', { opacity: 0.3 * Number(packet?.tuning?.overlayOpacity ?? 1), transparent: true, depthWrite: false });
-    const centerX = Number(player.x) * 0.5;
-    const centerZ = Number(player.y) * 0.5;
-    const renderTime = Number(packet.renderTime ?? 0);
-    const speed = Math.max(1.1, Number(packet?.tuning?.rainSpeed ?? 1180) / 300);
-    const angle = Number(packet?.tuning?.rainAngle ?? 16) * Math.PI / 180;
-    this.quaternion.setFromEuler(new THREE.Euler(0, 0, angle));
-    for (let index = 0; index < count; index += 1) {
-      const phase = fract(hash01(index, 3) + renderTime * speed / 6);
-      this.scale.set(1, 0.65 + hash01(index, 41) * 0.8, 1);
-      this.position.set(
-        centerX + (hash01(index, 11) - 0.5) * 13,
-        0.16 + (1 - phase) * 5.8,
-        centerZ + (hash01(index, 23) - 0.5) * 13
-      );
-      this.matrix.compose(this.position, this.quaternion, this.scale);
-      mesh.setMatrixAt(index, this.matrix);
+  updatePooledScreenWarmup() {
+    if (this.screenWarmup.status === 'screen_upload') {
+      this.screenWarmupRestore?.();
+      this.screenWarmupRestore = null;
+      this.screenWarmup = { status: 'ready', count: this.screenWarmup.count + 1 };
+      return;
     }
-    mesh.instanceMatrix.needsUpdate = true;
-    return count;
+    if (this.screenWarmup.status !== 'pending') return;
+    const restores = [];
+    const warmMaterial = (material) => {
+      if (!material) return;
+      const opacity = material.opacity;
+      material.opacity = 0;
+      restores.push(() => { material.opacity = opacity; });
+    };
+    const fireRoot = this.pools.get('mama-flyover')?.[0]?.userData?.fireRoot;
+    if (fireRoot) {
+      fireRoot.visible = true;
+      restores.push(() => { fireRoot.visible = false; });
+      fireRoot.traverse((object) => {
+        if (!object.isMesh) return;
+        const frustumCulled = object.frustumCulled;
+        object.frustumCulled = false;
+        warmMaterial(object.material);
+        restores.push(() => { object.frustumCulled = frustumCulled; });
+      });
+    }
+    restores.push(this.mamaNapalmFirewall.beginScreenWarmup());
+    for (const mesh of [this.foliageFireEffects.flames, this.foliageFireEffects.cores, this.foliageFireEffects.smoke]) {
+      const count = mesh.count;
+      const visible = mesh.visible;
+      mesh.setMatrixAt(0, this.matrix.identity());
+      mesh.count = 1;
+      mesh.visible = true;
+      mesh.instanceMatrix.needsUpdate = true;
+      warmMaterial(mesh.material);
+      restores.push(() => { mesh.count = count; mesh.visible = visible; });
+    }
+    this.screenWarmupRestore = () => { for (const restore of restores.reverse()) restore(); };
+    this.screenWarmup.status = 'screen_upload';
   }
-
   addLightning(lights) {
     const packets = lights.filter((light) => /lightning/i.test(light.sourceKind ?? light.id ?? '')
       && Number(light.effectiveIntensity ?? light.intensity ?? 0) > 0.025);
+    this.lightningAnchors = packets.map((packet) => ({
+      id: packet.id,
+      worldX: Number(packet.worldX) || 0,
+      worldY: Number(packet.worldY) || 0,
+      visualAnchorPolicy: packet.visualAnchorPolicy ?? null,
+      originAcquisition: packet.stormEvent?.originAcquisition ? { ...packet.stormEvent.originAcquisition } : null
+    }));
     for (const packet of packets) {
       const group = this.acquire('lightning-bolt', () => createLightningBolt(this));
       const strength = clamp01(packet.effectiveIntensity ?? packet.intensity ?? 1);
@@ -163,7 +196,6 @@ export class ThreeEffectsLayer {
     }
     return packets.length;
   }
-
   addDisc(key, packet, height, emissive) {
     const mesh = this.acquire(key, () => this.mesh('disc', () => new THREE.CircleGeometry(1, 16), packet.colour));
     updateMaterial(mesh.material, packet.fillColour ?? packet.hotColour ?? packet.colour, {
@@ -179,7 +211,6 @@ export class ThreeEffectsLayer {
     mesh.scale.set(radius, radius * 0.78, radius);
     mesh.receiveShadow = true;
   }
-
   addOrb(key, packet, height, emissive) {
     const mesh = this.acquire(key, () => this.mesh('effect-orb', () => new THREE.IcosahedronGeometry(1, 1), packet.colour));
     updateMaterial(mesh.material, packet.coreColour ?? packet.colour, {
@@ -190,7 +221,6 @@ export class ThreeEffectsLayer {
     mesh.position.copy(this.point(packet.worldX, packet.worldY, height));
     mesh.scale.setScalar(Math.max(0.025, pixelsToMeters(packet.radius, this.tileSize)));
   }
-
   addEffect(packet) {
     if (/smoke/i.test(packet.kind ?? packet.visualRole ?? '')) return this.addSmoke(packet);
     const mesh = this.acquire('effect-ring', () => this.mesh('effect-ring', () => new THREE.RingGeometry(0.7, 1, 18), packet.colour));
@@ -206,7 +236,6 @@ export class ThreeEffectsLayer {
     mesh.rotation.set(-Math.PI / 2, 0, 0);
     mesh.scale.setScalar(radius * (1.2 - (packet.life01 ?? 1) * 0.2));
   }
-
   addSmoke(packet) {
     const mesh = this.acquire('smoke', () => this.mesh('smoke-mass', () => new THREE.IcosahedronGeometry(1, 1), '#777b79'));
     const radius = Math.max(0.08, pixelsToMeters(packet.radius, this.tileSize));
@@ -218,7 +247,6 @@ export class ThreeEffectsLayer {
     mesh.position.copy(this.point(packet.worldX, packet.worldY, 0.28 + radius * 0.42));
     mesh.scale.set(radius * 1.2, radius * 0.7, radius);
   }
-
   addDroppedTorch(packet) {
     const shaft = this.acquire('dropped-torch', () => this.mesh('dropped-torch', () => new THREE.CylinderGeometry(0.018, 0.024, 1, 5), '#6d3f1e'));
     updateMaterial(shaft.material, packet.palette?.torch ?? '#6d3f1e');
@@ -228,7 +256,6 @@ export class ThreeEffectsLayer {
       this.addOrb('torch-flame', { ...packet, worldX: packet.flameWorldX, worldY: packet.flameWorldY, radius: packet.flameWorldRadius, colour: packet.palette?.flame, coreColour: packet.palette?.flameCore, opacity: packet.render.flameAlpha }, 0.13, true);
     }
   }
-
   addParticles(particles) {
     const mesh = this.ensureInstanced('particles', particles.length, 'particle', () => new THREE.IcosahedronGeometry(0.025, 0), '#d6a466', { emissive: '#c87932', opacity: 0.72, transparent: true, depthWrite: false });
     if (!mesh) return;
@@ -242,29 +269,21 @@ export class ThreeEffectsLayer {
     });
     mesh.instanceMatrix.needsUpdate = true;
   }
-
   addWorldEvents(events) {
-    for (const wall of events?.fireWalls ?? []) {
-      const mesh = this.acquire('fire-wall', () => this.mesh('fire-wall', () => new THREE.BoxGeometry(1, 1, 1), '#ff5a18'));
-      updateMaterial(mesh.material, '#ff5a18', { emissive: '#ff7f25', opacity: 0.82, transparent: true });
-      placeSegment(mesh, this.point(wall.worldAx, wall.worldAy, 0.16), this.point(wall.worldBx, wall.worldBy, 0.16), Math.max(0.12, pixelsToMeters(wall.worldWidth, this.tileSize)));
-    }
-    for (const fire of events?.treeFires ?? []) {
-      this.addOrb('tree-fire', { ...fire, radius: Math.max(8, fire.worldWidth * 0.18), colour: '#ff5b18', coreColour: '#ffd08a', opacity: Math.max(0.2, fire.heatAmount) }, 1.4 + fire.heatAmount * 1.8, true);
-    }
+    for (const group of this.pools.get('mama-flyover') ?? []) if (group.userData.fireRoot) group.userData.fireRoot.visible = false;
     for (const flyover of events?.flyovers ?? []) this.addFlyover(flyover);
   }
 
   addFlyover(packet) {
-    const group = this.acquire('mama-flyover', () => createFlyoverGroup(this));
+    const group = this.acquire('mama-flyover', () => createDragonfireFlyoverGroup(this));
     const altitudeMeters = packet.altitudeMeters ?? 9.2;
     const screenAnchorOffset = this.mamaFlyover.apply(packet, this.point(packet.worldX, packet.worldY, altitudeMeters));
-    const flame = group.userData.flame;
-    flame.visible = !!packet.breath?.active;
-    if (flame.visible) {
-      updateMaterial(flame.material, '#ff6422', { emissive: '#ff8a2f', opacity: packet.breath.opacity, transparent: true });
+    const fireRoot = group.userData.fireRoot;
+    fireRoot.visible = !!packet.breath?.active;
+    if (fireRoot.visible) {
       const origin = this.point(packet.breath.originWorldX, packet.breath.originWorldY, altitudeMeters - 0.22).add(screenAnchorOffset);
-      placeSegment(flame, origin, this.point(packet.breath.targetWorldX, packet.breath.targetWorldY, 0.2));
+      const target = this.point(packet.breath.targetWorldX, packet.breath.targetWorldY, 0.2);
+      updateDragonfireStream(group, origin, target, packet.breath.opacity, packet.breath.phase);
     }
   }
 
@@ -330,8 +349,8 @@ export class ThreeEffectsLayer {
     }
   }
 
-  mesh(geometryKey, geometryFactory, colour) {
-    const material = createMaterial(colour);
+  mesh(geometryKey, geometryFactory, colour, options = {}) {
+    const material = createMaterial(colour, options);
     this.ownedMaterials.add(material);
     return new THREE.Mesh(this.geometry(geometryKey, geometryFactory), material);
   }
@@ -350,10 +369,14 @@ export class ThreeEffectsLayer {
     return { contract: THREE_EFFECTS_LAYER_CONTRACT, ...this.stats, geometryCacheEntries: this.geometries.size, materialCacheEntries: this.ownedMaterials.size };
   }
 
+  takeWarmupBundle() { return this.mamaFlyover.takeWarmupBundle(); }
+
   dispose() {
     this.root.removeFromParent();
     this.mamaFlyover.dispose();
     this.babyNapalmDrool.dispose();
+    this.foliageFireEffects.dispose();
+    this.mamaNapalmFirewall.dispose();
     for (const geometry of this.geometries.values()) geometry.dispose();
     for (const material of this.ownedMaterials) material.dispose();
     this.geometries.clear();
@@ -390,19 +413,8 @@ function createLightningBolt(layer) {
   return group;
 }
 
-function createFlyoverGroup(layer) {
-  const group = layer.mamaFlyover.root;
-  const flameMaterial = createMaterial('#ff6422', { emissive: '#ff8a2f', transparent: true });
-  layer.ownedMaterials.add(flameMaterial);
-  const flame = new THREE.Mesh(layer.geometry('dragonfire-beam', () => new THREE.CylinderGeometry(0.12, 0.72, 1, 7)), flameMaterial);
-  flame.visible = false;
-  layer.root.add(flame);
-  group.userData.flame = flame;
-  return group;
-}
-
 function createMaterial(colour, options = {}) {
-  return new THREE.MeshStandardMaterial({
+  const material = new THREE.MeshStandardMaterial({
     color: parseColour(colour),
     roughness: options.roughness ?? 0.72,
     metalness: 0,
@@ -411,9 +423,12 @@ function createMaterial(colour, options = {}) {
     opacity: options.opacity ?? 1,
     transparent: options.transparent ?? false,
     depthWrite: options.depthWrite ?? true,
+    depthTest: options.depthTest ?? true,
     side: options.side ?? THREE.FrontSide,
     flatShading: true
   });
+  if (material.transparent && material.side === THREE.DoubleSide) material.forceSinglePass = true;
+  return material;
 }
 
 function updateMaterial(material, colour, options = {}) {
@@ -424,10 +439,13 @@ function updateMaterial(material, colour, options = {}) {
   material.opacity = options.opacity ?? 1;
   const transparent = options.transparent ?? material.opacity < 0.999;
   const depthWrite = options.depthWrite ?? !transparent;
-  if (material.transparent !== transparent || material.depthWrite !== depthWrite || (options.side != null && material.side !== options.side)) material.needsUpdate = true;
+  const depthTest = options.depthTest ?? material.depthTest;
+  if (material.transparent !== transparent || material.depthWrite !== depthWrite || material.depthTest !== depthTest || (options.side != null && material.side !== options.side)) material.needsUpdate = true;
   material.transparent = transparent;
   material.depthWrite = depthWrite;
+  material.depthTest = depthTest;
   material.side = options.side ?? THREE.FrontSide;
+  material.forceSinglePass = material.transparent && material.side === THREE.DoubleSide;
 }
 
 function pixelsToMeters(value, tileSize) { return Math.max(0, Number(value ?? 0)) / tileSize * 0.5; }

@@ -13,7 +13,10 @@ const state = {
   captureTone: '',
   lastSurfaceSignature: null,
   lastReturnEntryId: null,
-  attachments: []
+  attachments: [],
+  annotations: [],
+  view: 'chat',
+  filesBusy: false
 };
 
 function workspaceContext() {
@@ -43,55 +46,74 @@ async function request(path, options = {}) {
 }
 
 function ensureSurface() {
-  const tablist = document.querySelector('#left-panel .panel-tabs');
-  const leftPanel = document.getElementById('left-panel');
-  if (!tablist || !leftPanel) return false;
+  const chatPanel = document.getElementById('chat-panel');
+  const chatHeader = document.getElementById('chat-header');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatInputArea = document.getElementById('chat-input-area');
+  if (!chatPanel || !chatHeader || !chatMessages || !chatInputArea) return false;
 
-  let tab = document.querySelector('.ptab[data-panel-id="diary"]');
-  if (!tab) {
-    tab = document.createElement('div');
-    tab.className = 'ptab';
-    tab.dataset.panelId = 'diary';
-    tab.textContent = 'Diary';
-    tab.setAttribute('role', 'tab');
-    tab.setAttribute('tabindex', '-1');
-    tab.setAttribute('aria-selected', 'false');
-    tab.onclick = () => open();
-    const forgeTab = tablist.querySelector('[data-panel-id="bsb-map"]');
-    tablist.insertBefore(tab, forgeTab || tablist.firstChild);
+  document.querySelector('.ptab[data-panel-id="diary"]')?.remove();
+  document.getElementById('panel-diary')?.remove();
+
+  let tabs = document.getElementById('copilot-surface-tabs');
+  if (!tabs) {
+    tabs = document.createElement('div');
+    tabs.id = 'copilot-surface-tabs';
+    tabs.className = 'copilot-surface-tabs';
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', 'Co-pilot surfaces');
+    tabs.innerHTML = `
+      <button class="copilot-surface-tab active" data-copilot-surface="chat" type="button" role="tab">Chat</button>
+      <button class="copilot-surface-tab" data-copilot-surface="journal" type="button" role="tab">Journal <span id="project-diary-count">0</span></button>`;
+    chatHeader.insertBefore(tabs, document.getElementById('chat-model-badge'));
   }
 
-  let panel = document.getElementById('panel-diary');
-  if (!panel) {
-    panel = document.createElement('div');
-    panel.id = 'panel-diary';
-    panel.className = 'panel-content';
-    panel.style.display = 'none';
-    panel.innerHTML = `
-      <div class="project-diary-panel">
-        <div class="project-diary-head">
-          <div><span class="project-diary-eyebrow">Capture first</span><strong>Project Diary</strong></div>
-          <span id="project-diary-steward" class="project-diary-steward">quiet · event only</span>
-          <small>Keep the thought here. Move into Forge only when you are ready to author.</small>
-        </div>
-        <div id="project-diary-context" class="project-diary-context"></div>
-        <div class="project-diary-capture">
-          <label class="project-diary-label" for="project-diary-input">New entry</label>
-          <textarea id="project-diary-input" placeholder="Write the messy version — idea, bug, code, decision, or something you noticed..." spellcheck="true"></textarea>
-          <div class="project-diary-capture-row">
-            <label class="project-diary-attach"><input id="project-diary-attach-context" type="checkbox" checked> Attach current Forge / viewport context</label>
-            <input id="project-diary-files" type="file" accept="image/*,.txt,.md,.js,.json" multiple hidden>
-            <button id="project-diary-files-button" class="project-diary-button" type="button">Attach</button>
-            <button id="project-diary-capture-button" class="project-diary-button primary" type="button">Capture</button>
-          </div>
-          <div id="project-diary-attachments" class="project-diary-capture-status"></div>
-          <div id="project-diary-capture-status" class="project-diary-capture-status"></div>
-        </div>
-        <div class="project-diary-label">Recent entries</div>
-        <div id="project-diary-entries" class="project-diary-entries"></div>
-      </div>`;
-    const forgePanel = document.getElementById('panel-bsb-map');
-    leftPanel.insertBefore(panel, forgePanel || null);
+  let journal = document.getElementById('project-diary-view');
+  if (!journal) {
+    journal = document.createElement('div');
+    journal.id = 'project-diary-view';
+    journal.className = 'project-diary-view';
+    journal.hidden = true;
+    journal.innerHTML = `
+      <div class="project-diary-head">
+        <div><span class="project-diary-eyebrow">Preserved intent</span><strong>Project Journal</strong></div>
+        <span id="project-diary-steward" class="project-diary-steward">quiet · event only</span>
+        <small>Original notes, marks, and sources stay separate from AXIOM's interpretation.</small>
+      </div>
+      <div id="project-diary-context" class="project-diary-context"></div>
+      <div class="project-diary-section-head"><span>Recent entries</span><button id="project-diary-new-button" class="project-diary-button" type="button">New entry</button></div>
+      <div id="project-diary-entries" class="project-diary-entries"></div>`;
+    chatPanel.insertBefore(journal, chatMessages);
+  }
+
+  let draft = document.getElementById('project-diary-draft');
+  if (!draft) {
+    draft = document.createElement('div');
+    draft.id = 'project-diary-draft';
+    draft.className = 'project-diary-draft';
+    draft.hidden = true;
+    draft.innerHTML = `
+      <div class="project-diary-draft-head"><span>Journal entry draft</span><span id="project-diary-draft-state">context ready</span></div>
+      <div id="project-diary-draft-context" class="project-diary-context-chips"></div>
+      <div id="project-diary-attachments" class="project-diary-source-list"></div>
+      <input id="project-diary-files" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.txt,.md,.js,.json,.css,.html" multiple hidden>
+      <div class="project-diary-draft-actions">
+        <button id="project-diary-files-button" class="project-diary-button" type="button">Add image/file</button>
+        <button id="project-diary-snapshot-button" class="project-diary-button" type="button">Snapshot</button>
+        <button id="project-diary-clear-marks" class="project-diary-button" type="button">Clear marks</button>
+      </div>
+      <div id="project-diary-capture-status" class="project-diary-capture-status"></div>`;
+    chatInputArea.insertBefore(draft, document.getElementById('chat-input'));
+  }
+
+  let addEntry = document.getElementById('project-diary-capture-button');
+  if (!addEntry) {
+    addEntry = document.createElement('button');
+    addEntry.id = 'project-diary-capture-button';
+    addEntry.className = 'project-diary-button primary project-diary-add-entry';
+    addEntry.type = 'button';
+    addEntry.textContent = 'Add entry';
+    document.querySelector('.chat-send-row')?.insertBefore(addEntry, document.getElementById('send-btn'));
   }
 
   let dialog = document.getElementById('project-diary-dialog');
@@ -108,27 +130,38 @@ function ensureSurface() {
     document.body.appendChild(dialog);
   }
 
-  bindSurface(panel, dialog);
-  window.AxiomUXRuntime?.bindTabs?.();
+  bindSurface(journal, dialog);
   const context = workspaceContext();
   if (context) window.AxiomUXRuntime?.applyWorkspaceContext?.(context);
+  switchView(state.view, { focus: false });
   return true;
 }
 
-function bindSurface(panel, dialog) {
-  if (panel.dataset.diaryBound === 'true') return;
-  panel.dataset.diaryBound = 'true';
+function bindSurface(journal, dialog) {
+  if (journal.dataset.diaryBound === 'true') return;
+  journal.dataset.diaryBound = 'true';
   document.getElementById('project-diary-capture-button')?.addEventListener('click', () => capture());
-  document.getElementById('project-diary-input')?.addEventListener('keydown', event => {
+  document.getElementById('chat-input')?.addEventListener('keydown', event => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
       event.preventDefault();
       capture();
     }
   });
   document.getElementById('project-diary-files-button')?.addEventListener('click', () => document.getElementById('project-diary-files')?.click());
-  document.getElementById('project-diary-files')?.addEventListener('change', event => {
-    state.attachments = [...(event.target.files || [])].slice(0, 8).map(file => ({ name: file.name, type: file.type, size: file.size, reference: null }));
+  document.getElementById('project-diary-files')?.addEventListener('change', event => prepareFiles(event.target.files));
+  document.getElementById('project-diary-snapshot-button')?.addEventListener('click', () => addViewportSnapshot());
+  document.getElementById('project-diary-clear-marks')?.addEventListener('click', () => window.InteractionModeRuntime?.clearAnnotations?.());
+  document.getElementById('project-diary-new-button')?.addEventListener('click', () => { switchView('journal'); document.getElementById('chat-input')?.focus(); });
+  document.getElementById('copilot-surface-tabs')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-copilot-surface]');
+    if (button) switchView(button.dataset.copilotSurface);
+  });
+  document.getElementById('project-diary-attachments')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-remove-attachment]');
+    if (!button) return;
+    state.attachments.splice(Number(button.dataset.removeAttachment), 1);
     renderAttachments();
+    renderDraft();
   });
   document.getElementById('project-diary-entries')?.addEventListener('click', event => {
     const button = event.target.closest('[data-diary-action]');
@@ -142,6 +175,104 @@ function bindSurface(panel, dialog) {
   dialog.addEventListener('click', event => {
     if (event.target === dialog) dialog.close();
   });
+}
+
+function switchView(view, options = {}) {
+  state.view = view === 'journal' ? 'journal' : 'chat';
+  const journal = document.getElementById('project-diary-view');
+  const messages = document.getElementById('chat-messages');
+  const draft = document.getElementById('project-diary-draft');
+  const chatPanel = document.getElementById('chat-panel');
+  if (journal) journal.hidden = state.view !== 'journal';
+  if (messages) messages.hidden = state.view === 'journal';
+  if (draft) draft.hidden = state.view !== 'journal';
+  if (chatPanel) chatPanel.dataset.surface = state.view;
+  document.querySelectorAll('[data-copilot-surface]').forEach(button => {
+    const active = button.dataset.copilotSurface === state.view;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  const input = document.getElementById('chat-input');
+  if (input) input.placeholder = state.view === 'journal'
+    ? 'Add a thought to the marked view — text is optional when a doodle or source is present…'
+    : 'Ask AXIOM anything — input stays live during processing...';
+  const send = document.getElementById('send-btn');
+  if (send) send.textContent = state.view === 'journal' ? 'Ask Co-Pilot' : 'Send ↵';
+  const addEntry = document.getElementById('project-diary-capture-button');
+  if (addEntry) addEntry.hidden = state.view !== 'journal';
+  renderDraft();
+  if (options.focus !== false) input?.focus();
+  try { window.EDITOR?.events?.emit?.('projectDiary:viewChanged', { view: state.view, source: options.source || 'ProjectDiaryRuntime' }); } catch (_) { }
+  return status();
+}
+
+async function prepareFiles(fileList) {
+  const files = [...(fileList || [])].slice(0, Math.max(0, 4 - state.attachments.length));
+  if (!files.length) return;
+  state.filesBusy = true;
+  setCaptureStatus('Reading source files locally…');
+  renderBusy();
+  try {
+    for (const file of files) {
+      if (file.size > 1000000) throw new Error(`Source is larger than 1 MB: ${file.name}`);
+      const type = file.type || attachmentTypeFromName(file.name);
+      if (type.startsWith('image/')) {
+        if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(type)) throw new Error(`Unsupported image type: ${type}`);
+        state.attachments.push({ name: file.name, type, size: file.size, dataUrl: await readFileDataUrl(file), source: 'file_picker' });
+      } else {
+        if (!['text/plain', 'text/markdown', 'application/json', 'text/javascript', 'text/css', 'text/html'].includes(type)) throw new Error(`Unsupported source type: ${type}`);
+        state.attachments.push({ name: file.name, type, size: file.size, content: await file.text(), source: 'file_picker' });
+      }
+    }
+    setCaptureStatus(`${files.length} source${files.length === 1 ? '' : 's'} ready. Content will be preserved with the entry.`, 'good');
+  } catch (error) {
+    setCaptureStatus(String(error?.message || error), 'error');
+  } finally {
+    state.filesBusy = false;
+    const input = document.getElementById('project-diary-files');
+    if (input) input.value = '';
+    renderAttachments();
+    renderDraft();
+    renderBusy();
+  }
+}
+
+async function addViewportSnapshot() {
+  const snapshot = window.BsbV2MapAuthoring?.captureViewportSnapshot?.();
+  if (!snapshot?.ok) {
+    setCaptureStatus(snapshot?.classification === 'runtime_only_reference'
+      ? 'Runtime view is recorded as an anchored reference; pixel capture is unavailable on that surface.'
+      : `Snapshot unavailable: ${snapshot?.error || 'no capturable viewport'}`, 'error');
+    return snapshot || { ok: false };
+  }
+  if (state.attachments.length >= 4) {
+    setCaptureStatus('The entry already has the maximum of four sources.', 'error');
+    return { ok: false, error: 'project_diary_attachment_limit' };
+  }
+  state.attachments.push({ ...snapshot, size: Math.round(snapshot.dataUrl.length * .75), source: 'viewport_snapshot' });
+  renderAttachments();
+  renderDraft();
+  setCaptureStatus('Current Forge view is ready as a preserved Snapshot.', 'good');
+  return snapshot;
+}
+
+function readFileDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('project_diary_file_read_failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function attachmentTypeFromName(name) {
+  const extension = String(name || '').toLowerCase().split('.').pop();
+  if (extension === 'md') return 'text/markdown';
+  if (extension === 'json') return 'application/json';
+  if (['js', 'mjs', 'cjs', 'ts'].includes(extension)) return 'text/javascript';
+  if (extension === 'css') return 'text/css';
+  if (extension === 'html') return 'text/html';
+  return 'text/plain';
 }
 
 async function load() {
@@ -173,12 +304,13 @@ async function load() {
 
 async function capture() {
   if (state.busy) return { ok: false, error: 'project_diary_capture_busy' };
-  const input = document.getElementById('project-diary-input');
+  const input = document.getElementById('chat-input');
   const sourceText = String(input?.value || '').trim();
-  if (!sourceText) {
-    setCaptureStatus('Write something first — the Diary does not require any other fields.', 'error');
+  const annotations = window.InteractionModeRuntime?.status?.()?.annotations || state.annotations || [];
+  if (!sourceText && !annotations.length && !state.attachments.length) {
+    setCaptureStatus('Write, annotate, add a source, or take a Snapshot before adding an entry.', 'error');
     input?.focus();
-    return { ok: false, error: 'project_diary_source_text_required' };
+    return { ok: false, error: 'project_diary_source_material_required' };
   }
   const context = workspaceContext();
   if (!context?.project?.id) {
@@ -189,28 +321,43 @@ async function capture() {
   setCaptureStatus('Preserving your original entry…');
   renderBusy();
   try {
-    const attachContext = document.getElementById('project-diary-attach-context')?.checked !== false;
-    const capturedContext = attachContext ? compactWorkspaceContext(context) : { project: context.project };
-    const spatialAnchor = attachContext ? (window.BsbV2MapAuthoring?.getDiaryAnchor?.() || state.spatialAnchor) : null;
+    const capturedContext = compactWorkspaceContext(context);
+    const annotationAnchor = annotations.find(item => item.surface?.tile)?.surface || null;
+    const spatialAnchor = annotationAnchor ? {
+      surfaceId: annotationAnchor.surfaceId,
+      catalogueMapId: annotationAnchor.catalogueMapId,
+      mapId: annotationAnchor.mapId,
+      tile: annotationAnchor.tile,
+      selection: context.scene?.selection || null,
+      capturedAt: new Date().toISOString()
+    } : (window.BsbV2MapAuthoring?.getDiaryAnchor?.() || state.spatialAnchor);
+    const rawAttachments = [...state.attachments];
+    const preview = annotations.length ? window.InteractionModeRuntime?.exportPreviewPng?.() : null;
+    if (preview && rawAttachments.length < 4 && !rawAttachments.some(item => item.generatedFrom === 'annotation_session')) {
+      rawAttachments.push({ name: 'annotation-preview.png', type: 'image/png', size: Math.round(preview.length * .75), dataUrl: preview, generatedFrom: 'annotation_session' });
+    }
     const payload = await request('/entries', {
       method: 'POST',
       body: JSON.stringify({
         ...activeProjectParams(context),
-        source: { text: sourceText, attachments: state.attachments },
+        source: { text: sourceText, annotations, attachments: rawAttachments, classification: !sourceText && annotations.length ? 'visual_annotation' : undefined },
         context: capturedContext,
         spatialAnchor,
-        provenance: { sourceSurface: 'project_diary', capturedBy: 'user' }
+        provenance: { sourceSurface: annotations[0]?.surface?.surfaceId || 'project_journal', capturedBy: 'user' }
       })
     });
     state.entries = [payload.entry, ...state.entries.filter(entry => entry.id !== payload.entry.id)];
     if (input) input.value = '';
     state.attachments = [];
+    state.annotations = [];
+    window.InteractionModeRuntime?.clearAnnotations?.();
+    window.InteractionModeRuntime?.setMode?.('inspect', { notify: false });
     const fileInput = document.getElementById('project-diary-files');
     if (fileInput) fileInput.value = '';
     renderAttachments();
     setCaptureStatus('Original preserved. AXIOM is deriving a concise interpretation from bounded project evidence.', 'good');
     renderEntries();
-    const interpreted = await interpretEntry(payload.entry);
+    const interpreted = await interpretEntry(payload.entry, rawAttachments);
     return { ok: true, entry: interpreted || payload.entry };
   } catch (error) {
     setCaptureStatus(`Capture failed before completion: ${String(error.message || error)}`, 'error');
@@ -221,7 +368,12 @@ async function capture() {
   }
 }
 
-async function interpretEntry(entry) {
+async function interpretEntry(entry, rawAttachments = []) {
+  const visualOnly = !String(entry.source?.text || '').trim() && ((entry.source?.annotations || []).length || (entry.source?.attachments || []).length);
+  if (visualOnly) {
+    setCaptureStatus('Original visual source preserved. Semantic interpretation awaits a note or the vision proposal slice.', 'good');
+    return entry;
+  }
   const model = window.EDITOR?.model?.status?.();
   if (!model?.ok) {
     setCaptureStatus('Original preserved with deterministic interpretation. Local model is unavailable; no success was invented.', 'good');
@@ -232,6 +384,10 @@ async function interpretEntry(entry) {
     const promptPayload = {
       source: entry.source.text,
       sourceClassification: entry.source.classification,
+      visualContext: {
+        annotations: (entry.source.annotations || []).map(item => ({ kind: item.kind, surface: item.surface, pointCount: item.path?.length || 0 })),
+        attachments: rawAttachments.map(item => ({ name: item.name, type: item.type, textExcerpt: typeof item.content === 'string' ? item.content.slice(0, 1600) : null, visualPixelsInterpreted: false }))
+      },
       context: {
         project: entry.context.project,
         repository: entry.context.repository,
@@ -268,7 +424,7 @@ async function interpretEntry(entry) {
     setCaptureStatus(`Original preserved · interpreted by ${model.current?.model || 'local model'} · ${MODEL_MAX_TOKENS}-token cap.`, 'good');
     return payload.entry;
   } catch (error) {
-    setCaptureStatus(`Original preserved with deterministic interpretation. Local-model interpretation failed visibly: ${String(error.message || error)}`, 'error');
+    setCaptureStatus(`Original preserved. Local-model enhancement unavailable (${String(error.message || error)}); deterministic interpretation retained.`, 'fallback');
     return entry;
   }
 }
@@ -283,14 +439,18 @@ async function openInForge(entryId) {
     selection: entry.context?.scene?.selection,
     spatialAnchor: entry.context?.spatialAnchor
   }, { inputOwner: 'forge', source: 'project_diary_open_in_forge' });
+  window.InteractionModeRuntime?.loadAnnotations?.(entry.source?.annotations || [], { source: 'project_journal_open_in_forge' });
   window.EDITOR?.notify?.('info', 'Forge now owns map input. Diary context remains attached to the entry.');
   return result || { ok: true };
 }
 
-function open() {
+function open(options = {}) {
   ensureSurface();
-  window.AxiomUXRuntime?.showLeftPanel?.('diary', { source: 'project_diary_open' });
-  window.BsbV2MapAuthoring?.setInputOwner?.('diary', { source: 'project_diary_open', force: true });
+  switchView('journal', { focus: options.focus !== false });
+  const activeLeft = window.AxiomUXRuntime?.getState?.()?.activeLeftPanel;
+  if (isBsbWorkspace() && (activeLeft === 'diary' || !document.getElementById(`panel-${activeLeft}`))) {
+    window.AxiomUXRuntime?.showLeftPanel?.('bsb-map', { source: 'project_journal_open' });
+  }
   state.spatialAnchor = window.BsbV2MapAuthoring?.getDiaryAnchor?.() || state.spatialAnchor;
   renderContext();
   return status();
@@ -430,6 +590,7 @@ function render() {
   renderCaptureStatus();
   renderAttachments();
   renderEntries();
+  renderDraft();
   renderBusy();
 }
 
@@ -439,20 +600,20 @@ function renderContext() {
   const context = workspaceContext();
   const mapState = window.BsbV2MapAuthoring?.workspaceState?.() || null;
   const anchor = window.BsbV2MapAuthoring?.getDiaryAnchor?.() || state.spatialAnchor;
+  const annotationState = window.InteractionModeRuntime?.status?.() || { annotations: state.annotations };
   const region = context?.scene?.catalogueMapId || context?.scene?.mapId || 'No active region';
   const selection = context?.scene?.selection;
-  const inputOwner = mapState?.inputOwner || 'inspect';
   root.innerHTML = `
     <div class="project-diary-context-grid">
       <b>Project</b><span title="${escapeAttr(context?.project?.root || '')}">${escapeHtml(context?.project?.name || 'No verified project')}</span>
       <b>Region</b><span>${escapeHtml(region)}</span>
-      <b>Focus</b><span>${selection ? `${escapeHtml(selection.kind || 'record')} · ${escapeHtml(selection.id || 'unknown')}` : 'No selected Forge record'}</span>
-      <b>Map pin</b><span>${anchor?.tile ? `${anchor.tile.x}, ${anchor.tile.y}` : 'Click the map while Diary is active'}</span>
-      <b>Input</b><span>${inputOwner === 'diary' ? 'Diary pin — map is read-only' : inputOwner === 'forge' ? 'Forge — map edits enabled' : 'Inspect — map is read-only'}</span>
+      <b>Surface</b><span>${escapeHtml(mapState?.view === 'runtime' ? 'Runtime preview' : mapState?.active ? 'Forge authoring' : 'AXIOM viewport')}</span>
+      <b>Focus</b><span>${selection ? `${escapeHtml(selection.kind || 'record')} · ${escapeHtml(selection.id || 'unknown')}` : 'No selected record'}</span>
+      <b>Anchor</b><span>${anchor?.tile ? `tile ${anchor.tile.x}, ${anchor.tile.y}` : `${annotationState.annotations?.length || 0} viewport mark${annotationState.annotations?.length === 1 ? '' : 's'}`}</span>
     </div>
     <div class="project-diary-relationship">
-      <b>One surface, explicit ownership</b>
-      <span>Diary owns words and context pins · Forge owns authored map changes · the viewport follows the active panel.</span>
+      <b>Original first, interpretation second</b>
+      <span>Journal preserves your words and marks · AXIOM interpretations remain derived · Forge alone owns authored map changes.</span>
     </div>`;
 }
 
@@ -487,21 +648,55 @@ function setCaptureStatus(text, tone = '') {
 function renderBusy() {
   const button = document.getElementById('project-diary-capture-button');
   if (!button) return;
-  button.disabled = state.busy;
-  button.textContent = state.busy ? 'Capturing…' : 'Capture';
+  button.disabled = state.busy || state.filesBusy;
+  button.textContent = state.busy ? 'Adding…' : state.filesBusy ? 'Reading…' : 'Add entry';
 }
 
 function renderAttachments() {
   const node = document.getElementById('project-diary-attachments');
   if (!node) return;
-  node.textContent = state.attachments.length ? state.attachments.map(item => item.name).join(' · ') : '';
+  node.innerHTML = state.attachments.map((item, index) => `
+    <span class="project-diary-source-chip" title="${escapeAttr(item.type || '')}">
+      <span>${item.type?.startsWith('image/') ? 'image' : 'file'}</span>
+      ${escapeHtml(item.name)}
+      <button type="button" data-remove-attachment="${index}" aria-label="Remove ${escapeAttr(item.name)}">×</button>
+    </span>`).join('');
+}
+
+function renderDraft() {
+  const draft = document.getElementById('project-diary-draft');
+  const chips = document.getElementById('project-diary-draft-context');
+  const draftState = document.getElementById('project-diary-draft-state');
+  if (!draft || !chips) return;
+  const context = workspaceContext();
+  const map = window.BsbV2MapAuthoring?.workspaceState?.() || null;
+  const interaction = window.InteractionModeRuntime?.status?.() || { annotations: state.annotations || [] };
+  state.annotations = interaction.annotations || [];
+  const firstSurface = state.annotations[0]?.surface || null;
+  const region = context?.scene?.catalogueMapId || context?.scene?.mapId || 'no region';
+  const selection = context?.scene?.selection;
+  const surface = firstSurface?.surfaceId || (map?.view === 'runtime' ? 'runtime preview' : map?.active ? 'Forge authoring' : 'AXIOM viewport');
+  const anchor = firstSurface?.tile ? `tile ${firstSurface.tile.x},${firstSurface.tile.y}` : firstSurface?.classification === 'runtime_only_reference' ? 'runtime-only reference' : null;
+  chips.innerHTML = [
+    context?.project?.name,
+    region,
+    surface,
+    anchor,
+    selection?.id ? `${selection.kind || 'record'} · ${selection.id}` : null,
+    state.annotations.length ? `${state.annotations.length} mark${state.annotations.length === 1 ? '' : 's'}` : null
+  ].filter(Boolean).map(value => `<span>${escapeHtml(value)}</span>`).join('');
+  if (draftState) draftState.textContent = state.annotations.length || state.attachments.length ? 'visual source ready' : 'current context auto';
+  const clearMarks = document.getElementById('project-diary-clear-marks');
+  if (clearMarks) clearMarks.disabled = !state.annotations.length;
 }
 
 function renderEntries() {
   const root = document.getElementById('project-diary-entries');
   if (!root) return;
+  const count = document.getElementById('project-diary-count');
+  if (count) count.textContent = String(state.entries.length);
   if (!state.entries.length) {
-    root.innerHTML = '<div class="project-diary-empty">Nothing recorded yet. A rough sentence is enough; AXIOM will preserve it before deriving structure.</div>';
+    root.innerHTML = '<div class="project-diary-empty">Nothing recorded yet. Write, point, circle, highlight, doodle, or add a source; the original will be preserved before AXIOM derives anything.</div>';
     return;
   }
   root.innerHTML = state.entries.map(renderEntry).join('');
@@ -515,6 +710,9 @@ function renderEntry(entry) {
   const anchor = entry.context?.spatialAnchor;
   const region = entry.context?.scene?.catalogueMapId || entry.context?.scene?.mapId || 'no region';
   const modelLabel = interpretation?.classification === 'model_interpretation' ? (interpretation.model || 'local model') : 'deterministic baseline';
+  const annotationCount = entry.source?.annotations?.length || 0;
+  const attachmentCount = entry.source?.attachments?.length || 0;
+  const original = String(entry.source?.text || '').trim() || `Visual entry · ${annotationCount} mark${annotationCount === 1 ? '' : 's'} · ${attachmentCount} source${attachmentCount === 1 ? '' : 's'}`;
   return `
     <article class="project-diary-entry" data-entry-id="${escapeAttr(entry.id)}">
       <div class="project-diary-entry-head">
@@ -522,7 +720,8 @@ function renderEntry(entry) {
         <span class="project-diary-pill ${interpretation?.classification === 'model_interpretation' ? 'model' : 'warn'}">${escapeHtml(modelLabel)}</span>
         <time>${escapeHtml(formatTime(entry.createdAt))}</time>
       </div>
-      <div class="project-diary-source">${escapeHtml(entry.source?.text || '')}</div>
+      ${renderEntrySources(entry)}
+      <div class="project-diary-source">${escapeHtml(original)}</div>
       <div class="project-diary-interpretation"><span class="project-diary-label">What AXIOM understood</span><br>${escapeHtml(payload.interpretedIntent || 'Interpretation pending.')}</div>
       <div class="project-diary-evidence">
         <span><b>Context</b> ${escapeHtml(region)}${anchor?.tile ? ` · tile ${anchor.tile.x},${anchor.tile.y}` : ''}${entry.context?.scene?.selection?.id ? ` · ${escapeHtml(entry.context.scene.selection.id)}` : ''}</span>
@@ -537,6 +736,18 @@ function renderEntry(entry) {
       </div>
       <details><summary>Evidence and provenance</summary><pre>${escapeHtml(JSON.stringify({ source: entry.source, context: entry.context, evidence: entry.derived?.evidence, interpretation }, null, 2))}</pre></details>
     </article>`;
+}
+
+function renderEntrySources(entry) {
+  const image = (entry.source?.attachments || []).find(item => item.type?.startsWith('image/') && item.id);
+  const annotations = entry.source?.annotations || [];
+  if (!image && !annotations.length) return '';
+  const marks = annotations.length ? `<span>${annotations.map(item => item.kind).join(' · ')}</span>` : '';
+  if (!image) return `<div class="project-diary-visual-source"><div class="project-diary-visual-placeholder">${escapeHtml(`${annotations.length} preserved viewport mark${annotations.length === 1 ? '' : 's'}`)}</div>${marks}</div>`;
+  let params = null;
+  try { params = new URLSearchParams(activeProjectParams()).toString(); } catch { params = ''; }
+  const url = `${API_ROOT}/entries/${encodeURIComponent(entry.id)}/attachments/${encodeURIComponent(image.id)}${params ? `?${params}` : ''}`;
+  return `<div class="project-diary-visual-source"><img src="${escapeAttr(url)}" alt="Preserved visual source for this Journal entry"><span>${escapeHtml(image.name)}${annotations.length ? ` · ${annotations.length} mark${annotations.length === 1 ? '' : 's'}` : ''}</span></div>`;
 }
 
 function renderCompletion(completion) {
@@ -572,6 +783,26 @@ function bindRuntimeEvents() {
     renderContext();
   });
   window.EDITOR?.events?.on?.('bsb:inputOwnerChanged', () => renderContext());
+  window.EDITOR?.events?.on?.('annotation:created', event => {
+    state.annotations = event?.status?.annotations || [];
+    switchView('journal', { focus: false, source: 'annotation_created' });
+    renderDraft();
+    renderContext();
+  });
+  window.EDITOR?.events?.on?.('annotation:loaded', event => {
+    state.annotations = event?.status?.annotations || [];
+    renderDraft();
+    renderContext();
+  });
+  window.EDITOR?.events?.on?.('annotation:cleared', () => {
+    state.annotations = [];
+    renderDraft();
+    renderContext();
+  });
+  window.EDITOR?.events?.on?.('interaction:modeChanged', event => {
+    if (event?.activeMode === 'annotate') switchView('journal', { focus: false, source: 'annotate_mode' });
+    renderDraft();
+  });
   window.EDITOR?.events?.on?.('workspace:surfaceStateChanged', event => {
     if (event?.surfaceId !== 'bsb-v2-map-authoring' || !event.state?.active) return;
     const surface = event.state;
@@ -617,14 +848,34 @@ function status() {
     schema: 'axiom.project-diary.browser-runtime.v0',
     activeProjectId: state.activeProjectId,
     entryCount: state.entries.length,
-    activePanel: window.AxiomUXRuntime?.getState?.()?.activeLeftPanel || null,
+    activePanel: state.view === 'journal' ? 'journal' : 'chat',
+    activeView: state.view,
+    activeLeftPanel: window.AxiomUXRuntime?.getState?.()?.activeLeftPanel || null,
     inputOwner: window.BsbV2MapAuthoring?.workspaceState?.()?.inputOwner || null,
     spatialAnchor: window.BsbV2MapAuthoring?.getDiaryAnchor?.() || state.spatialAnchor,
     steward: state.steward,
     modelBudget: { trigger: 'capture_only', maxTokens: MODEL_MAX_TOKENS, idleCalls: 0 },
     lastReturnEntryId: state.lastReturnEntryId,
+    draft: { annotations: state.annotations.length, attachments: state.attachments.length },
     error: state.error
   };
+}
+
+function prepareChatPrompt(text = '') {
+  const userText = String(text || '').trim();
+  if (state.view !== 'journal') return userText;
+  const interaction = window.InteractionModeRuntime?.status?.() || { annotations: state.annotations };
+  const annotations = interaction.annotations || [];
+  const context = workspaceContext();
+  if (!userText && !annotations.length && !state.attachments.length) return '';
+  const visual = [
+    `surface=${annotations[0]?.surface?.surfaceId || context?.authoring?.surfaceId || 'current viewport'}`,
+    `marks=${annotations.map(item => item.kind).join(', ') || 'none'}`,
+    `sources=${state.attachments.map(item => item.name).join(', ') || 'none'}`,
+    'classification=journal_draft_projection',
+    'note=image pixels are preserved sources but are not supplied to the text-only chat adapter in this slice'
+  ].join('; ');
+  return `[Current Journal draft context: ${visual}]\n${userText || 'Describe what can be inferred safely from the marked viewport context, and state what remains uncertain.'}`;
 }
 
 async function init() {
@@ -639,6 +890,8 @@ async function init() {
     generateHandover,
     reconcileCompletion,
     emitStewardEvent,
+    switchView,
+    prepareChatPrompt,
     status
   };
   await activateWorkspace();
@@ -655,6 +908,8 @@ const ProjectDiaryRuntime = {
   generateHandover,
   reconcileCompletion,
   emitStewardEvent,
+  switchView,
+  prepareChatPrompt,
   status,
   entries: () => [...state.entries]
 };

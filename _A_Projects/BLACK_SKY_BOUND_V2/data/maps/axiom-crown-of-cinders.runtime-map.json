@@ -3,6 +3,14 @@
   "id": "axiom_crown_of_cinders",
   "title": "The Crown of Cinders",
   "scenarioId": "demo_arena",
+  "atmosphere": {
+    "contract": "black-sky-bound.region-atmosphere.v1",
+    "rainAndSparksEnabled": true
+  },
+  "firstPlaythrough": {
+    "contract": "black-sky-bound.first-playthrough-region.v1",
+    "availableInstinctIds": []
+  },
   "width": 64,
   "height": 48,
   "tiles": [

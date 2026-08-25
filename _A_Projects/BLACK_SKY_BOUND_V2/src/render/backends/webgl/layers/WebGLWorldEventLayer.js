@@ -39,7 +39,7 @@ export class WebGLWorldEventLayer {
     this.flyoverViewportTriangleCount = 0;
     this.flyoverViewportCoverage = 0;
     this.flyoverWorldBounds = null;
-    this.treeFireOverlayCount = 0;
+    this.foliageFireOverlayCount = 0;
     this.infernoCompositions = new Map();
     this.activeInfernoCompositions = [];
     this.infernoGeometry = createInfernoGeometryStats();
@@ -58,7 +58,7 @@ export class WebGLWorldEventLayer {
     this.flyoverViewportTriangleCount = 0;
     this.flyoverViewportCoverage = 0;
     this.flyoverWorldBounds = null;
-    this.treeFireOverlayCount = 0;
+    this.foliageFireOverlayCount = 0;
     resetInfernoGeometryStats(this.infernoGeometry);
     const events = projection.worldEvents ?? {};
     for (const flyover of events.flyovers ?? []) {
@@ -69,10 +69,10 @@ export class WebGLWorldEventLayer {
     }
     for (const wall of events.fireWalls ?? []) this.appendFireWall(wall);
     this.releaseInactiveInfernoCompositions(events.fireWalls ?? []);
-    for (const treeFire of events.treeFires ?? []) this.appendTreeFireOverlay(treeFire);
+    for (const foliageFire of events.foliageFires ?? []) this.appendFoliageFireOverlay(foliageFire);
     this.fireWallCount = events.fireWalls?.length ?? 0;
-    this.treeFireOverlayCount = events.treeFires?.length ?? 0;
-    this.objectCount = (events.flyovers?.length ?? 0) + this.fireWallCount + this.treeFireOverlayCount;
+    this.foliageFireOverlayCount = events.foliageFires?.length ?? 0;
+    this.objectCount = (events.flyovers?.length ?? 0) + this.fireWallCount + this.foliageFireOverlayCount;
     this.sourceCount = this.objectCount;
     this.primitiveCount = this.triangles.length + this.radials.length + this.infernoGeometry.clusterCount;
     this.status = this.primitiveCount > 0 ? 'active' : 'inactive';
@@ -107,7 +107,7 @@ export class WebGLWorldEventLayer {
       flyoverViewportTriangleCount: this.flyoverViewportTriangleCount,
       flyoverViewportCoverage: this.flyoverViewportCoverage,
       flyoverWorldBounds: this.flyoverWorldBounds,
-      treeFireOverlayCount: this.treeFireOverlayCount,
+      foliageFireOverlayCount: this.foliageFireOverlayCount,
       infernoGeometry
     };
   }
@@ -204,29 +204,29 @@ export class WebGLWorldEventLayer {
     }
   }
 
-  appendTreeFireOverlay(treeFire) {
-    const heat = Math.max(0, Math.min(1, treeFire.heatAmount ?? 0));
-    const embers = Math.max(0, Math.min(1, treeFire.emberAmount ?? 0));
-    const phase = treeFire.phase;
-    const count = phase === 'engulfed' ? 5 : phase === 'simmer_high' ? 3 : phase === 'simmer_low' ? 1 : 0;
+  appendFoliageFireOverlay(foliageFire) {
+    const heat = Math.max(0, Math.min(1, foliageFire.heatAmount ?? 0));
+    const embers = Math.max(0, Math.min(1, foliageFire.emberAmount ?? 0));
+    const phase = foliageFire.phase;
+    const count = phase === 'burnt_out' ? 0 : foliageFire.family === 'tree' ? 2 : 1;
     const sockets = [[0.28, 0.58], [0.66, 0.62], [0.46, 0.38], [0.18, 0.76], [0.78, 0.78]];
-    const seed = stableSeed(treeFire.id);
+    const seed = stableSeed(foliageFire.id);
     for (let index = 0; index < count; index += 1) {
       const socket = sockets[index];
-      const pulse = 0.86 + Math.sin(treeFire.fireAge * 7.8 + index * 1.9 + seed * 0.01) * 0.14;
+      const pulse = 0.86 + Math.sin(foliageFire.fireAge * 7.8 + index * 1.9 + seed * 0.01) * 0.14;
       appendLayeredFlame(this.triangles, {
-        x: treeFire.worldTileX + treeFire.worldWidth * socket[0],
-        y: treeFire.worldTileY + treeFire.worldHeight * socket[1],
-        radius: Math.max(5, Math.min(treeFire.worldWidth, treeFire.worldHeight) * (0.052 + heat * 0.025)),
+        x: foliageFire.worldTileX + foliageFire.worldWidth * socket[0],
+        y: foliageFire.worldTileY + foliageFire.worldHeight * socket[1],
+        radius: Math.max(foliageFire.family === 'tree' ? 5 : 3, Math.min(foliageFire.worldWidth, foliageFire.worldHeight) * (0.052 + heat * 0.025)),
         outerColor: FIRE_OUTER,
         innerColor: FIRE_INNER,
         alpha: heat * pulse * 0.84,
-        seed: seed * 0.001 + index * 0.7 + treeFire.fireAge * 2.2,
-        lean: Math.sin(seed + index * 2.1 + treeFire.fireAge * 3.4) * 0.28
+        seed: seed * 0.001 + index * 0.7 + foliageFire.fireAge * 2.2,
+        lean: Math.sin(seed + index * 2.1 + foliageFire.fireAge * 3.4) * 0.28
       });
     }
-    if (phase === 'burnt_out' && embers > 0.02) {
-      this.radials.push({ x: treeFire.worldX, y: treeFire.worldY + treeFire.worldHeight * 0.18, radius: 8 + embers * 10, softness: 0.9, color: [0.82, 0.08, 0.01, embers * 0.18] });
+    if (foliageFire.family === 'tree' && phase === 'burnt_out' && embers > 0.02) {
+      this.radials.push({ x: foliageFire.worldX, y: foliageFire.worldY + foliageFire.worldHeight * 0.18, radius: 8 + embers * 10, softness: 0.9, color: [0.82, 0.08, 0.01, embers * 0.18] });
     }
   }
 }

@@ -30,18 +30,20 @@ const game = createInitialGameState(map);
 game.worldEvents.autoEnabled = false;
 
 equal(mamaWorldEventKind(0), MamaWyvernEventKind.INFERNO, 'the first natural Mama encounter should activate the complete sampled roar, flyover, napalm, and aftermath suite');
-equal(mamaWorldEventKind(1), MamaWyvernEventKind.FLYOVER, 'the next natural encounter should retain the lower-impact visual flyover variation');
+equal(mamaWorldEventKind(1), MamaWyvernEventKind.INFERNO, 'every natural Mama encounter should resolve to the complete inferno suite');
 
 const lightningIntervals = Array.from({ length: 6 }, (_, index) => (
   getLightningEventStart(game.sceneLights[0], index + 1) - getLightningEventStart(game.sceneLights[0], index)
 ));
 assert(lightningIntervals.every((seconds) => seconds >= 18 && seconds <= 32), 'storm cadence should be slightly more frequent but remain bounded and occasional');
 
-queueMamaWyvernWorldEvent(game.worldEvents, MamaWyvernEventKind.FLYOVER, {
+const flyoverAliasReceipt = queueMamaWyvernWorldEvent(game.worldEvents, MamaWyvernEventKind.FLYOVER, {
   lightningSync: true,
   angle: 0.36,
   source: 'focused_test'
 });
+equal(flyoverAliasReceipt.requestedKind, 'flyover', 'the compatibility alias should preserve the requested kind');
+equal(flyoverAliasReceipt.resolvedKind, 'inferno', 'the compatibility alias should resolve to a full inferno');
 worldEventSystem({ game, map, dt: 0 });
 equal(game.worldEvents.activeEvent.phase, MamaWyvernEventPhase.WARNING, 'manual flyover should begin with the distant-roar warning phase');
 equal(game.worldEvents.audio.eventType, AudioEventType.MAMA_WYVERN_ROAR, 'warning phase should publish the mama roar audio event');
@@ -50,7 +52,8 @@ equal(game.worldEvents.audio.cueId, 'world.mama_wyvern.distant_roar', 'warning r
 game.renderTime = 2;
 worldEventSystem({ game, map, dt: MAMA_WYVERN_WORLD_EVENT.timing.warningSeconds + MAMA_WYVERN_WORLD_EVENT.timing.flyoverSeconds * 0.46 });
 equal(game.worldEvents.activeEvent.phase, MamaWyvernEventPhase.FLYOVER, 'warning should hand off to the moving shadow phase');
-equal(game.worldEvents.audio.eventType, AudioEventType.MAMA_WYVERN_FLYOVER, 'flyover handoff should publish the close moving roar');
+assert(game.worldEvents.audio.events.some((event) => event.eventType === AudioEventType.MAMA_WYVERN_FLYOVER), 'flyover handoff should publish the close moving roar');
+equal(game.worldEvents.audio.eventType, AudioEventType.MAMA_WYVERN_NAPALM, 'every crossing should begin napalm audio once visible breath starts');
 equal(game.worldEvents.diagnostics.lightningSyncCount, 1, 'lightning-sync trigger should queue one manual lightning event');
 const manualLightning = buildSceneLightViews(game.sceneLights, game.renderTime + 0.02)
   .find((light) => light.stormEvent?.manual === true);
@@ -72,6 +75,8 @@ equal(eventLayer.aerialSilhouetteMetrics.legPrimitiveCount, 0, 'aerial silhouett
 assert(eventLayer.triangles.length > 80, 'large Mama silhouette should retain a readable wing/neck/tail shape');
 
 worldEventSystem({ game, map, dt: 3 });
+equal(game.worldEvents.fireWalls.length, 1, 'the flyover compatibility alias should deploy one inferno wall');
+game.worldEvents.fireWalls.length = 0;
 queueMamaWyvernWorldEvent(game.worldEvents, MamaWyvernEventKind.INFERNO, {
   angle: -0.62,
   centerX: 18,

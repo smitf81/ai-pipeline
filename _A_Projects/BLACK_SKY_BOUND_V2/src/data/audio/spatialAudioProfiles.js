@@ -56,9 +56,9 @@ export const AUDIO_SPATIAL_PROFILES = Object.freeze({
   }),
   [AudioSpatialProfileId.STORM]: profile({
     id: AudioSpatialProfileId.STORM,
-    referenceDistanceMeters: 8,
-    maxDistanceMeters: 160,
-    rolloffFactor: 0.45,
+    referenceDistanceMeters: 18,
+    maxDistanceMeters: 220,
+    rolloffFactor: 0.18,
     sourceHeightMeters: 7,
     dopplerScale: 0,
     priority: 88

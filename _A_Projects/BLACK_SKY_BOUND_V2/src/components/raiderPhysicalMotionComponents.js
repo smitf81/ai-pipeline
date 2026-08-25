@@ -1,4 +1,4 @@
-export const RAIDER_PHYSICAL_MOTION_INTENT_CONTRACT = 'black-sky-bound.raider-physical-motion-intent.v0';
+export const RAIDER_PHYSICAL_MOTION_INTENT_CONTRACT = 'black-sky-bound.raider-physical-motion-intent.v1';
 
 export function createRaiderPhysicalMotionIntent(x, y, facing = 0) {
   const originX = finite(x, 0);
@@ -11,10 +11,10 @@ export function createRaiderPhysicalMotionIntent(x, y, facing = 0) {
   return {
     classification: 'raider_physical_motion_intent_component',
     contract: RAIDER_PHYSICAL_MOTION_INTENT_CONTRACT,
-    solverId: 'raider_contact_intent_solver_v0',
+    solverId: 'raider_ink_contact_intent_solver_v1',
     enabled: true,
-    poseEnabled: false,
-    poseActivation: 'shadow_only_pending_visual_acceptance',
+    poseEnabled: true,
+    poseActivation: 'production_raider_ink_stick_v1',
     updateCount: 0,
     pelvis: {
       x: originX,
@@ -34,6 +34,12 @@ export function createRaiderPhysicalMotionIntent(x, y, facing = 0) {
     locomotion: {
       speed: 0,
       speed01: 0,
+      maxSpeed: 3.1,
+      forward: 0,
+      lateral: 0,
+      idleWeight: 1,
+      walkWeight: 0,
+      runWeight: 0,
       travelFacing: heading,
       stepPhase: 0,
       supportFoot: 'left',
@@ -81,6 +87,11 @@ export function createRaiderPhysicalMotionIntent(x, y, facing = 0) {
       recoilDuration: 0.16,
       contactCount: 0,
       lastContactHitCount: 0
+    },
+    equipment: {
+      policy: 'right_hand_spear_left_hand_torch_v1',
+      spearHand: 'right',
+      torchHand: 'left'
     },
     continuity: {
       plantSwitchCount: 0,

@@ -7,13 +7,15 @@ import { buildAllBlobMasks } from './map.js';
 import {
   RUNTIME_MAP_AUTHORING_FIELDS,
   RUNTIME_MAP_CONTRACT,
-  RUNTIME_MAP_REQUIRED_FIELDS
+  RUNTIME_MAP_REQUIRED_FIELDS,
+  REGION_ATMOSPHERE_CONTRACT
 } from './runtimeMapContract.js';
 import { createSceneObjects } from './sceneObjects.js';
 import { TerrainType } from './terrain.js';
 import { normalizeRuntimeTransitionSequences } from './transitionSequences.js';
 import { normalizeDemoArenaDefinition } from '../game/arenaEncounter.js';
 import { getCreatureRecipe, normalizeCreatureRecipeReference } from '../data/creatures/creatureRecipes.js';
+import { FIRST_PLAYTHROUGH_REGION_CONTRACT, getInstinctDefinition } from '../data/instincts.js';
 
 const TERRAIN_TYPES = new Set(Object.values(TerrainType));
 const ENTITY_KINDS = new Set([EntityKind.RAIDER, EntityKind.HUSK, EntityKind.WEREWOLF]);
@@ -111,6 +113,8 @@ export function normalizeRuntimeMap(source) {
   if (departureSequenceId && !sceneSequences.some((entry) => entry.id === departureSequenceId)) {
     throw new Error(`runtime_map_departure_sequence_missing:${departureSequenceId}`);
   }
+  const firstPlaythrough = normalizeFirstPlaythrough(source.firstPlaythrough);
+  const atmosphere = normalizeRegionAtmosphere(source.atmosphere);
 
   const map = {
     contract: RUNTIME_MAP_CONTRACT,
@@ -129,10 +133,45 @@ export function normalizeRuntimeMap(source) {
     unitSpawners,
     sceneObjects: createSceneObjects(normalizeSceneObjectInputs(source.sceneObjects)),
     sceneSequences,
+    firstPlaythrough,
+    atmosphere,
     ...(arena ? { arena } : {})
   };
   map.blobMasks = buildAllBlobMasks(map);
   return deepFreeze(map);
+}
+
+function normalizeFirstPlaythrough(source) {
+  if (source == null) return { contract: FIRST_PLAYTHROUGH_REGION_CONTRACT, availableInstinctIds: [] };
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    throw new Error('runtime_map_first_playthrough_invalid');
+  }
+  if (!Array.isArray(source.availableInstinctIds)) {
+    throw new Error('runtime_map_first_playthrough_instincts_invalid');
+  }
+  if (source.contract != null && source.contract !== FIRST_PLAYTHROUGH_REGION_CONTRACT) {
+    throw new Error(`runtime_map_first_playthrough_contract_invalid:${source.contract}`);
+  }
+  const availableInstinctIds = [...new Set(source.availableInstinctIds.map((value) => String(value ?? '').trim()))];
+  const unknown = availableInstinctIds.find((instinctId) => !getInstinctDefinition(instinctId));
+  if (unknown) throw new Error(`runtime_map_first_playthrough_instinct_unknown:${unknown}`);
+  return { contract: FIRST_PLAYTHROUGH_REGION_CONTRACT, availableInstinctIds };
+}
+
+function normalizeRegionAtmosphere(source) {
+  if (source == null) {
+    return { contract: REGION_ATMOSPHERE_CONTRACT, rainAndSparksEnabled: true };
+  }
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    throw new Error('runtime_map_region_atmosphere_invalid');
+  }
+  if (source.contract != null && source.contract !== REGION_ATMOSPHERE_CONTRACT) {
+    throw new Error(`runtime_map_region_atmosphere_contract_invalid:${source.contract}`);
+  }
+  if (typeof source.rainAndSparksEnabled !== 'boolean') {
+    throw new Error('runtime_map_region_atmosphere_enabled_invalid');
+  }
+  return { contract: REGION_ATMOSPHERE_CONTRACT, rainAndSparksEnabled: source.rainAndSparksEnabled };
 }
 
 function normalizeTiles(source, width, height) {

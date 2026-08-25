@@ -121,6 +121,8 @@ export function zeroPlayerIntentWhileTuning(state, input) {
     intent.moveY = 0;
     intent.sprint = false;
     intent.dodge = false;
+    intent.dodgeChain = false;
+    intent.pounceCounter = false;
     intent.melee = false;
     intent.bite = false;
     intent.lunge = false;

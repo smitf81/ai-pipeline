@@ -11,13 +11,20 @@ import { syncGameViews } from '../src/game/selectors.js';
 import { createCamera } from '../src/render/camera.js';
 import { WebGLHudDebugLayer } from '../src/render/backends/webgl/layers/WebGLHudDebugLayer.js';
 import { WebGLPostProcessLayer } from '../src/render/backends/webgl/layers/WebGLPostProcessLayer.js';
-import { buildBodyStateProjection } from '../src/projection/bodyStateProjection.js';
+import { buildBodyStateProjection, resolveDangerPressure } from '../src/projection/bodyStateProjection.js';
 import { buildRenderProjection } from '../src/projection/renderProjection.js';
 import { applyDamageToEntity, healthSystem } from '../src/systems/healthSystem.js';
 import { createDemoMap } from '../src/world/map.js';
 
 const profile = getBodyStateProfile(BodyStateProfileId.YOUNG_DRAGON_SURVIVAL);
 equal(ACTORS[EntityKind.YOUNG_DRAGON].hp, profile.health.maxHealth, 'player max health should be owned by body-state tuning');
+equal(resolveDangerPressure(.62, profile.health.visualOnsetRatio, profile.health.dangerCurveExponent), 0, 'health pressure should remain absent at its visual onset');
+assert(resolveDangerPressure(.5, profile.health.visualOnsetRatio, profile.health.dangerCurveExponent) < .15, 'moderate damage should retain only a faint pressure signal');
+assert(resolveDangerPressure(.35, profile.health.visualOnsetRatio, profile.health.dangerCurveExponent) > .25, 'health pressure should become clearly legible at the critical boundary');
+assert(resolveDangerPressure(.15, profile.health.visualOnsetRatio, profile.health.dangerCurveExponent) > .65, 'near-death pressure should accelerate into the terminal range');
+equal(resolveDangerPressure(.42, profile.stamina.lowThreshold, profile.stamina.dangerCurveExponent), 0, 'stamina pressure should remain absent at its onset');
+assert(resolveDangerPressure(.3, profile.stamina.lowThreshold, profile.stamina.dangerCurveExponent) > .18, 'thirty-percent stamina should begin constraining peripheral vision');
+assert(resolveDangerPressure(.15, profile.stamina.lowThreshold, profile.stamina.dangerCurveExponent) > .55, 'critical stamina should be unmistakable without a whole-screen wash');
 
 const harness = createHarness();
 const playerHealth = component(harness, harness.game.dragonId, ComponentType.Health);

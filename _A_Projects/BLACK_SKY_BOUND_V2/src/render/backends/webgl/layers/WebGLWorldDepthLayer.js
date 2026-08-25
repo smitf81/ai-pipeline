@@ -33,8 +33,8 @@ export class WebGLWorldDepthLayer {
     this.sceneObjectLitDetailVisibleCount = 0;
     this.sceneObjectVisibilityHeldCount = 0;
     this.sceneObjectVisibilityFadingCount = 0;
-    this.treeFireActiveCount = 0;
-    this.treeFireBurntOutCount = 0;
+    this.foliageFireActiveCount = 0;
+    this.foliageFireBurntOutCount = 0;
     this.proceduralTreeCount = 0;
     this.proceduralTreeSplineCount = 0;
     this.proceduralTreeFoliageClusterCount = 0;
@@ -92,8 +92,8 @@ export class WebGLWorldDepthLayer {
     this.sceneObjectLitDetailVisibleCount = scenery.litDetailVisibleCount;
     this.sceneObjectVisibilityHeldCount = scenery.visibilityHeldCount;
     this.sceneObjectVisibilityFadingCount = scenery.visibilityFadingCount;
-    this.treeFireActiveCount = scenery.treeFireActiveCount;
-    this.treeFireBurntOutCount = scenery.treeFireBurntOutCount;
+    this.foliageFireActiveCount = scenery.foliageFireActiveCount;
+    this.foliageFireBurntOutCount = scenery.foliageFireBurntOutCount;
     this.proceduralTreeCount = scenery.proceduralTreeCount;
     this.proceduralTreeSplineCount = scenery.proceduralTreeSplineCount;
     this.proceduralTreeFoliageClusterCount = scenery.proceduralTreeFoliageClusterCount;
@@ -163,8 +163,8 @@ export class WebGLWorldDepthLayer {
       sceneObjectLitDetailVisibleCount: this.sceneObjectLitDetailVisibleCount,
       sceneObjectVisibilityHeldCount: this.sceneObjectVisibilityHeldCount,
       sceneObjectVisibilityFadingCount: this.sceneObjectVisibilityFadingCount,
-      treeFireActiveCount: this.treeFireActiveCount,
-      treeFireBurntOutCount: this.treeFireBurntOutCount,
+      foliageFireActiveCount: this.foliageFireActiveCount,
+      foliageFireBurntOutCount: this.foliageFireBurntOutCount,
       proceduralTreeCount: this.proceduralTreeCount,
       proceduralTreeSplineCount: this.proceduralTreeSplineCount,
       proceduralTreeFoliageClusterCount: this.proceduralTreeFoliageClusterCount,

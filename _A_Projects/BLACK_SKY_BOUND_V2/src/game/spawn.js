@@ -89,13 +89,13 @@ export function spawnActor(world, type, x, y, team = null, options = {}) {
     addComponent(world, entity, ComponentType.PlayerLifecycle, Components.playerLifecycle());
     addComponent(world, entity, ComponentType.PlayerIntent, Components.playerIntent());
     addComponent(world, entity, ComponentType.AbilityProgression, Components.abilityProgression(getDefaultUnlockedAbilityIds()));
-    addComponent(world, entity, ComponentType.ChargeCounterState, Components.chargeCounterState(ABILITIES[AbilityId.CHARGE_COUNTER]));
+    addComponent(world, entity, ComponentType.PounceCounterState, Components.pounceCounterState(ABILITIES[AbilityId.POUNCE_COUNTER]));
     addComponent(world, entity, ComponentType.AttackSet, Components.attackSet({
       bite: ABILITIES[AbilityId.BITE_CLAW],
       lunge: ABILITIES[AbilityId.BODY_LUNGE],
       smokeBurst: ABILITIES[AbilityId.SMOKE_BURST],
       smokeSpit: ABILITIES[AbilityId.SMOKE_SPIT],
-      charge: ABILITIES[AbilityId.CHARGE_COUNTER]
+      pounce: ABILITIES[AbilityId.POUNCE_COUNTER]
     }));
     addComponent(world, entity, ComponentType.SmokeEmitter, Components.smokeEmitter(ABILITIES[AbilityId.SMOKE_BURST]));
     addComponent(world, entity, ComponentType.NapalmDripEmitter, Components.napalmDripEmitter(getNapalmDribbleRecipe(NapalmEmitterId.WYVERN_MOUTH_DRIBBLE)));

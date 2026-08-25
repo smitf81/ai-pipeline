@@ -1,6 +1,7 @@
 import { timerSystem } from '../systems/timerSystem.js';
 import { inputSystem } from '../systems/inputSystem.js';
 import { movementSystem } from '../systems/movementSystem.js';
+import { playerFacingSystem } from '../systems/playerFacingSystem.js';
 import { combatSystem } from '../systems/combatSystem.js';
 import { smokeSystem } from '../systems/smokeSystem.js';
 import { enemyPressureSystem } from '../systems/enemyPressureSystem.js';
@@ -24,7 +25,7 @@ import { viewSyncSystem } from '../systems/viewSyncSystem.js';
 import { staminaSystem } from '../systems/staminaSystem.js';
 import { dodgeSystem } from '../systems/dodgeSystem.js';
 import { worldEventSystem } from '../systems/worldEventSystem.js';
-import { chargeCounterSystem } from '../systems/chargeCounterSystem.js';
+import { pounceCounterSystem } from '../systems/chargeCounterSystem.js';
 import { arenaWaveSystem } from '../systems/arenaWaveSystem.js';
 import { bodyContactRigSystem } from '../systems/bodyContactRigSystem.js';
 import { raiderPhysicalMotionSystem } from '../systems/raiderPhysicalMotionSystem.js';
@@ -32,13 +33,14 @@ import { raiderPhysicalMotionSystem } from '../systems/raiderPhysicalMotionSyste
 export const ACTION_SYSTEMS = Object.freeze([
   timerSystem,
   inputSystem,
+  playerFacingSystem,
   worldEventSystem,
   staminaSystem,
   movementSystem,
   combatSystem,
   enemyPressureSystem,
   dodgeSystem,
-  chargeCounterSystem,
+  pounceCounterSystem,
   actorSeparationSystem,
   healthSystem,
   proceduralActionSystem,

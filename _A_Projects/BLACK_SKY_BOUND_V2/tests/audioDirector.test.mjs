@@ -262,6 +262,8 @@ debug = lightningDirector.update({ game: lightningHarness.game, time: 21.5, paus
 assert(!recentCue(debug, 'world.storm.thunder'), 'thunder should remain pending until its distance delay expires');
 debug = lightningDirector.update({ game: lightningHarness.game, time: 22, paused: false }, 0.08);
 assert(recentCue(debug, 'world.storm.thunder'), 'storm thunder should succeed the visual lightning after the bounded delay');
+assert(debug.lightning.cameraShake.active, 'thunder arrival should publish an active camera shake impulse');
+equal(debug.lightning.cameraShake.sourcePolicy, 'delayed_thunder_arrival_only', 'camera shake should sync to thunder arrival rather than the earlier flash');
 assert(
   debug.lightning.recentStrikes[0].firedAtMs > debug.lightning.recentStrikes[0].flashAtMs,
   'lightning diagnostics should preserve visible-flash-before-thunder ordering'

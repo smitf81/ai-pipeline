@@ -4,20 +4,23 @@ import { WORLD_TRANSFORM_3D } from '../../three/worldTransform3D.js';
 
 export const THREE_MAMA_FLYOVER_MESH_CONTRACT = 'black-sky-bound.three-mama-flyover-mesh.v1';
 
-const MODEL_URL = new URL('../../../../assets/models/mama/dragon_main_march_v5_flyover.glb', import.meta.url).href;
+const MODEL_URL = new URL('../../../../assets/models/mama/dragon_main_march_v5_flyover_lod1.glb', import.meta.url).href;
 
 export const MAMA_FLYOVER_MESH_PROFILE = Object.freeze({
-  id: 'mama_wyvern_dragon_main_march_v5_flyover',
+  id: 'mama_wyvern_dragon_main_march_v5_flyover_lod1',
   sourceFilename: 'Dragon_Main_March_V5.blend',
-  assetFilename: 'dragon_main_march_v5_flyover.glb',
+  sourceAssetFilename: 'dragon_main_march_v5_flyover.glb',
+  assetFilename: 'dragon_main_march_v5_flyover_lod1.glb',
   expectedMeshCount: 1,
-  expectedTriangleCount: 62848,
+  sourceTriangleCount: 62848,
+  expectedTriangleCount: 7661,
   sourceWingspanMeters: 9.873,
   sourceLengthMeters: 7.97,
   sourceThicknessMeters: 0.963,
   headingAxisCorrectionRadians: -Math.PI / 2,
   screenAnchorPolicy: 'fixed_camera_orthographic_parallax_compensation_v1',
-  materialPolicy: 'unlit_near_black_translucent_silhouette_v1'
+  materialPolicy: 'unlit_near_black_translucent_silhouette_v1',
+  lodPolicy: 'offline_simplified_flyover_silhouette_lod1_preserve_original_source_glb'
 });
 
 export class ThreeMamaFlyoverMesh {
@@ -38,6 +41,7 @@ export class ThreeMamaFlyoverMesh {
       toneMapped: false,
       fog: false
     });
+    this.material.forceSinglePass = true;
     this.status = autoLoad ? 'loading' : 'deferred_non_browser';
     this.error = null;
     this.model = null;
@@ -46,6 +50,10 @@ export class ThreeMamaFlyoverMesh {
     this.dimensions = new THREE.Vector3();
     this.screenAnchorOffset = new THREE.Vector3();
     this.geometries = new Set();
+    this.warmupPending = false;
+    this.screenWarmupPending = false;
+    this.screenWarmupActive = false;
+    this.warmup = { status: autoLoad ? 'waiting_for_asset' : 'deferred_non_browser', count: 0, lastMs: 0, error: null };
     this.disposed = false;
     this.loadPromise = autoLoad ? this.load(loaderFactory()) : null;
   }
@@ -94,7 +102,58 @@ export class ThreeMamaFlyoverMesh {
     this.visualRoot.add(scene);
     this.status = 'ready';
     this.error = null;
+    this.warmupPending = true;
+    this.screenWarmupPending = true;
+    this.warmup.status = 'pending';
     return scene;
+  }
+
+  takeWarmupBundle() {
+    if (!this.warmupPending || !this.model || this.disposed) return null;
+    this.warmupPending = false;
+    this.warmup.status = 'compiling';
+    const scene = new THREE.Scene();
+    scene.name = 'mama-flyover:warmup-scene';
+    scene.add(this.visualRoot.clone(true));
+    const camera = new THREE.OrthographicCamera(-6, 6, 3.5, -3.5, 0.1, 40);
+    camera.position.set(0, 4, 14);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld();
+    return {
+      scene,
+      camera,
+      complete: (elapsedMs, error = null) => {
+        this.warmup.count += 1;
+        this.warmup.lastMs = round(elapsedMs);
+        this.warmup.error = error ? String(error?.message ?? error) : null;
+        this.warmup.status = error ? 'compile_failed_pending_screen_upload' : 'compiled_pending_screen_upload';
+        scene.clear();
+      }
+    };
+  }
+
+  updateScreenWarmup(view = {}, allowed = true) {
+    if (this.screenWarmupActive) {
+      this.screenWarmupActive = false;
+      this.root.visible = false;
+      this.model?.traverse((object) => { if (object.isMesh) object.frustumCulled = true; });
+      this.warmup.status = 'ready';
+      return false;
+    }
+    const compiled = this.warmup.status === 'compiled_pending_screen_upload'
+      || this.warmup.status === 'compile_failed_pending_screen_upload';
+    if (!allowed || !compiled || !this.screenWarmupPending || !this.model) return false;
+    this.screenWarmupPending = false;
+    this.screenWarmupActive = true;
+    const target = view.cameraTarget;
+    this.root.position.set(Number(target?.x) || 0, 0.1, Number(target?.z) || 0);
+    this.root.rotation.set(0, 0, 0);
+    this.root.scale.setScalar(0.46);
+    this.material.opacity = 0;
+    this.model.traverse((object) => { if (object.isMesh) object.frustumCulled = false; });
+    this.root.visible = true;
+    this.warmup.status = 'screen_upload';
+    return true;
   }
 
   apply(packet, position) {
@@ -116,10 +175,12 @@ export class ThreeMamaFlyoverMesh {
       contract: THREE_MAMA_FLYOVER_MESH_CONTRACT,
       assetId: MAMA_FLYOVER_MESH_PROFILE.id,
       sourceFilename: MAMA_FLYOVER_MESH_PROFILE.sourceFilename,
+      sourceAssetFilename: MAMA_FLYOVER_MESH_PROFILE.sourceAssetFilename,
+      sourceTriangleCount: MAMA_FLYOVER_MESH_PROFILE.sourceTriangleCount,
       assetFilename: MAMA_FLYOVER_MESH_PROFILE.assetFilename,
       status: this.status,
       error: this.error,
-      visible: this.root.visible && this.status === 'ready',
+      visible: this.root.visible && this.status === 'ready' && this.material.opacity > 0.001,
       projectedWithoutMesh: this.root.visible && this.status !== 'ready',
       meshCount: this.meshCount,
       triangleCount: Math.round(this.triangleCount),
@@ -130,7 +191,10 @@ export class ThreeMamaFlyoverMesh {
       screenAnchorOffsetMeters: vectorRecord(this.screenAnchorOffset),
       scale: round(scale),
       opacity: round(this.material.opacity),
-      materialPolicy: MAMA_FLYOVER_MESH_PROFILE.materialPolicy
+      materialPolicy: MAMA_FLYOVER_MESH_PROFILE.materialPolicy,
+      lodPolicy: MAMA_FLYOVER_MESH_PROFILE.lodPolicy,
+      renderPassPolicy: this.material.forceSinglePass ? 'transparent_double_side_single_pass_v1' : 'transparent_double_side_two_pass',
+      warmup: { ...this.warmup }
     };
   }
 
@@ -139,6 +203,9 @@ export class ThreeMamaFlyoverMesh {
     this.model = null;
     this.meshCount = 0;
     this.triangleCount = 0;
+    this.warmupPending = false;
+    this.screenWarmupPending = false;
+    this.screenWarmupActive = false;
   }
 
   dispose() {

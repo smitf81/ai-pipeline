@@ -3,7 +3,7 @@ import { generateProceduralUndergrowthSkeleton } from '../../../../world/procedu
 import { parseWebGLColor, withAlpha } from '../WebGLColor.js';
 import { adaptMaterialToWebGL } from '../WebGLMaterialAdapter.js';
 
-export const UNDERGROWTH_GEOMETRY_MODE = 'procedural_undergrowth_dna_spline_geometry_v1';
+export const UNDERGROWTH_GEOMETRY_MODE = 'procedural_undergrowth_dna_spline_geometry_v2_flattened';
 
 export function proceduralUndergrowthStats(source = {}) {
   return {
@@ -32,7 +32,7 @@ export function buildUndergrowthGeometry(object, alpha, rects, triangles) {
       materialState: object.material?.state
     });
   const skeleton = generateProceduralUndergrowthSkeleton(definition);
-  const frame = undergrowthGeometryFrame(object);
+  const frame = undergrowthGeometryFrame(object, definition);
   const render = object.render ?? {};
   const material = adaptMaterialToWebGL(object.material, parseWebGLColor(definition.leafColour, [0.16, 0.32, 0.18, 1]));
   const leafBase = fireTint(seasonalLeafColour(definition), material, 0.94);
@@ -57,9 +57,9 @@ export function buildUndergrowthGeometry(object, alpha, rects, triangles) {
     const center = toWorld(cluster, frame);
     appendEllipseFan(triangles, {
       ...center,
-      radiusX: Math.max(2, cluster.radiusX * frame.w),
-      radiusY: Math.max(0.9, cluster.radiusY * frame.h),
-      rotation: cluster.rotation,
+      radiusX: Math.max(2, cluster.radiusX * frame.meterX),
+      radiusY: Math.max(0.9, cluster.radiusZ * frame.meterX * 0.34),
+      rotation: cluster.rotationY,
       color: mixColour(leafShade, stemShade, 0.34),
       alpha: alpha * cluster.alpha,
       segments: 7
@@ -78,9 +78,9 @@ export function buildUndergrowthGeometry(object, alpha, rects, triangles) {
       : mixColour(leafBase, leafShade, -leaf.colourShift);
     appendEllipseFan(triangles, {
       ...center,
-      radiusX: Math.max(1.5, leaf.radiusX * frame.w),
-      radiusY: Math.max(0.8, leaf.radiusY * frame.h),
-      rotation: -leaf.rotation,
+      radiusX: Math.max(1.5, leaf.radiusX * frame.meterX),
+      radiusY: Math.max(0.8, leaf.radiusY * frame.meterY),
+      rotation: -leaf.rotationZ,
       color: index % 3 === 0 ? mixColour(colour, leafHighlight, 0.15) : colour,
       centerColor: mixColour(colour, leafShade, 0.12),
       alpha: alpha * leaf.alpha,
@@ -90,7 +90,7 @@ export function buildUndergrowthGeometry(object, alpha, rects, triangles) {
 
   for (const ember of skeleton.emberNodes) {
     const center = toWorld(ember, frame);
-    const radius = Math.max(0.9, ember.radius * frame.w);
+    const radius = Math.max(0.9, ember.radius * frame.meterX);
     appendEllipseFan(triangles, {
       ...center,
       radiusX: radius * 1.55,
@@ -125,12 +125,18 @@ export function buildUndergrowthGeometry(object, alpha, rects, triangles) {
   });
 }
 
-function undergrowthGeometryFrame(object) {
+function undergrowthGeometryFrame(object, definition) {
   const x = object.worldTileX;
   const y = object.worldTileY;
   const w = object.worldWidth;
   const h = object.worldHeight;
-  return { x, y, w, h, cx: object.anchorWorldX ?? x + w * 0.5, baseY: object.anchorWorldY ?? y + h * 0.88 };
+  return {
+    x, y, w, h,
+    cx: object.anchorWorldX ?? x + w * 0.5,
+    baseY: object.anchorWorldY ?? y + h * 0.88,
+    meterX: w / Math.max(0.1, definition.spreadMeters),
+    meterY: h / Math.max(0.1, definition.heightMeters)
+  };
 }
 
 function appendSplineRibbon(triangles, spline, frame, shade, light, alpha, radiusScale) {
@@ -140,8 +146,8 @@ function appendSplineRibbon(triangles, spline, frame, shade, light, alpha, radiu
     const length = Math.max(0.0001, Math.hypot(b.x - a.x, b.y - a.y));
     const px = -(b.y - a.y) / length;
     const py = (b.x - a.x) / length;
-    const ar = Math.max(0.5, spline.points[index].radius * frame.w * radiusScale);
-    const br = Math.max(0.28, spline.points[index + 1].radius * frame.w * radiusScale);
+    const ar = Math.max(0.5, spline.points[index].radius * frame.meterX * radiusScale);
+    const br = Math.max(0.28, spline.points[index + 1].radius * frame.meterX * radiusScale);
     const aLeft = { x: a.x + px * ar, y: a.y + py * ar };
     const aRight = { x: a.x - px * ar, y: a.y - py * ar };
     const bLeft = { x: b.x + px * br, y: b.y + py * br };
@@ -169,7 +175,7 @@ function appendEllipseFan(triangles, options) {
 }
 
 function toWorld(point, frame) {
-  return { x: frame.cx + point.x * frame.w, y: frame.baseY - point.y * frame.h };
+  return { x: frame.cx + point.x * frame.meterX, y: frame.baseY - point.y * frame.meterY };
 }
 
 function seasonalLeafColour(definition) {

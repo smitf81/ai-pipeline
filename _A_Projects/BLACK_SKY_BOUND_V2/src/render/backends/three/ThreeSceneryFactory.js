@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import { renderWorldPointToWorld3D } from '../../three/worldTransform3D.js';
 
 const SUPPORTED_KINDS = new Set([
-  'tree', 'procedural_tree', 'dead_snag', 'procedural_geology', 'procedural_undergrowth', 'fern_patch', 'forest_shrub',
-  'ground_decal', 'fire_arrow', 'fire_arrow_cluster', 'smouldering_fern', 'smouldering_bramble'
+  'tree', 'procedural_tree', 'dead_snag', 'procedural_geology', 'ground_decal', 'fire_arrow', 'fire_arrow_cluster'
 ]);
 
 export class ThreeSceneryFactory {
@@ -21,11 +20,7 @@ export class ThreeSceneryFactory {
     if ((kind === 'tree' || kind === 'procedural_tree') && packet.treeDefinition) object = this.treeFactory.create(packet.treeDefinition);
     else if (kind === 'dead_snag') object = this.createSnag(packet);
     else if (kind === 'procedural_geology') object = this.createGeology(packet);
-    else if (kind === 'procedural_undergrowth') object = /shrub|bramble/.test(packet.undergrowthDefinition?.species ?? '')
-      ? this.createShrub(packet, /ember|smoulder/.test(packet.undergrowthDefinition?.species ?? packet.authoredType ?? ''))
-      : this.createFern(packet, /ember|smoulder/.test(packet.undergrowthDefinition?.species ?? packet.authoredType ?? ''));
-    else if (kind === 'fern_patch' || kind === 'smouldering_fern') object = this.createFern(packet, kind.startsWith('smouldering'));
-    else if (kind === 'forest_shrub' || kind === 'smouldering_bramble') object = this.createShrub(packet, kind.startsWith('smouldering'));
+    else if (kind === 'procedural_undergrowth') throw new Error(`three_scenery_factory_undergrowth_requires_batch_layer:${packet.id}`);
     else if (kind === 'ground_decal') object = this.createGroundDecal(packet);
     else if (kind === 'fire_arrow' || kind === 'fire_arrow_cluster') object = this.createFireArrows(packet, kind === 'fire_arrow_cluster' ? 3 : 1);
     else object = this.createUnsupported(packet, kind);
@@ -43,6 +38,7 @@ export class ThreeSceneryFactory {
     const group = new THREE.Group();
     const trunk = new THREE.Mesh(this.geometry(`snag:${radius}:${height}`, () => new THREE.ConeGeometry(radius * 0.45, radius, height, 6, 4)), this.material(packet, packet.render?.trunkColour ?? '#4a3326'));
     trunk.position.y = height * 0.5;
+    trunk.userData.semanticRole = 'foliage_stem';
     trunk.castShadow = trunk.receiveShadow = true;
     group.add(trunk);
     for (let index = 0; index < 4; index += 1) {
@@ -51,6 +47,7 @@ export class ThreeSceneryFactory {
       limb.rotation.z = Math.PI * (0.35 + index * 0.04);
       limb.rotation.y = index * 1.8;
       limb.castShadow = true;
+      limb.userData.semanticRole = 'foliage_stem';
       group.add(limb);
     }
     return group;
@@ -66,41 +63,6 @@ export class ThreeSceneryFactory {
     mesh.rotation.y = hash01(packet.id) * Math.PI;
     mesh.castShadow = mesh.receiveShadow = true;
     return mesh;
-  }
-
-  createFern(packet, burning) {
-    const group = new THREE.Group();
-    const width = Number(packet.physical?.widthMeters ?? 1.4);
-    const height = Number(packet.physical?.heightMeters ?? 0.45);
-    const material = this.material(packet, packet.render?.frondColour ?? '#24482f');
-    for (let index = 0; index < 7; index += 1) {
-      const leaf = new THREE.Mesh(this.geometry('fern-leaf', () => new THREE.ConeGeometry(0.08, 0.52, 3, 1)), material);
-      leaf.scale.set(width * 0.34, height, 0.72);
-      leaf.position.y = height * 0.38;
-      leaf.rotation.z = (index % 2 ? -1 : 1) * (0.45 + index * 0.035);
-      leaf.rotation.y = index / 7 * Math.PI * 2;
-      leaf.castShadow = burning;
-      group.add(leaf);
-    }
-    if (burning) group.add(this.ember(packet, height * 0.24));
-    return group;
-  }
-
-  createShrub(packet, burning) {
-    const group = new THREE.Group();
-    const width = Number(packet.physical?.widthMeters ?? 1.6);
-    const depth = Number(packet.physical?.depthMeters ?? 1.05);
-    const height = Number(packet.physical?.heightMeters ?? 0.7);
-    const material = this.material(packet, packet.render?.bodyColour ?? '#2d4d2d');
-    for (let index = 0; index < 5; index += 1) {
-      const mesh = new THREE.Mesh(this.geometry('shrub-cluster', () => new THREE.IcosahedronGeometry(0.5, 1)), material);
-      mesh.scale.set(width * (0.26 + (index % 2) * 0.08), height * 0.46, depth * 0.38);
-      mesh.position.set((index - 2) * width * 0.16, height * (0.3 + (index % 2) * 0.12), Math.sin(index * 2.1) * depth * 0.18);
-      mesh.castShadow = mesh.receiveShadow = true;
-      group.add(mesh);
-    }
-    if (burning) group.add(this.ember(packet, height * 0.48));
-    return group;
   }
 
   createGroundDecal(packet) {

@@ -4,7 +4,8 @@
 
 **Status:** Living design document  
 **Source concept:** `GCD.md`  
-**Current build focus:** First playable survival scenario  
+**Last design refresh:** 2026-08-14  
+**Current build focus:** Opening-to-early-game playable path, instinct progression, combat feel, 3D presentation, and production-quality audiovisual feedback.  
 **Primary design rule:** Keep the playable version small enough to finish.
 
 This document translates the concept promise from the GCD into build-facing design rules, mechanics, feedback requirements, and implementation notes.
@@ -12,7 +13,9 @@ This document translates the concept promise from the GCD into build-facing desi
 The GCD defines what the game is.  
 The GDD defines how the game works.
 
-Sections marked **Undefined**, **Provisional**, or **Needs Test** are intentionally incomplete. Do not fill them with guesses unless a design decision has been tested or agreed.
+Sections marked **Undefined**, **Provisional**, **Needs Test**, or **Target** are intentionally incomplete. Do not fill them with guesses unless a design decision has been tested or agreed.
+
+The repository runtime is now substantially ahead of the original first-playable notes. Where implementation and intended design differ, this document should state both clearly rather than treating legacy behaviour as canon.
 
 ---
 
@@ -20,21 +23,24 @@ Sections marked **Undefined**, **Provisional**, or **Needs Test** are intentiona
 
 ### Summary
 
-**Black Sky Bound** is a top-down 2D action survival game about a young dragon fighting, fleeing, and surviving its way through a hostile world.
+**Black Sky Bound** is an isometric 3D action-survival game about a newly hatched young wyvern fighting, fleeing, learning, and surviving through a hostile night.
 
-The player is not a hero clearing arenas. The player is a small, frightened, vicious creature trying to escape a collapsing situation involving raiders, husks, fire, predators, and larger forces it cannot yet control.
+The player is not a hero clearing arenas. The player is a small, frightened, vicious creature trying to escape a collapsing situation involving raiders, husks, werewolves, fire, predators, and larger forces it cannot yet control.
+
+The game's power curve should feel biological and experiential. The wyvern does not acquire a conventional spell bar; survival behaviours deepen into increasingly controlled **instincts**.
 
 ### Genre / Format
 
-- **Genre:** Top-down 2D action survival
-- **Camera / View:** Top-down 2D
+- **Genre:** Isometric 3D action survival
+- **Camera / View:** Fixed isometric / elevated top-down 3D
 - **Mode:** Single-player
-- **Session Length:** 10–20 minute levels
-- **Target Platform:** PC first
+- **Structure:** Compact authored levels / scenes forming one short first game
+- **Target Platform:** PC / laptop first
+- **Input priority:** Keyboard + mouse first, with a control language that can translate cleanly to controller later
 
-### First Playable Target
+### Current Playable Target
 
-A short top-down survival action scenario where a young dragon moves through a dangerous forest, dodges threats, attacks at close range, uses smoke to disrupt enemies, and reaches safety before being overwhelmed.
+A connected opening and survival path where the player hatches, learns basic movement and evasion, survives escalating enemy pressure, awakens smoke as the first major instinct, and develops towards increasingly controlled breath attacks and eventual napalm.
 
 ---
 
@@ -42,7 +48,7 @@ A short top-down survival action scenario where a young dragon moves through a d
 
 The player should feel like:
 
-> A small but dangerous young dragon, newly alone in a chaotic world, surviving through instinct, speed, smoke, tooth, claw, and sudden bursts of terrifying power.
+> A small but dangerous young wyvern, newly alone in a chaotic world, surviving through instinct, speed, smoke, tooth, and sudden bursts of terrifying emerging power.
 
 ### Fantasy Pillars
 
@@ -50,7 +56,8 @@ The player should feel like:
 - **Fast, physical, and animalistic**
 - **Surviving, not conquering**
 - **Escaping through chaos**
-- **Power emerging in bursts, not full control**
+- **Power emerging through instinct and experience, not a spell menu**
+- **A creature becoming more capable without becoming clean, heroic, or fully controlled**
 
 ### Anti-Fantasy
 
@@ -61,6 +68,7 @@ The player should not feel like:
 - a clean arena brawler character
 - a strategy-game commander
 - a fully powered fantasy monster from the start
+- an MMO character juggling a row of unrelated ability hotkeys
 
 ---
 
@@ -70,249 +78,306 @@ The player should not feel like:
 
 The player should move quickly through dangerous spaces, using panic movement, dodging, sudden lunges, and terrain reading to survive.
 
-**Status:** Provisional  
-**Needs:** Movement tuning, acceleration rules, dodge/lunge feel test.
+**Status:** Implemented foundation / Needs feel tuning  
+**Needs:** Better grounded crawl/stalk presentation, turning and acceleration polish, dodge feel, enemy collision/pathing improvements.
 
-### 3.2 Tooth, Claw, Body
+### 3.2 Tooth and Body
 
-Combat should begin physical and close-range. The dragon survives through biting, clawing, body lunges, and disruption before fire becomes available later.
+Combat begins physical and close-range. The young wyvern should rely primarily on one convincing bite rather than a broad melee combo assembled from visually weak attacks.
 
-**Status:** Provisional  
-**Needs:** First melee move set, hit timing, recovery timing, enemy reaction tests.
+**Design decision:** Retire the base wing/wing/bite combo as the target design. Wings are young, vulnerable locomotion structures rather than routine weapons.
+
+**Target:** One high-quality base bite with strong anticipation, neck/jaw motion, contact, sound, enemy reaction, and recovery.
 
 ### 3.3 Smoke and Disruption
 
-Smoke is an early survival tool. It should let the dragon disrupt enemies, break pressure, obscure movement, or create escape windows.
+Smoke is the first major instinct and the foundation of the wyvern's breath-power progression.
 
-**Status:** Provisional  
-**Needs:** Decide whether smoke is cone, cloud, trail, burst, or context-sensitive action.
+It begins as a broad panic response and gradually becomes directed, compressed, heated, and finally combustible.
+
+**Status:** First awakening implemented; wider progression defined below.
 
 ### 3.4 Escape, Not Arena-Clearing
 
 The goal is survival and escape, not clearing every enemy. The player should often be choosing whether to attack, flee, hide, disrupt, or burst through.
 
-**Status:** Strong design intent  
-**Needs:** Scenario objectives that reward escape over full combat cleanup.
+**Status:** Strong design intent
 
 ---
 
-## 4. First Playable Scope
+## 4. Current Scope
 
-### Must Include
+### Must Support
 
-- One short playable scenario
-- Young dragon movement
-- Dodging / burst movement
-- Close-range attack
-- Smoke or disruption ability
-- Enemy pressure
-- Environmental danger
-- Reach-safety objective
+- Embodied egg-hatching opening
+- Young wyvern ground movement
+- Dodge / burst movement
+- Dodge-to-leap counter
+- One strong close-range bite
+- Smoke instinct awakening
+- Multiple levels / scene transitions
+- Raiders, husks, and werewolf pressure
+- Enemy-versus-enemy interactions where appropriate
+- Environmental danger, fire, darkness, weather, smoke, and Mama world events
+- Body-led health and stamina feedback
 - Death and automatic respawn
 - Minimal start / pause / settings shell
+- Instinct progression towards napalm
+- A late-game Mama werewolf confrontation
+- A narrative ending that can introduce the werewolf pup without turning the final beat into a reward-screen pet unlock
 
-### Must Not Include Yet
+### Avoid / Park Unless Required
 
-- Full stealth system
-- Full flight
+- Full stealth simulation
+- Full player flight
 - Base building
 - Strategy systems
 - Morale systems
-- Complex fire simulation
 - Open-world exploration
 - Multiple playable characters
 - Long-term survival crafting
-- Deep upgrade trees
+- Deep RPG upgrade trees
 - Large dialogue system
+- Complex systemic fire chemistry beyond what supports the authored game
 
 ### Scope Discipline Rule
 
-If a proposed feature does not directly support the first playable survival scenario, park it.
+New systems must serve the playable story and survival loop. Tool-building, simulation breadth, and procedural sophistication are not success conditions by themselves.
 
 ---
 
-## 5. Controls
+## 5. Controls — Instinctive Input Language
 
-**Status:** Undefined / Needs input testing
+**Status:** Target design agreed 2026-08-14; runtime migration required in places
 
-### Current Intent
+### Core Principle
 
-Controls should feel immediate, physical, and readable. The player should be focused on survival, not command management.
+Do not assign every ability a separate keyboard key.
 
-### Candidate Control Needs
+The player should learn a very small number of physical verbs, while newly awakened instincts deepen what those verbs can express.
 
-| Action | Input | Status | Notes |
-|---|---:|---|---|
-| Move | TBD | Undefined | WASD or mouse movement to decide. |
-| Sprint / Burst | TBD | Undefined | Should feel like panic movement, not a generic run toggle. |
-| Dodge / Lunge | TBD | Undefined | May overlap with attack or burst. |
-| Bite / Claw | TBD | Undefined | Needs simple, reliable primary attack. |
-| Smoke | TBD | Undefined | Could be hold, tap, directional, or escape burst. |
-| Pause | Esc | Provisional | Tap to pause/resume; hold or secondary input for system menu. |
+The intended combat language is:
 
-### Open Questions
+| Input | Physical meaning | Target behaviour |
+|---|---|---|
+| WASD | Move | Screen-relative ground movement |
+| LMB | Jaws / attack | Base bite; contextual offensive follow-ups |
+| Space | Evade | Dodge / burst movement |
+| RMB | Breath / instinct | Smoke and later breath-power family |
+| Shift | Sprint / urgency | Existing runtime behaviour; keep only if it earns its place |
+| Esc | Pause | Minimal pause / system access |
 
-- Is movement keyboard-based, mouse-directed, or hybrid?
-- Should attacks aim towards mouse, movement direction, or nearest target?
-- Should smoke be a defensive panic button or a deliberate placement tool?
+### Bite
+
+- **LMB normally:** one strong bite.
+- No default wing/wing/bite combo target.
+- The attack should aim towards the mouse/pointer direction unless testing proves another solution better.
+
+### Dodge and Leap Counter
+
+- **Space:** dodge.
+- During the valid dodge follow-up window, **LMB:** leap/counter attack.
+- The first-scene tutorial should teach this through brief slow-time and an input prompt.
+- This tutorial behaviour existed before the tutorial migration and needs restoring in the current presentation path.
+
+**Runtime mismatch to resolve:** the current implementation uses a second Space press for `DODGE CHARGE`; canonical target is **Space → LMB**.
+
+### Breath / Instinct
+
+RMB represents the wyvern accessing its breath instinct, not a numbered ability slot.
+
+Target progression:
+
+- **Tap RMB:** broad radial Smoke Veil.
+- **Hold RMB:** controlled Smoke Stream / forward cone once unlocked.
+- **Hold RMB + tap LMB:** Smouldering Spit once unlocked.
+- **Hold RMB + hold LMB, then release:** charged Napalm Spit once unlocked.
+
+The exact thresholds and input buffering require testing, but the control language should remain simple enough to translate later to controller triggers/buttons without redesigning the ability system.
+
+### Input Design Rule
+
+If a new instinct cannot fit naturally into the existing physical verbs, first ask whether it is actually part of the same creature progression before adding another dedicated key.
 
 ---
 
 ## 6. Movement
 
-**Status:** Provisional
+**Status:** Implemented foundation / Active feel work
 
 ### Design Intent
 
-Movement should sell the dragon as a physical young creature: fast, low, dangerous, slightly uncontrolled under pressure.
+Movement should sell the wyvern as a physical young creature: fast, low, dangerous, slightly uncontrolled under pressure.
 
 ### Movement Feel Goals
 
 - responsive enough for survival action
 - not floaty
-- not slow RTS-style movement
+- low, grounded, and stalk-like when moving normally
 - panic-capable without becoming silly
 - body weight visible in turns, lunges, stops, and recovery
+- wings support body language and locomotion rather than reading as generic melee weapons
 
-### Candidate Movement Components
+### Current / Target Components
 
-- Base movement
-- Short burst / sprint
-- Dodge or sidestep
-- Body lunge
+- WASD movement
+- Sprint / urgency movement, subject to continued usefulness testing
+- Space dodge
+- Dodge → LMB leap/counter
 - Collision slide around terrain
-- Brief stumble/flinch on heavy hit
+- Brief flinch / pressure response on heavy hit
 
 ### Implementation Notes
 
-- Movement tuning should be tested before adding more abilities.
-- Avoid complex stamina rules until the basic movement loop feels good.
-- The first playable only needs enough movement depth to make escape tense and readable.
-
-### Open Questions
-
-- Does the dragon rotate instantly or physically turn?
-- Can the player cancel attacks with movement?
-- Can burst movement damage or stagger small enemies?
+- Screen-relative movement is already supported in the 3D renderer path.
+- Stamina exists and can gate high-cost evasion/counters.
+- Inter-enemy collision, crowd movement and leash behaviour need further work; enemies should not look broken merely because they are trying to maintain authored pressure ranges.
 
 ---
 
 ## 7. Combat
 
-**Status:** Provisional
+**Status:** Implemented foundation / Target simplification
 
 ### Design Intent
 
 Combat should be close, risky, and animalistic. The player is dangerous, but getting surrounded should be frightening.
 
-### Initial Combat Actions
+### Core Combat Actions
 
 | Action | Purpose | Status |
 |---|---|---|
-| Bite | Focused close-range damage | Undefined |
-| Claw swipe | Wider short-range pressure | Undefined |
-| Body lunge | Movement plus impact | Undefined |
-| Smoke disruption | Escape / confuse / interrupt | Provisional |
+| Bite | Reliable close-range damage | Implemented; visual/feel quality still active work |
+| Dodge | Avoid pressure / reposition | Implemented |
+| Dodge → leap counter | Risk/reward evasive retaliation | Implemented foundation; input should migrate to Space → LMB |
+| Smoke Veil | Break pressure / disrupt | Implemented unlock path |
+| Later breath instincts | Range, disruption and eventual lethal power | Progression target |
 
 ### Combat Rules
 
-- The player should not be encouraged to clear every enemy.
+- Do not encourage clearing every enemy.
 - Enemy contact should create pressure quickly.
-- Attacks should create short survival windows, not safe dominance.
+- Attacks create short survival windows, not safe dominance.
 - Hit feedback must be extremely clear.
+- Physics/contact should remain grounded in actual body/contact volumes rather than arbitrary screen-space hits.
+- Friendly/enemy faction interactions can create useful chaos, but should remain readable.
 
-### Open Questions
+### Current Simplification
 
-- Should bite and claw be separate moves or a single contextual attack chain?
-- Should body lunge cost stamina/breath?
-- Can the dragon knock enemies into hazards?
-- How much damage should enemies take before retreating, dying, or regrouping?
-
----
-
-## 8. Smoke / Disruption
-
-**Status:** Partially defined
-
-### Design Intent
-
-Smoke should be the dragon’s first strange power: not full fire, not magic spellcasting, but a survival instinct that disrupts enemies and buys space.
-
-### Possible Smoke Uses
-
-- briefly obscure the dragon
-- interrupt enemy targeting
-- create an escape window
-- mark a panic trail
-- choke or confuse weaker enemies
-- interact with light/fire later
-
-### First Playable Requirement
-
-Smoke only needs one reliable use in the first playable:
-
-> Let the player break pressure long enough to escape or reposition.
-
-### Avoid For Now
-
-- complex gas simulation
-- large persistent smoke fields
-- multi-material smoke/fire chemistry
-- heavy per-pixel simulation
-
-### Open Questions
-
-- Is smoke emitted from the mouth, body, wings, or movement trail?
-- Is smoke directional or radial?
-- Does smoke cost stamina/breath?
-- Do all enemies react to smoke the same way?
+The existing `BITE_CLAW` / “ATTACK COMBO” naming and presentation should be treated as legacy implementation language. Canonical target is a **single primary bite** unless later testing proves a second physical attack is genuinely needed.
 
 ---
 
-## 9. Health, Pressure, Death, and Respawn
+## 8. Breath Instincts / Smoke / Fire Progression
 
-**Status:** Partially defined
+**Status:** First unlock implemented; progression plan defined
 
 ### Design Intent
 
-Health should feel like mounting injury and pressure, not a visible number or pickup economy.
+Breath powers are one developing biological lineage, not a collection of unrelated spells.
 
-The player should understand danger through screen pressure, audio, movement, and body feedback rather than a traditional health bar.
+The player should feel the same internal mechanism becoming more controlled and dangerous:
+
+> panic smoke → directed smoke → compressed smouldering spit → ignition → napalm
+
+### Instinct 1 — Smoke Veil
+
+**Unlock:** First major scene transition / awakening.  
+**Input:** Tap RMB.  
+**Role:** Defensive panic response.
+
+- broad radial burst
+- low control
+- breaks pressure and creates escape space
+- obscures/disrupts enemies
+- should not begin unlocked at game start
+
+The current smoke-awakening transition already owns the Mama impact, raider scatter, smoke blackout, EXHALE prompt, repeated player input and radial-smoke release.
+
+### Instinct 2 — Smoke Stream
+
+**Input:** Hold RMB.  
+**Role:** Same breath mechanism under increasing conscious control.
+
+- directional forward cone / stream
+- narrower than Smoke Veil
+- greater useful range
+- sustained or drain-based use
+- better for shaping approach lanes than panic escape
+
+### Instinct 3 — Smouldering Spit
+
+**Input target:** Hold RMB + tap LMB.  
+**Role:** First true projectile-like breath attack.
+
+- compressed smoking glob / spit
+- low direct damage
+- creates a brief local smoke/disruption effect
+- useful for confusion, pressure interruption, and eventually breaking line-of-sight once enemy perception supports it properly
+- should feel biologically adjacent to smoke rather than like a magic fireball
+
+### Instinct 4 — Cinder Breath / Ignition
+
+**Status:** Provisional intermediate power.
+
+This is the developmental step between smouldering spit and true napalm.
+
+- short-range hot ash / ember exhalation
+- modest direct damage
+- strong stagger or panic potential
+- can ignite selected environmental materials or interact with existing smoke
+- first clear visual appearance of orange/heat inside the wyvern's previously grey-black breath
+
+This unlock should communicate that the wyvern has learned **heat**, but not yet Mama's combustible secretion.
+
+### Instinct 5 — Napalm Spit
+
+**Input target:** Hold RMB + hold LMB to charge; release to fire.  
+**Role:** Major late-game offensive payoff.
+
+- proper projectile attack
+- combustible / pooling impact behaviour
+- materially higher damage and area denial
+- strongest visible connection to Mama's fire biology
+- should arrive late enough to feel like a genuine transformation in capability
+
+### Design Rule
+
+Practice develops **control and effectiveness**. Story/instinct moments develop **new capability**.
+
+The game should not become a hotbar or spell-wheel game as more instincts unlock.
+
+---
+
+## 9. Health, Pressure, Stamina, Death, and Respawn
+
+**Status:** Implemented foundation / Ongoing tuning
+
+### Design Intent
+
+Health should feel like mounting injury and pressure, not a pickup economy.
+
+The player should understand danger through screen pressure, audio, movement, and body feedback rather than relying on a dominant conventional health HUD.
 
 ### Health Model
 
-Health should behave like recoverable pressure:
+Health behaves like recoverable pressure:
 
-1. The dragon is hit.
+1. The wyvern is hit.
 2. Injury pressure increases.
 3. Recovery is delayed.
-4. If the dragon avoids further damage for long enough, pressure begins to recover.
-5. If pressure reaches maximum, the dragon collapses/dies.
+4. If the player avoids further damage long enough, pressure begins to recover.
+5. If pressure reaches maximum, the wyvern collapses/dies.
 
-### Recovery Rule
+### Stamina
 
-**Provisional rule:** Health begins recovering only after the player avoids further damage for a short period.
+Stamina already gates demanding movement/combat actions and should continue to support the physicality of dodging and counters.
 
-Suggested starting values for testing:
-
-| Value | Starting Test Range |
-|---|---:|
-| Recovery delay after hit | 2–4 seconds |
-| Full recovery duration | 4–8 seconds |
-| Death fade delay | 1.5–2.5 seconds |
-
-These are not final values. Tune through playtesting.
+Do not let stamina become constant bar-watching. Body, breath and screen feedback should carry most of the communication.
 
 ### Health Pickups
 
-Health pickups should be avoided for the first playable. They do not currently fit the grounded survival fantasy.
-
-If healing is ever needed later, prefer diegetic recovery such as:
-
-- reaching shelter
-- hiding long enough
-- warmth/rest at safe points
-- story-specific intervention
+Avoid routine health pickups. If explicit healing is required later, prefer diegetic recovery such as shelter, rest, warmth, or story-specific intervention.
 
 ### Death Handling
 
@@ -333,220 +398,138 @@ Preferred flow:
 4. Brief blackout.
 5. Automatic respawn at latest checkpoint.
 
-### Respawn
-
-**Provisional rule:** Respawn is automatic after a short fade-out.
-
-Open decisions:
-
-- checkpoint frequency
-- whether enemies reset
-- whether world damage persists
-- whether death has any scenario consequence
-
 ---
 
 ## 10. UI & Player Feedback
 
-**Status:** Partially defined
+**Status:** Implemented foundation / Active presentation work
 
 ### UI Direction
 
-Black Sky Bound should use minimal, body-led UI rather than conventional HUD elements. The player should read the young dragon’s state through pressure, breath, motion, sound, colour, and screen treatment rather than bars, numbers, or collectible recovery items.
+Black Sky Bound should use minimal, body-led UI rather than conventional HUD-heavy presentation.
 
-### Core UI Principle
-
-The UI should answer only the player’s immediate survival questions:
+The UI should answer only immediate survival questions:
 
 - Am I badly hurt?
 - Am I exhausted?
 - Am I safe enough to recover?
 - Am I being overwhelmed?
 - Where is escape?
-- What action can save me right now?
+- What instinct/action can save me right now?
 
-### Health Feedback
+### Health / Stamina Feedback
 
-Use:
+Prefer combinations of:
 
-- red/dark border vignette
+- red/dark border pressure
 - pulse pressure at screen edge
 - brief hit distortion
 - sound muffling
-- heartbeat or breath intensity
+- heartbeat / breath intensity
 - body flinch
-- animation weakness near death
+- posture or movement weakness
+- restrained stamina overlay where needed for readability
 
-Avoid:
-
-- permanent health bar
-- floating damage numbers
-- healing pickups as default solution
-- heavy UI panels
-
-### Stamina / Breath Feedback
-
-Stamina or breath should be communicated indirectly.
-
-Possible feedback:
-
-- heavier breathing
-- reduced movement snap
-- weakened smoke output
-- slight desaturation
-- tighter vignette
-- lower body posture
-- brief screen pressure during overexertion
-
-### Pause Feedback
-
-Pause should be almost symbolic.
-
-Preferred pause presentation:
-
-- simulation freezes
-- audio dampens
-- image subtly darkens
-- one small symbol appears
-- no large menu unless requested
-
-Provisional input model:
-
-- Tap Esc: pause/resume
-- Hold Esc or secondary input: open system menu
-
-### Required Minimal Menus
-
-Even with minimal in-game UI, the PC release still needs:
-
-- start / continue
-- restart checkpoint
-- controls
-- settings
-- quit
-
-These should be understated and stylistically consistent with the world.
+Avoid floating damage numbers, MMO bars, quest clutter, and healing-item UI loops.
 
 ### Tutorial / Prompt Rules
 
-Use brief contextual prompts only when needed.
+Use brief contextual prompts close to the moment they matter.
 
-Prompts should:
+Current priority:
 
-- appear close to the moment they matter
-- fade quickly
-- avoid clutter
-- teach survival action, not explain lore
+- Restore the early dodge-counter teaching beat from before the tutorial migration.
+- Use brief slow-time when the first relevant combat threat makes the action necessary.
+- Teach **Space → LMB** rather than requiring the player to memorise an abstract “charge” key.
+- Smoke awakening should remain diegetic and action-led: the player exhales through the smoke rather than reading a tutorial panel.
 
-### UI Style Notes
+### Pause / Menus
 
-Possible surface language:
-
-- ash
-- smoke
-- moonlight
-- bone scratches
-- claw marks
-- ember glow
-- darkened blood/pressure edges
-- simple creature-symbols
-
-Avoid:
-
-- clean sci-fi panels
-- bright arcade UI
-- strategy HUD language
-- quest-marker clutter
-- MMO-style bars and icons
+Keep pause visually understated, but the PC release still needs start/continue, restart checkpoint, controls, settings, and quit.
 
 ---
 
 ## 11. Enemies
 
-**Status:** Undefined / Needs design pass
+**Status:** Implemented foundation / Behaviour and presentation tuning active
 
-### Known Enemy Context
+### Current Enemy Families
 
-The opening world includes:
-
-- raiders
-- husks
-- disturbed predators
-- environmental fire/chaos
-- mother dragon as background catastrophe, not normal enemy
+| Enemy Type | Purpose | Current direction |
+|---|---|---|
+| Raider | Armed human pressure; patrols, torches, spears, group behaviour | Procedural 3D bodies and recipe-backed variation implemented |
+| Husk | Chaotic/swarming pressure | Existing combat/AI foundation |
+| Werewolf | Larger predatory threat; lunge/bite pressure; late-game lineage | Existing predator presence; Mama werewolf is late-game boss target |
 
 ### Enemy Design Intent
 
-Enemies should create pressure, panic, and route problems. They do not all need deep AI in the first playable.
+Enemies should create pressure, panic, and route problems rather than behaving like stationary arena targets.
 
-### First Playable Enemy Needs
+### Behaviour Notes
 
-| Enemy Type | Purpose | Status |
-|---|---|---|
-| Raider | Armed human pressure / nest attack context | Undefined |
-| Husk | Swarming chaotic threat | Undefined |
-| Predator | Environmental danger / opportunistic pressure | Undefined |
-
-### Open Questions
-
-- Which enemy appears first?
-- Which enemy teaches dodging?
-- Which enemy teaches smoke?
-- Which enemy is too dangerous to fight directly?
-- Do enemies fight each other in the first playable?
+- Windup / attack / recovery readability matters more than raw AI cleverness.
+- Enemy-versus-enemy and faction interactions may contribute to world chaos.
+- Stuck recovery and leash systems exist, but current leash/crowd behaviour can look unnatural.
+- Inter-enemy collision and pathfinding need a more coherent solution so groups do not jam, repel strangely, or appear indecisive around the player.
+- Smoke should eventually interact with perception/line-of-sight rather than only applying abstract disruption values.
 
 ---
 
-## 12. Scenario Structure
+## 12. Scenario / Story Structure
 
-**Status:** Provisional
+**Status:** Developing
 
-### First Scenario Intent
+### Opening
 
-The first scenario should introduce the player as a young dragon separated from safety during a violent collapse.
+The game begins with the player embodied inside the egg rather than waking after the attack.
 
-The player should move through a dangerous forest, survive immediate pressure, and reach safety.
+Current opening direction includes:
 
-### Candidate Scenario Flow
+1. Darkness / shell enclosure and exterior sound perspective
+2. Cracking / emergence
+3. Baby wyvern first cry from the player actor
+4. First movement through the aftermath
+5. Early combat pressure and dodge/counter teaching
+6. Mama as a powerful off-screen / flyover world presence rather than a controllable ally
 
-1. Wake / regain control after nest attack
-2. Learn movement under threat
-3. Avoid or fight first raiders/husks
-4. Use smoke/disruption to break pressure
-5. Cross dangerous terrain or burning area
-6. Reach cave/shelter/escape point
-7. End scenario / unlock next beat
+### First Major Instinct Transition
+
+At the transition into the next major playable scene:
+
+1. Mama impacts / lands violently off-screen.
+2. Camera shake, debris and raider reactions establish the event without requiring a janky full Mama landing animation.
+3. Smoke rolls over and blacks out the scene.
+4. The player receives the EXHALE prompt.
+5. Repeated breath input clears pockets in the smoke.
+6. Smoke Veil unlocks as the first major instinct.
+7. The next playable space immediately gives the player a reason to use it under pressure.
+
+### Mid-game Development
+
+Progression should introduce increasingly controlled breath instincts in authored situations that prove why each new behaviour matters.
+
+Avoid unlocking abilities in isolation from level design.
+
+### Late-game Story Target
+
+- Mama Wyvern dies before the final Mama werewolf confrontation.
+- The young wyvern defeats the adult werewolf.
+- Afterwards it discovers the werewolf pup.
+- The pup should not be presented primarily as a collectible or reward-screen companion unlock.
+- Preferred emotional direction: one newly orphaned creature recognises another; the pup eventually follows.
+- The final presentation of Mama's absence/death still needs a deliberate authored beat so the ending feels conclusive rather than simply stopping after the boss.
 
 ### Objective Style
 
 Objectives should feel environmental, not checklist-heavy.
 
-Prefer:
-
-- visible cave mouth
-- moonlit opening
-- mother dragon roar/fire direction
-- smoke/embers suggesting route
-- enemies pushing the player forward
-
-Avoid:
-
-- large waypoint arrows
-- quest log clutter
-- “Kill 10 raiders” objectives
-
-### Open Questions
-
-- What is the shortest complete first scenario?
-- How many enemy types should appear?
-- Does the player ever stop moving, or is the level almost entirely escape pressure?
-- What is the final safe point?
+Prefer visible spaces, light, smoke, sound, threat movement and authored pressure over waypoint arrows or “kill X enemies” tasks.
 
 ---
 
 ## 13. Visual Direction
 
-**Status:** Strong concept direction / implementation still open
+**Status:** 3D runtime established / Art quality active
 
 ### Reference Words
 
@@ -556,114 +539,162 @@ Avoid:
 - small creature, huge danger
 - violent silhouettes
 - glowing eyes and embers
+- faceted, physical forms rather than flat strategy sprites
 
-### Avoid
+### Runtime Direction
 
-- cute mascot dragon
-- bright cartoon fantasy
-- clean arenas
-- readable-but-boring tiles
-- over-detailed realism
-- strategy-game visual clutter
+The default runtime renderer is now Three.js `webgl3d`, using a fixed isometric orthographic camera.
 
-### First Playable Visual Priorities
+The game world, creatures, terrain, effects, lighting and Mama events are represented through the 3D renderer / screen-space layers as appropriate.
 
-1. The dragon must read clearly.
-2. Enemies must read clearly under pressure.
-3. Hazards must be understandable quickly.
-4. The path to safety must be readable without ugly UI.
-5. Darkness should create atmosphere without hiding the game.
+### Lighting Principle
 
-### Open Questions
+Darkness should create strong contrast and mystery without becoming an opaque blue/black wash.
 
-- How stylised should the dragon silhouette be?
-- How abstract can terrain be before it loses believability?
-- What is the baseline colour palette for forest/night/fire/smoke?
-- How much screen treatment is too much during injury or exhaustion?
+Light should feel as though it **carves readable space out of darkness**, rather than brightening the whole world or relying on a uniform dark overlay that smears light sources.
+
+### Current Visual Priorities
+
+1. Grounded baby-wyvern movement and pose quality
+2. One excellent readable bite/contact action
+3. Stronger terrain/tree/cliff material and mesh quality
+4. Clean object/contact shadows without chunky square bases
+5. Production-quality smoke/napalm/fire effects
+6. Stable performance while preserving lighting contrast
 
 ---
 
 ## 14. Audio Direction
 
-**Status:** Undefined
+**Status:** Production foundation established / Expanding
 
 ### Design Intent
 
-Audio should communicate body state, threat, and world collapse.
+Audio communicates body state, threat, scale, enclosure, and world collapse.
 
-### Possible Audio Pillars
+### Current Foundations
 
-- breath
-- heartbeat
-- claws/feet on ground
-- enemy calls
-- distant mother dragon
-- forest fire
-- husk swarm noise
-- muffled panic when injured
+- Transform-owned spatial audio exists in the runtime.
+- Opening audio perspective changes with the egg enclosure.
+- The hatchling has a dedicated real-source first cry rather than borrowing Mama's roar.
+- The baby bite has moved towards a real-source production palette.
+- Mama/world threat audio is being treated as spatial world-event sound rather than generic centred cues.
+
+### Audio Pillars
+
+- breath and throat/body texture
+- claws/feet and body movement
+- readable enemy attacks/calls
+- Mama scale and distance
+- fire / napalm / smoke pressure
+- exterior world sound filtered by enclosure or obstruction
 - low-pressure silence before danger
 
-### Open Questions
-
-- Does low health create heartbeat or breath dominance?
-- Does stamina/breath recovery have an audio cue?
-- How much music is present during the first playable?
-- Are enemy types identified more by sound than visuals?
+Avoid generic fantasy-dragon sound when specific reptilian, crocodilian, alligator-like, strained or animal recordings can create a more believable identity.
 
 ---
 
-## 15. Progression
+## 15. Instinct Progression & Mastery
 
-**Status:** Provisional
+**Status:** Core progression philosophy agreed; implementation beyond first unlock TBD
 
 ### Design Intent
 
-Progression should feel like survival instincts awakening, not RPG power inflation.
+Progression should feel like survival instincts awakening and being practised, not RPG power inflation.
 
-### Possible Progression Types
+### Capability Progression
 
-- stronger movement options
-- new smoke control
-- improved lunge / bite / claw timing
-- better recovery instincts
-- eventual dragonfire
-- new scenario access
+Current target order:
 
-### First Playable Requirement
+1. **Movement + Bite** — baseline newborn physical survival
+2. **Dodge + Leap Counter** — accessible within the first scene
+3. **Smoke Veil** — first major awakened power; broad radial panic response
+4. **Smoke Stream** — directed, sustained control
+5. **Smouldering Spit** — first projectile-like compressed breath attack
+6. **Cinder Breath / Ignition** — provisional intermediate heat milestone
+7. **Napalm Spit** — late-game major offensive instinct
+8. **Werewolf pup relationship** — narrative/passive-ish future companion potential, not a conventional combat skill unlock
 
-The first playable does not need a full progression system.
+### Instinct Mastery
 
-It only needs one satisfying scenario loop and possibly one end-state unlock tease.
+Each breath instinct should expose enough data to grow through use and tuning.
 
-### Open Questions
+Candidate mastery variables:
 
-- Does the first scenario unlock anything?
-- When does dragonfire first appear?
-- Is progression ability-based, story-based, or both?
+**Smoke Veil**
+- radius
+- density / disruption strength
+- persistence
+- stamina/breath cost
+
+**Smoke Stream**
+- range
+- cone width
+- density / pressure effect
+- sustained cost
+
+**Smouldering Spit**
+- projectile velocity
+- accuracy / spread
+- impact smoke size
+- stagger / panic
+- damage
+
+**Cinder Breath**
+- heat
+- cone range
+- stagger
+- ignition effectiveness
+
+**Napalm Spit**
+- charge rate
+- projectile size / velocity
+- pool size
+- burn duration
+- damage
+
+### XP / Growth Rule
+
+- Usage may award instinct-specific mastery XP.
+- Use diminishing returns or other anti-grind rules so the player is not encouraged to spam an ability into a wall.
+- Practice improves effectiveness/control within a capability.
+- Story/instinct moments unlock new capabilities.
+- Base and growth values must be data-driven/exposed enough for tuning rather than buried across implementation code.
+
+### Progression Anti-Goal
+
+Do not build a deep upgrade-tree UI for the first game. Growth should be felt primarily through the creature and its abilities.
 
 ---
 
 ## 16. Technical Design Notes
 
-**Status:** Provisional / Build-facing notes
+**Status:** Current runtime substantially established
 
-### Runtime Priorities
+### Runtime Direction
 
-- Keep the first playable lean.
-- Avoid heavy simulation unless it directly improves the playable loop.
-- Do not rebuild strategy systems from older prototypes unless needed.
-- Prefer simple authored scenario logic over broad systemic complexity.
-- Prioritise stable framerate and readable feedback.
+- Three.js `webgl3d` is the default renderer.
+- Fixed isometric orthographic camera.
+- ECS / fixed-step simulation remains authoritative for transforms, poses, collision, contact, damage and progression.
+- Renderer-neutral projection feeds the 3D presentation.
+- Procedural 3D creature/environment surfaces can vary presentation without moving gameplay truth into the renderer.
+- Body/contact rigs own stable hurt/attack shapes.
+- Event-driven systems are preferred where possible.
+- Avoid “everything on tick” behaviour.
+- Maintain explicit performance budgets and fail-visible diagnostics rather than silently degrading important visuals.
 
-### Current Technical Bias
+### Current Systems Already Beyond the Old GDD
 
-- Top-down 2D runtime
-- PC first
-- Short scenario-based structure
-- Minimal HUD
-- Automatic respawn
-- Event-driven systems where possible
-- Avoid “everything on tick” behaviour
+- 3D isometric renderer and camera
+- embodied hatching sequence
+- smoke awakening transition
+- health / stamina feedback and automatic death lifecycle
+- multiple enemy attack/state systems
+- werewolf predator presence
+- Mama flyover / fire world events
+- procedural 3D wyvern and raider presentation
+- spatial audio and opening enclosure perspective
+- authored map/runtime transition pipeline
 
 ### Hard Rule
 
@@ -673,29 +704,37 @@ Do not let engine/tool-building replace finishing the game.
 
 ## 17. Open Questions / Risks
 
-### Scope Risks
-
-- How do we keep the first playable from expanding back into strategy/simulation work?
-- How do we avoid tool-building becoming the project again?
-- What is the smallest scenario that still feels complete?
-
 ### Feel Risks
 
-- Does movement feel good enough without flight?
-- Do tooth, claw, smoke, and movement satisfy before dragonfire exists?
-- Can the dragon feel vulnerable and dangerous at the same time?
+- Can the grounded crawl/stalk motion become convincing enough without full flight?
+- Can one excellent bite carry the baseline melee better than a broader but weaker combo? **Current answer: likely yes; test it.**
+- Can dodge → LMB counter remain obvious and satisfying under pressure?
+- Can later breath inputs remain readable without accidental tap/hold ambiguity?
 
-### Systems Risks
+### Enemy / Navigation Risks
 
-- How much smoke/fire interaction is needed for fun?
-- Can health recovery work without feeling too forgiving?
-- Can minimal UI stay readable enough for new players?
+- Inter-enemy collision currently contributes to unnatural crowd behaviour.
+- Leashing can create visibly strange retreats/re-engagement.
+- Smoke needs a more meaningful future perception / line-of-sight relationship.
+- Group pressure must remain dangerous without turning into collision soup.
 
-### Production Risks
+### Visual / Performance Risks
 
-- Are we building too many systems before proving the core loop?
-- Are we documenting decisions faster than implementing playable truth?
-- Is the first playable narrow enough to finish and show?
+- Lighting must preserve strong light/dark contrast without smearing or hiding gameplay.
+- Tree/environment meshes and materials still need a meaningful quality pass.
+- Creature animation improvements must be validated visually, not only structurally or through unit tests.
+- VFX ambition must remain within stable frame budgets.
+
+### Scope / Production Risks
+
+- Do not build five separate ability systems where one instinct family will do.
+- Do not let Axiom/pipeline/tool work become the product.
+- Keep design truth, runtime truth and experimental prototypes clearly separated.
+- Finish authored playable scenes around the systems that already exist.
+
+### Ending Question
+
+The emotional shape is promising, but the exact final beat remains open: how do we make Mama's death, the werewolf boss defeat, and the pup following the wyvern resolve into a genuinely final-feeling ending rather than a companion teaser?
 
 ---
 
@@ -706,19 +745,27 @@ Use this section to record agreed decisions so we do not re-litigate them every 
 | Date | Decision | Reason | Status |
 |---|---|---|---|
 | TBD | Use GCD for concept promise and GDD for build-facing design. | Prevent concept document bloat. | Agreed |
-| TBD | Avoid health pickups in first playable. | Does not fit the grounded survival fantasy. | Agreed/provisional |
-| TBD | Use body-led UI instead of permanent HUD bars. | Supports feral survival tone. | Agreed/provisional |
+| TBD | Avoid routine health pickups. | Does not fit the grounded survival fantasy. | Agreed/provisional |
+| TBD | Use body-led UI instead of permanent HUD-heavy presentation. | Supports feral survival tone. | Agreed/provisional |
 | TBD | Death should fade and auto-respawn without large failure text. | Avoids punitive tone and keeps flow moving. | Agreed/provisional |
+| 2026-07-30 | Three.js isometric `webgl3d` becomes the default runtime renderer. | The project has migrated from the old 2D presentation to an embodied 3D world while retaining gameplay simulation authority. | Implemented |
+| 2026-08-14 | Treat player powers as **instincts** expressed through a small physical input language. | Avoid hotkey bloat and make progression feel biological/intuitive. | Agreed |
+| 2026-08-14 | Baseline melee target is one strong bite; retire wing/wing/bite as the canonical combo. | Wings read as vulnerable locomotion structures and the combo is not landing visually. | Agreed / implementation cleanup needed |
+| 2026-08-14 | Canonical dodge counter input is **Space → LMB**. | Reuses the existing evade + attack verbs and feels more instinctive than a second dodge press. | Agreed / runtime migration needed |
+| 2026-08-14 | RMB owns the breath-instinct family: tap Smoke Veil, hold Smoke Stream, chord with LMB for later spit/napalm behaviours. | Scales progression without adding a row of ability keys. | Agreed / needs input prototyping |
+| 2026-08-14 | Breath progression target is Smoke Veil → Smoke Stream → Smouldering Spit → Cinder/Ignition → Napalm. | Creates one coherent biological development path from panic smoke to Mama-like fire. | Agreed, Cinder remains provisional |
+| 2026-08-14 | Practice can improve instinct mastery; story moments unlock new capabilities. | Supports growth without grind-driven RPG progression. | Agreed / system TBD |
+| 2026-08-14 | Werewolf pup should land as an emotional/narrative ending beat first, not a reward-screen pet unlock. | Mirrors the newly orphaned wyvern and gives the ending thematic meaning. | Direction agreed; final staging TBD |
 
 ---
 
 ## 19. Parking Lot
 
-Ideas that may be good later, but are not first playable requirements.
+Ideas that may be good later, but are not current first-game requirements.
 
 - Full stealth system
-- Full flight
-- Complex fire spread
+- Full player flight
+- Complex systemic fire spread
 - Long-form survival crafting
 - Strategy layer
 - Morale systems
@@ -727,4 +774,4 @@ Ideas that may be good later, but are not first playable requirements.
 - Advanced enemy faction simulation
 - Persistent campaign systems
 - Deep upgrade trees
-
+- Full companion command / progression system for the werewolf pup

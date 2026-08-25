@@ -20,8 +20,8 @@ export function accumulateProceduralTreeStats(target, treeGeometry) {
   target.proceduralTreeFoliageClusterCount += treeGeometry.foliageClusterCount;
 }
 
-const TREE_FIRE_OUTER = Object.freeze([1, 0.16, 0.018, 0.94]);
-const TREE_FIRE_INNER = Object.freeze([1, 0.64, 0.08, 0.98]);
+const FOLIAGE_FIRE_OUTER = Object.freeze([1, 0.16, 0.018, 0.94]);
+const FOLIAGE_FIRE_INNER = Object.freeze([1, 0.64, 0.08, 0.98]);
 
 export function buildTreeGeometry(object, alpha, rects, triangles) {
   const definition = object.treeDefinition?.contract
@@ -92,7 +92,7 @@ export function buildTreeGeometry(object, alpha, rects, triangles) {
     });
   }
 
-  appendTreeFireGeometry(object, material, geometry, alpha, rects, triangles);
+  appendFoliageFireGeometry(object, material, geometry, alpha, rects, triangles);
   return Object.freeze({
     contract: TREE_GEOMETRY_MODE,
     definitionContract: definition.contract,
@@ -215,7 +215,7 @@ function toWorld(point, geometry) {
   };
 }
 
-function appendTreeFireGeometry(object, material, geometry, alpha, rects, triangles) {
+function appendFoliageFireGeometry(object, material, geometry, alpha, rects, triangles) {
   const phase = material.firePhase;
   if (!phase) return;
   const { x, y, w, h, cx, baseY } = geometry;
@@ -223,7 +223,7 @@ function appendTreeFireGeometry(object, material, geometry, alpha, rects, triang
   const embers = material.emberAmount;
   const age = material.fireAge;
   const seed = object.treeDefinition?.seed ?? 1;
-  const flameCount = phase === 'engulfed' ? 7 : phase === 'simmer_high' ? 5 : phase === 'simmer_low' ? 3 : 0;
+  const flameCount = phase === 'ablaze' ? 7 : phase === 'smoulder_high' ? 5 : phase === 'smoulder_low' ? 3 : 0;
   const sockets = [
     [-0.28, 0.54, 0.9], [0.26, 0.58, 0.82], [-0.12, 0.36, 1.04], [0.12, 0.28, 0.88],
     [-0.38, 0.72, 0.72], [0.38, 0.74, 0.68], [0.02, 0.68, 0.76]
@@ -235,8 +235,8 @@ function appendTreeFireGeometry(object, material, geometry, alpha, rects, triang
       x: cx + w * socket[0],
       y: y + h * socket[1],
       radius: Math.max(5, Math.min(w, h) * 0.075 * socket[2] * (0.72 + heat * 0.56)),
-      outerColor: TREE_FIRE_OUTER,
-      innerColor: TREE_FIRE_INNER,
+      outerColor: FOLIAGE_FIRE_OUTER,
+      innerColor: FOLIAGE_FIRE_INNER,
       alpha: alpha * heat * pulse,
       seed: seed * 0.01 + index * 0.83 + age * 2.4,
       lean: Math.sin(seed + index * 1.7 + age * 3.2) * 0.28

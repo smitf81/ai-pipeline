@@ -36,10 +36,11 @@ Open `http://127.0.0.1:5177` if the browser does not open automatically.
 
 ## Current controls
 
-- WASD / arrows: move
+- WASD / arrows: move independently of mouse-facing
 - Hold Shift: sprint while stamina lasts
-- Space: dodge immediately in the held move direction; without movement, use aim/facing
-- Space again during the dodge: queue the stamina-heavy charge counter
+- Space: dodge in the held move direction; without movement, retreat away from the cursor
+- Space during a dodge: reserve one second dodge after a 60ms landing beat
+- LMB during the dodge window: commit a cursor-directed 1.75m Pounce Counter; otherwise LMB attacks normally
 - Left click or J: tooth/claw attack
 - Q: body lunge
 - Right click: radial smoke burst after the Level 1-to-2 instinct awakening (directional smoke remains a later locked refinement)

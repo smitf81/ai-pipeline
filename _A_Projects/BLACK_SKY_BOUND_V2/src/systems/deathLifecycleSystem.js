@@ -14,7 +14,7 @@ import { query } from '../ecs/query.js';
 import { addComponent, createEntity, getComponent, removeComponent, removeEntity } from '../ecs/world.js';
 import { resetEnemyAttack } from './enemyAttackSystem.js';
 import { canEntityOccupy } from './movementSystem.js';
-import { resetChargeCounterState } from './chargeCounterSystem.js';
+import { resetPounceCounterState } from './chargeCounterSystem.js';
 
 const LIVE_AUTHORITY_COMPONENTS = Object.freeze([
   ComponentType.EnemyPressureAI,
@@ -221,27 +221,44 @@ function resetPlayerLiveState(world, entity) {
 
 function resetPlayerActionState(world, entity) {
   const dodge = getComponent(world, entity, ComponentType.DodgeState);
+  const stamina = getComponent(world, entity, ComponentType.Stamina);
   if (dodge) Object.assign(dodge, Components.dodgeState({
     id: dodge.profileId,
     stamina: {
-      max: getComponent(world, entity, ComponentType.Stamina)?.max ?? 0,
-      regenPerSecond: getComponent(world, entity, ComponentType.Stamina)?.regenPerSecond ?? 0,
-      recoveryDelay: getComponent(world, entity, ComponentType.Stamina)?.recoveryDelay ?? 0
+      max: stamina?.max ?? 0,
+      regenPerSecond: stamina?.regenPerSecond ?? 0,
+      recoveryDelay: stamina?.recoveryDelay ?? 0
     },
     sprint: {
-      enabled: getComponent(world, entity, ComponentType.Stamina)?.sprintEnabled === true,
-      multiplier: getComponent(world, entity, ComponentType.Stamina)?.sprintMultiplier ?? 1,
-      drainPerSecond: getComponent(world, entity, ComponentType.Stamina)?.sprintDrainPerSecond ?? 0,
-      resumeThreshold: getComponent(world, entity, ComponentType.Stamina)?.sprintResumeThreshold ?? 0
+      enabled: stamina?.sprintEnabled === true,
+      multiplier: stamina?.sprintMultiplier ?? 1,
+      drainPerSecond: stamina?.sprintDrainPerSecond ?? 0,
+      resumeEnergy01: stamina?.sprintResumeEnergy01 ?? 0
     },
     dodge: {
       enabled: dodge.enabled,
       cost: dodge.cost,
-      distance: dodge.distance,
+      distance: dodge.baseDistance,
       duration: dodge.duration,
-      cooldown: dodge.cooldown,
+      cooldown: dodge.baseCooldown,
       visualRecoveryDuration: dodge.visualRecoveryDuration,
       visualRecoveryStartPhase: dodge.visualRecoveryStartPhase,
+      inputBufferSeconds: dodge.inputBufferSeconds,
+      interruptionBlendSeconds: dodge.interruptionBlendSeconds,
+      gradient: {
+        enabled: dodge.gradientEnabled,
+        curve: dodge.gradientCurve,
+        fullEffectEnergy01: dodge.fullEffectEnergy01,
+        minEffectiveness: dodge.minEffectiveness,
+        distanceMinMeters: dodge.distanceMinMeters,
+        distanceMaxMeters: dodge.distanceMaxMeters,
+        apexMinMeters: dodge.apexMinMeters,
+        apexMaxMeters: dodge.apexMaxMeters,
+        landingCompressionLowEnergyMeters: dodge.landingCompressionLowEnergyMeters,
+        landingCompressionFullEnergyMeters: dodge.landingCompressionFullEnergyMeters,
+        cooldownLowEnergySeconds: dodge.cooldownLowEnergySeconds,
+        cooldownFullEnergySeconds: dodge.cooldownFullEnergySeconds
+      },
       aiStyle: dodge.aiStyle,
       aiTriggerRange: dodge.aiTriggerRange
     }
@@ -256,7 +273,7 @@ function resetPlayerActionState(world, entity) {
   }
   const action = getComponent(world, entity, ComponentType.ActionState);
   if (action) Object.assign(action, Components.actionState());
-  resetChargeCounterState(getComponent(world, entity, ComponentType.ChargeCounterState));
+  resetPounceCounterState(getComponent(world, entity, ComponentType.PounceCounterState));
   const combo = getComponent(world, entity, ComponentType.ComboState);
   if (combo) Object.assign(combo, Components.comboState());
   const motionState = getComponent(world, entity, ComponentType.MotionState);

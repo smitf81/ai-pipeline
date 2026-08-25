@@ -117,8 +117,7 @@ function resolveRequestedCrossing(event, player, viewport, tuning) {
 }
 
 function resolveMamaBreathPose(event, progress, tuning) {
-  const active = event.kind === 'mama_wyvern_inferno'
-    && progress >= tuning.startProgress
+  const active = progress >= tuning.startProgress
     && progress <= tuning.endProgress;
   const span = Math.max(EPSILON, tuning.endProgress - tuning.startProgress);
   const phase = clamp01((progress - tuning.startProgress) / span);
